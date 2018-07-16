@@ -32,7 +32,10 @@ class ParseAccountHist(list):
         self.delegated_vests_out = {}
         self.timestamp = addTzInfo(datetime(1970, 1, 1, 0, 0, 0, 0))
         self.path = path
-        self.excluded_accounts = ["minnowbooster", "smartsteem", "randowhale", "tipu"]
+        self.excluded_accounts = ["minnowbooster", "smartsteem", "randowhale", "tipu", "steemvoter", "jerrybanfield",
+                                  "boomerang", "postpromoter", "appreciator", "buildawhale", "upme", "smartmarket",
+                                  "minnowhelper", "pushup", "sbi2", "sbi3", "sbi4", "sbi5", "sbi6", "sbi7", "sbi8",
+                                  "lays", "qustodian"]
         self.allowed_memo_words = ['for', 'and', 'sponsor', 'shares', 'share', 'sponsorship',
                                    'please', 'steem', 'thanks', 'additional',
                                    'sponsee', 'sponsoring', 'sponser', 'one', 'you', 'thank', 'enroll',

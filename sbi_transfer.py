@@ -11,11 +11,11 @@ from steembi.parse_hist_op import ParseAccountHist
     
 
 if __name__ == "__main__":
-    account = "steembasicincome"
+    accounts = ["steembasicincome", "sbi2", "sbi3", "sbi4", "sbi5", "sbi6", "sbi7", "sbi8"]
     database_ops = "sbi.sqlite"
     database_transfer = "sbi_tranfer.sqlite"
     path = ""
-    path = "E:\\curation_data\\"
+    path = "E:\\sbi\\"
     # Update current node list from @fullnodeupdate
 
     nodes = NodeList()
@@ -23,11 +23,11 @@ if __name__ == "__main__":
     stm = Steem(node=nodes.get_nodes())
     set_shared_steem_instance(stm)
     transfer_table = [{"index": -1}]
-    
-    account = Account(account)
-    pah = ParseAccountHist(account, path, transfer_table)
-    ops = db_load(path, database_ops, account["name"])
-    while True:
+
+    for account in accounts:
+        account = Account(account)
+        pah = ParseAccountHist(account, path, transfer_table)
+        ops = db_load(path, database_ops, account["name"])
         
         start_index = ops[-1]["index"] + 1
         start_index = pah.transfer_table[-1]["index"] + 1
@@ -39,4 +39,3 @@ if __name__ == "__main__":
             # ops.append(op)
 
             # db_extend(path, database_ops, account["name"], ops)
-        sleep(60)

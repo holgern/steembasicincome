@@ -46,7 +46,7 @@ def db_has_key(path, database, key):
 
 if __name__ == "__main__":
     accounts = ["steembasicincome", "sbi2", "sbi3", "sbi4", "sbi5", "sbi6", "sbi7", "sbi8"]
-    path = "E:\\curation_data\\"
+    path = "E:\\sbi\\"
     database = "sbi.sqlite"
     # Update current node list from @fullnodeupdate
     nodes = NodeList()
