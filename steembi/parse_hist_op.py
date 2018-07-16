@@ -32,10 +32,10 @@ class ParseAccountHist(list):
         self.delegated_vests_out = {}
         self.timestamp = addTzInfo(datetime(1970, 1, 1, 0, 0, 0, 0))
         self.path = path
-        self.excluded_accounts = ["minnowbooster", "smartsteem", "randowhale", "tipu", "steemvoter", "jerrybanfield",
+        self.excluded_accounts = ["minnowbooster", "smartsteem", "randowhale", "steemvoter", "jerrybanfield",
                                   "boomerang", "postpromoter", "appreciator", "buildawhale", "upme", "smartmarket",
-                                  "minnowhelper", "pushup", "sbi2", "sbi3", "sbi4", "sbi5", "sbi6", "sbi7", "sbi8",
-                                  "lays", "qustodian"]
+                                  "minnowhelper", "pushup", "steembasicincome", "sbi2", "sbi3", "sbi4", "sbi5", "sbi6", "sbi7", "sbi8"]
+
         self.allowed_memo_words = ['for', 'and', 'sponsor', 'shares', 'share', 'sponsorship',
                                    'please', 'steem', 'thanks', 'additional',
                                    'sponsee', 'sponsoring', 'sponser', 'one', 'you', 'thank', 'enroll',
@@ -95,9 +95,9 @@ class ParseAccountHist(list):
         for acc in self.delegated_vests_out:
             vests = Amount(self.delegated_vests_out[acc])
             delegated_sp_out[acc] = str(self.steem.vests_to_sp(vests))
-        with open(self.path + 'sbi_delegation_in.txt', 'w') as the_file:
+        with open(self.path + 'sbi_delegation_in_'+self.account["name"]+'.txt', 'w') as the_file:
             the_file.write(str(delegated_sp_in) + '\n')
-        with open(self.path + 'sbi_delegation_out.txt', 'w') as the_file:
+        with open(self.path + 'sbi_delegation_out_'+self.account["name"]+'.txt', 'w') as the_file:
             the_file.write(str(delegated_sp_out) + '\n')
 
     def parse_memo(self, memo, shares, account):
@@ -228,6 +228,9 @@ class ParseAccountHist(list):
                 the_file.write(ascii(op) + '\n')
             return
         if amount.symbol == "SBD":
+            
+            shares = -amount.amount
+            self.new_transfer_record(op["index"], op["to"], "", shares, op["timestamp"], share_type=share_type)
             if self.path is None:
                 return
             with open(self.path + 'sbi_skipped_SBD_transfer_out.txt', 'a') as the_file:
@@ -242,6 +245,7 @@ class ParseAccountHist(list):
 
     def parse_transfer_in_op(self, op):
         amount = Amount(op["amount"], steem_instance=self.steem)
+        share_type = "standard"
         if amount.amount < 1:
             if self.path is None:
                 return
@@ -249,11 +253,8 @@ class ParseAccountHist(list):
                 the_file.write(ascii(op) + '\n')
             return
         if amount.symbol == "SBD":
-            if self.path is None:
-                return
-            with open(self.path + 'sbi_skipped_SBD_transfer.txt', 'a') as the_file:
-                the_file.write(ascii(op) + '\n')
-            return
+            share_type = "SBD"
+
         index = op["index"]
         account = op["from"]
         timestamp = op["timestamp"]
@@ -261,7 +262,7 @@ class ParseAccountHist(list):
         memo = op["memo"]
         shares = int(amount.amount)
         if memo.lower().replace(',', '  ').replace('"', '') == "":
-            self.new_transfer_record(index, account, sponsee, shares, timestamp)
+            self.new_transfer_record(index, account, account, sponsee, shares, timestamp)
             return
         [sponsor, sponsee, not_parsed_words, account_error] = self.parse_memo(memo, shares, account)
         
@@ -271,31 +272,31 @@ class ParseAccountHist(list):
         
         
         if sponsee_amount == 0 and not account_error:
-            message = op["timestamp"] + " from: " + sponsor + ' amount: ' + str(amount) + ' memo: ' + ascii(op["memo"]) + '\n'
+            message = op["timestamp"] + " to: " + self.account["name"] + " from: " + sponsor + ' amount: ' + str(amount) + ' memo: ' + ascii(op["memo"]) + '\n'
             if self.path is None:
                 return            
             with open(self.path + 'sbi_no_sponsee.txt', 'a') as the_file:
                 the_file.write(message)
             return
         if sponsee_amount != shares and not account_error:
-            message = op["timestamp"] + " from: " + sponsor + ' amount: ' + str(amount) + ' memo: ' + ascii(op["memo"]) + '\n'
+            message = op["timestamp"] + " to: " + self.account["name"] + " from: " + sponsor + ' amount: ' + str(amount) + ' memo: ' + ascii(op["memo"]) + '\n'
             if self.path is None:
                 return            
             with open(self.path + 'sbi_wrong_amount.txt', 'a') as the_file:
                 the_file.write(message)
             return        
         if account_error:
-            message = op["timestamp"] + " from: " + sponsor + ' amount: ' + str(amount) + ' memo: ' + ascii(op["memo"]) + '\n'
+            message = op["timestamp"] + " to: " + self.account["name"] + " from: " + sponsor + ' amount: ' + str(amount) + ' memo: ' + ascii(op["memo"]) + '\n'
             if self.path is None:
                 return            
             with open(self.path + 'sbi_wrong_account_name.txt', 'a') as the_file:
                 the_file.write(message)
             return
         
-        self.new_transfer_record(index, sponsor, sponsee, shares, timestamp)
+        self.new_transfer_record(index, account, sponsor, sponsee, shares, timestamp, share_type=share_type)
 
-    def new_transfer_record(self, index, sponsor, sponsee, shares, timestamp, share_age=1, status="valid", share_type="standard"):
-        data = {"index": index, "sponsor": sponsor, "sponsee": sponsee, "shares": shares, "timestamp": timestamp,
+    def new_transfer_record(self, index, account, sponsor, sponsee, shares, timestamp, share_age=1, status="valid", share_type="standard"):
+        data = {"index": index, "account": account, "sponsor": sponsor, "sponsee": sponsee, "shares": shares, "timestamp": timestamp,
                 "share_age": share_age, "status": status, "share_type": share_type}
         self.transfer_table.append(data)
         if self.path is None:

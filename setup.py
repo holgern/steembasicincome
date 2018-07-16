@@ -32,7 +32,8 @@ requires = [
     "pycryptodomex",
     "pytz",
     "Click",
-    "prettytable"
+    "prettytable",
+    "beem"
 ]
 
 
