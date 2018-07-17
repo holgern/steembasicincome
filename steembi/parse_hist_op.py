@@ -45,7 +45,7 @@ class ParseAccountHist(list):
         self.trxStorage = trxStorage
         self.transfer_table = transfer_table
 
-    def update_delegation(self, timestamp, delegated_in=None, delegated_out=None):
+    def update_delegation(self, op, delegated_in=None, delegated_out=None):
         """ Updates the internal state arrays
 
             :param datetime timestamp: datetime of the update
@@ -57,13 +57,15 @@ class ParseAccountHist(list):
 
         """
 
-        self.timestamp = timestamp
+        self.timestamp = op["timestamp"]
 
         new_deleg = dict(self.delegated_vests_in)
         if delegated_in is not None and delegated_in:
             if delegated_in['amount'] == 0 and delegated_in['account'] in new_deleg:
+                self.new_delegation_record(op["index"], delegated_in['account'], delegated_in['amount'], op["timestamp"], share_type="RemovedDelegation")
                 del new_deleg[delegated_in['account']]
             elif delegated_in['amount']  > 0:
+                self.new_delegation_record(op["index"], delegated_in['account'], delegated_in['amount'], op["timestamp"], share_type="Delegation")
                 new_deleg[delegated_in['account']] = delegated_in['amount']
             else:
                 print(delegated_in)
@@ -229,14 +231,18 @@ class ParseAccountHist(list):
                 the_file.write(ascii(op) + '\n')
             return
         if amount.symbol == "SBD":
-            
-            shares = -amount.amount
-            # self.new_transfer_record(op["index"], op["to"], "", shares, op["timestamp"], share_type="Refund")
-            if self.path is None:
+            # self.trxStorage.get_account(op["to"], share_type="SBD")
+            shares = -int(amount.amount)
+            if "http" in op["memo"] or " STEEM " not in op["memo"]:
+                if self.path is None:
+                    return
+                with open(self.path + 'sbi_skipped_SBD_transfer_out.txt', 'a') as the_file:
+                    the_file.write(ascii(op) + '\n')
                 return
-            with open(self.path + 'sbi_skipped_SBD_transfer_out.txt', 'a') as the_file:
-                the_file.write(ascii(op) + '\n')
+            self.new_transfer_record(op["index"], ascii(op["memo"]), op["to"], op["to"], {}, shares, op["timestamp"], share_type="Refund")
+            # self.new_transfer_record(op["index"], op["to"], "", shares, op["timestamp"], share_type="Refund")
             return
+
         else:
             if self.path is None:
                 return
@@ -246,7 +252,7 @@ class ParseAccountHist(list):
 
     def parse_transfer_in_op(self, op):
         amount = Amount(op["amount"], steem_instance=self.steem)
-        share_type = "standard"
+        share_type = "Standard"
         if amount.amount < 1:
             if self.path is None:
                 return
@@ -263,7 +269,7 @@ class ParseAccountHist(list):
         memo = op["memo"]
         shares = int(amount.amount)
         if memo.lower().replace(',', '  ').replace('"', '') == "":
-            self.new_transfer_record(index, account, account, sponsee, shares, timestamp)
+            self.new_transfer_record(index, ascii(op["memo"]), account, account, sponsee, shares, timestamp)
             return
         [sponsor, sponsee, not_parsed_words, account_error] = self.parse_memo(memo, shares, account)
         
@@ -274,6 +280,7 @@ class ParseAccountHist(list):
         
         if sponsee_amount == 0 and not account_error:
             message = op["timestamp"] + " to: " + self.account["name"] + " from: " + sponsor + ' amount: ' + str(amount) + ' memo: ' + ascii(op["memo"]) + '\n'
+            self.new_transfer_record(index, ascii(op["memo"]), account, sponsor, sponsee, shares, timestamp, status="LessOrNoSponsee", share_type=share_type)
             if self.path is None:
                 return            
             with open(self.path + 'sbi_no_sponsee.txt', 'a') as the_file:
@@ -281,6 +288,7 @@ class ParseAccountHist(list):
             return
         if sponsee_amount != shares and not account_error:
             message = op["timestamp"] + " to: " + self.account["name"] + " from: " + sponsor + ' amount: ' + str(amount) + ' memo: ' + ascii(op["memo"]) + '\n'
+            self.new_transfer_record(index, ascii(op["memo"]), account, sponsor, sponsee, shares, timestamp, status="LessOrNoSponsee", share_type=share_type)            
             if self.path is None:
                 return            
             with open(self.path + 'sbi_wrong_amount.txt', 'a') as the_file:
@@ -288,23 +296,26 @@ class ParseAccountHist(list):
             return        
         if account_error:
             message = op["timestamp"] + " to: " + self.account["name"] + " from: " + sponsor + ' amount: ' + str(amount) + ' memo: ' + ascii(op["memo"]) + '\n'
+            self.new_transfer_record(index, ascii(op["memo"]), account, sponsor, sponsee, shares, timestamp, status="AccountDoesNotExist", share_type=share_type)
             if self.path is None:
                 return            
             with open(self.path + 'sbi_wrong_account_name.txt', 'a') as the_file:
                 the_file.write(message)
             return
         
-        self.new_transfer_record(index, account, sponsor, sponsee, shares, timestamp, share_type=share_type)
+        self.new_transfer_record(index, ascii(op["memo"]), account, sponsor, sponsee, shares, timestamp, share_type=share_type)
 
-    def new_transfer_record(self, index, account, sponsor, sponsee, shares, timestamp, share_age=1, status="valid", share_type="standard"):
-        data = {"index": index, "pool": self.account["name"], "account": account, "sponsor": sponsor, "sponsee": sponsee, "shares": shares, "timestamp": timestamp,
+    def new_transfer_record(self, index, memo, account, sponsor, sponsee, shares, timestamp, share_age=1, status="Valid", share_type="Standard"):
+        data = {"index": index, "source": self.account["name"], "memo": memo, "account": account, "sponsor": sponsor, "sponsee": sponsee, "shares": shares, "timestamp": timestamp,
                 "share_age": share_age, "status": status, "share_type": share_type}
-        self.trxStorage.add(index, self.account["name"], account, sponsor, json.dumps(sponsee), shares, timestamp, share_age, status, share_type)
+        self.trxStorage.add(index, self.account["name"], memo, account, sponsor, json.dumps(sponsee), shares, float(0), timestamp, share_age, status, share_type)
         self.transfer_table.append(data)
-        if self.path is None:
-            return        
-        with open(self.path + 'sbi_transfer_ok.txt', 'a') as the_file:
-            the_file.write(str(data) + '\n')
+
+    def new_delegation_record(self, index, account, vests, timestamp, share_age=1, status="Valid", share_type="Delegation"):
+        data = {"index": index, "source": self.account["name"], "memo": "", "account": account, "sponsor": account, "sponsee": {}, "shares": 0, "vests": vests, "timestamp": timestamp,
+                "share_age": share_age, "status": status, "share_type": share_type}
+        self.trxStorage.add(index, self.account["name"], "", account, account, json.dumps({}), 0, float(vests), timestamp, share_age, status, share_type)
+        self.transfer_table.append(data)
 
     def parse_op(self, op):
         if op['type'] == "delegate_vesting_shares":
@@ -312,11 +323,11 @@ class ParseAccountHist(list):
             # print(op)
             if op['delegator'] == self.account["name"]:
                 delegation = {'account': op['delegatee'], 'amount': vests}
-                self.update_delegation(op["timestamp"], 0, delegation)
+                self.update_delegation(op, 0, delegation)
                 return
             if op['delegatee'] == self.account["name"]:
                 delegation = {'account': op['delegator'], 'amount': vests}
-                self.update_delegation(op["timestamp"], delegation, 0)
+                self.update_delegation(op, delegation, 0)
                 return
 
         elif op['type'] == "transfer":

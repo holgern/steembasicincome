@@ -116,5 +116,14 @@ class Testcases(unittest.TestCase):
         [sponsor, sponsee, not_parsed_words, account_error] = pah.parse_memo(memo, shares, account)
         self.assertEqual(sponsor, "thehive")
         self.assertEqual(sponsee, {"bashadow": 3})
-        self.assertFalse(account_error)        
-        
+        self.assertFalse(account_error)
+
+    def test_no_sponsee(self):
+        memo = '@awesomianist'
+        shares = 4
+        account = "awesomianist"
+        pah = ParseAccountHist("steembasicincome", None, {})
+        [sponsor, sponsee, not_parsed_words, account_error] = pah.parse_memo(memo, shares, account)
+        self.assertEqual(sponsor, "awesomianist")
+        self.assertEqual(sponsee, {})
+        self.assertFalse(account_error)

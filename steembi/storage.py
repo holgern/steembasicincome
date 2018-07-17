@@ -170,10 +170,13 @@ class Trx(DataDir):
         query = ("CREATE TABLE {0} ("
                  "id INTEGER PRIMARY KEY AUTOINCREMENT,"
                  "op_index int,"
+                 "source varchar(50) DEFAULT NULL,"
+                 "memo text,"
                  "account varchar(50) DEFAULT NULL,"
                  "sponsor varchar(50) DEFAULT NULL,"
                  "sponsee text,"
                  "shares int,"
+                 "vests decimal(15,6) DEFAULT NULL,"
                  "timestamp datetime DEFAULT NULL,"
                  "share_age int,"
                  "status varchar(50) DEFAULT NULL,"
@@ -186,15 +189,15 @@ class Trx(DataDir):
     def get_all_data(self):
         """ Returns the public keys stored in the database
         """
-        query = ("SELECT id, op_index, account, sponsor, sponsee, shares,"
+        query = ("SELECT id, op_index, source, account, sponsor, sponsee, shares, vests,"
                  "timestamp, share_age, status, share_type from {0} ".format(self.__tablename__))
         connection = sqlite3.connect(self.sqlDataBaseFile)
         cursor = connection.cursor()
         try:
             cursor.execute(query)
             results = cursor.fetchall()
-            return [{"ID": ret[0], "op_index": ret[1], "account": ret[2], "sponsor": ret[3], "sponsee": ret[4],
-                    "shares": ret[5], "timestamp": ret[6], "share_age": ret[7], "status": ret[8], "share_type": ret[9]} for ret in results]
+            return [{"ID": ret[0], "op_index": ret[1], "source": ret[2],  "account": ret[3], "sponsor": ret[4], "sponsee": ret[5],
+                    "shares": ret[6], "vests": ret[7], "timestamp": ret[8], "share_age": ret[9], "status": ret[10], "share_type": ret[11]} for ret in results]
         except sqlite3.OperationalError:
             return []
 
@@ -211,19 +214,35 @@ class Trx(DataDir):
         except sqlite3.OperationalError:
             return []
 
+    def get_account(self, account, share_type="standard"):
+        """ Returns all entries for given value
+
+        """
+        query = ("SELECT id, op_index, source, account, sponsor, sponsee, shares, vests,"
+                 "timestamp, share_age, status, share_type from {0} WHERE account=? and share_type=?".format(self.__tablename__), (account, share_type,))
+        connection = sqlite3.connect(self.sqlDataBaseFile)
+        cursor = connection.cursor()
+        cursor.execute(*query)
+        results = cursor.fetchall()
+        if results:
+            return [{"ID": ret[0], "op_index": ret[1], "source": ret[2],  "account": ret[3], "sponsor": ret[4], "sponsee": ret[5],
+                    "shares": ret[6], "vests": ret[7], "timestamp": ret[8], "share_age": ret[9], "status": ret[10], "share_type": ret[11]} for ret in results]
+        else:
+            return None
+
     def get(self, value, where="id"):
         """ Returns all entries for given value
 
         """
-        query = ("SELECT id, op_index, account, sponsor, sponsee, shares,"
+        query = ("SELECT id, op_index, source, account, sponsor, sponsee, shares, vests,"
                  "timestamp, share_age, status, share_type from {0} WHERE {1}=?".format(self.__tablename__, where), (value,))
         connection = sqlite3.connect(self.sqlDataBaseFile)
         cursor = connection.cursor()
         cursor.execute(*query)
         results = cursor.fetchall()
         if results:
-            return [{"ID": ret[0], "op_index": ret[1], "account": ret[2], "sponsor": ret[3], "sponsee": ret[4],
-                    "shares": ret[5], "timestamp": ret[6], "share_age": ret[7], "status": ret[8], "share_type": ret[9]} for ret in results]
+            return [{"ID": ret[0], "op_index": ret[1], "source": ret[2],  "account": ret[3], "sponsor": ret[4], "sponsee": ret[5],
+                    "shares": ret[6], "vests": ret[7], "timestamp": ret[8], "share_age": ret[9], "status": ret[10], "share_type": ret[11]} for ret in results]
         else:
             return None
 
@@ -234,8 +253,8 @@ class Trx(DataDir):
         id_list = self.get_all_ids()
         if ID in id_list:
             data = self.get(ID)
-            if data["status"] == "refunded":
-                continue
+            if data["status"].lower() == "refunded":
+                return
             age = addTzInfo(datetime.utcnow()) - formatTimeString(data["timestamp"])
             share_age = int(age.total_seconds() / 60 / 60 / 24)
             query = ("UPDATE {0} SET share_age=? WHERE id=?".format(self.__tablename__), (share_age, ID))
@@ -244,13 +263,13 @@ class Trx(DataDir):
             cursor.execute(*query)
             connection.commit()
 
-    def add(self, index, account, sponsor, sponsee, shares, timestamp, share_age, status, share_type):
+    def add(self, index, source, memo, account, sponsor, sponsee, shares, vests, timestamp, share_age, status, share_type):
         """ Add a new data set
 
         """
-        query = ("INSERT INTO {0} (op_index, account, sponsor, sponsee, shares,"
-                 "timestamp, share_age, status, share_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-                 "".format(self.__tablename__), (index, account, sponsor, sponsee, shares,
+        query = ("INSERT INTO {0} (op_index, source, memo, account, sponsor, sponsee, shares, vests,"
+                 "timestamp, share_age, status, share_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                 "".format(self.__tablename__), (index, source, memo, account, sponsor, sponsee, shares, vests,
                                                  timestamp, share_age, status, share_type))
         connection = sqlite3.connect(self.sqlDataBaseFile)
         cursor = connection.cursor()
