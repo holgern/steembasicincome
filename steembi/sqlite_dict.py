@@ -1,5 +1,6 @@
 from sqlitedict import SqliteDict
 from contextlib import closing
+import os
 
 
 def db_store(path, database, key, data):

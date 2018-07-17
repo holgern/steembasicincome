@@ -25,7 +25,7 @@ log = logging.getLogger(__name__)
 
 class ParseAccountHist(list):
     
-    def __init__(self, account, path, transfer_table, steem_instance=None):
+    def __init__(self, account, path, steem_instance=None):
         self.steem = steem_instance or shared_steem_instance()
         self.account = Account(account, steem_instance=self.steem)    
         self.delegated_vests_in = {}
@@ -43,7 +43,6 @@ class ParseAccountHist(list):
                                    'sponsor:']
         from .storage import (trxStorage)
         self.trxStorage = trxStorage
-        self.transfer_table = transfer_table
 
     def update_delegation(self, op, delegated_in=None, delegated_out=None):
         """ Updates the internal state arrays
@@ -309,13 +308,11 @@ class ParseAccountHist(list):
         data = {"index": index, "source": self.account["name"], "memo": memo, "account": account, "sponsor": sponsor, "sponsee": sponsee, "shares": shares, "timestamp": timestamp,
                 "share_age": share_age, "status": status, "share_type": share_type}
         self.trxStorage.add(index, self.account["name"], memo, account, sponsor, json.dumps(sponsee), shares, float(0), timestamp, share_age, status, share_type)
-        self.transfer_table.append(data)
 
     def new_delegation_record(self, index, account, vests, timestamp, share_age=1, status="Valid", share_type="Delegation"):
         data = {"index": index, "source": self.account["name"], "memo": "", "account": account, "sponsor": account, "sponsee": {}, "shares": 0, "vests": vests, "timestamp": timestamp,
                 "share_age": share_age, "status": status, "share_type": share_type}
         self.trxStorage.add(index, self.account["name"], "", account, account, json.dumps({}), 0, float(vests), timestamp, share_age, status, share_type)
-        self.transfer_table.append(data)
 
     def parse_op(self, op):
         if op['type'] == "delegate_vesting_shares":

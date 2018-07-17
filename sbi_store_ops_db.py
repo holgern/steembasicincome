@@ -6,43 +6,8 @@ from beem.nodelist import NodeList
 from beem.utils import formatTimeString
 import re
 import os
-from sqlitedict import SqliteDict
-from contextlib import closing
+from steembi.sqlite_dict import db_store, db_load, db_append, db_extend, db_has_database, db_has_key
 
-def db_store(path, database, key, data):
-    with closing(SqliteDict(path + database, autocommit=True)) as db:
-        db[key] = data
-
-def db_load(path, database, key):
-    with closing(SqliteDict(path + database, autocommit=True)) as db:
-        return db[key]
-
-def db_append(path, database, key, new_data):
-    with closing(SqliteDict(path + database, autocommit=True)) as db:
-        data = db[key]
-        data.append(new_data)
-        db[key] = data
-
-def db_extend(path, database, key, new_data):
-    with closing(SqliteDict(path + database, autocommit=True)) as db:
-        data = db[key]
-        data.extend(new_data)
-        db[key] = data
-
-def db_has_database(path, database):
-    if not os.path.isfile(path + database):
-        return False
-    else:
-        return True
-
-def db_has_key(path, database, key):
-    if not os.path.isfile(path + database):
-        return False
-    with closing(SqliteDict(path + database, autocommit=True)) as db:
-        if key in db:
-            return True
-        else:
-            return False
 
 if __name__ == "__main__":
     accounts = ["steembasicincome", "sbi2", "sbi3", "sbi4", "sbi5", "sbi6", "sbi7", "sbi8"]
@@ -86,9 +51,18 @@ if __name__ == "__main__":
         last_op = {}
         last_op["index"] = -1
         last_op["timestamp"] = '2000-12-29T10:07:45'
+        first_error_index = None
+        index = 0
         for op in ops:
             if (op["index"] - last_op["index"]) != 1:
-                print("error %s %d %d" % (account, op["index"], last_op["index"]))
+                print("error %s %d %d" % (account["name"], op["index"], last_op["index"]))
+                if first_error_index is None:
+                    first_error_index = index
             if (formatTimeString(op["timestamp"]) < formatTimeString(last_op["timestamp"])):
-                print("error %s %s %s" % (account, op["timestamp"], last_op["timestamp"]))
+                print("error %s %s %s" % (account["name"], op["timestamp"], last_op["timestamp"]))
+                if first_error_index is None:
+                    first_error_index = index                
             last_op = op
+            index += 1
+        if first_error_index is not None:
+            db_store(path, database, account["name"], ops[:first_error_index - 1])

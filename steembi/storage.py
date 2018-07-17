@@ -214,6 +214,19 @@ class Trx(DataDir):
         except sqlite3.OperationalError:
             return []
 
+    def get_all_op_index(self, source):
+        """ Returns all ids
+        """
+        query = ("SELECT op_index from {0} where source=?".format(self.__tablename__), (source,))
+        connection = sqlite3.connect(self.sqlDataBaseFile)
+        cursor = connection.cursor()
+        try:
+            cursor.execute(*query)
+            results = cursor.fetchall()
+            return [x[0] for x in results]
+        except sqlite3.OperationalError:
+            return []
+
     def get_account(self, account, share_type="standard"):
         """ Returns all entries for given value
 

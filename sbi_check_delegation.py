@@ -12,6 +12,10 @@ from steembi.parse_hist_op import ParseAccountHist
 
 if __name__ == "__main__":
     accounts = ["steembasicincome", "sbi2", "sbi3", "sbi4", "sbi5", "sbi6", "sbi7", "sbi8"]
+    
+    from steembi.storage import (trxStorage)
+    
+    
     database_ops = "sbi.sqlite"
     database_transfer = "sbi_tranfer.sqlite"
     path = ""
@@ -21,27 +25,21 @@ if __name__ == "__main__":
     nodes = NodeList()
     nodes.update_nodes()
     stm = Steem(node=nodes.get_nodes())
-    set_shared_steem_instance(stm)
-    tt = []
-
+    data = trxStorage.get_all_data()
+    delegation = {}
+    sum_sp = {}
     for account in accounts:
-        
-        account = Account(account)
-        print(account["name"])
-        pah = ParseAccountHist(account, path)
-        ops = db_load(path, database_ops, account["name"])
-        op_index = pah.trxStorage.get_all_op_index(account["name"])
-        start_index = ops[-1]["index"] + 1
-        if len(op_index) == 0:
-            start_index = 0
-        else:
-            start_index = op_index[-1] + 1
-        print("start_index %d" % start_index)
-        # ops = []
-        # for op in account.history(start=start_index, use_block_num=False): 
-        for op in ops[start_index:]:
-            pah.parse_op(op)
-            # ops.append(op)
+        delegation[account] = {}
+        sum_sp[account] = 0
 
-            # db_extend(path, database_ops, account["name"], ops)
-
+    for d in data:
+        if d["share_type"] == "Delegation":
+            delegation[d["source"]][d["account"]] = stm.vests_to_sp(d["vests"])
+        elif d["share_type"] == "RemovedDelegation":
+            delegation[d["source"]][d["account"]] = 0
+    
+    for account in accounts:
+        dd = delegation[account]
+        for d in dd:
+            sum_sp[account] += dd[d]
+        print("%s: %.6f SP" % (account, sum_sp[account]))

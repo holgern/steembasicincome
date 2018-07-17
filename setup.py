@@ -21,19 +21,8 @@ VERSION = '0.0.1'
 tests_require = ['mock >= 2.0.0', 'pytest', 'pytest-mock', 'parameterized']
 
 requires = [
-    "future",
-    "ecdsa",
-    "requests",
-    "websocket-client",
-    "appdirs",
-    "Events",
-    "scrypt",
-    "pylibscrypt",
-    "pycryptodomex",
-    "pytz",
-    "Click",
-    "prettytable",
-    "beem"
+    "beem",
+    "sqlitedict"
 ]
 
 
