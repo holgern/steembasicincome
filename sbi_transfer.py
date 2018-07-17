@@ -12,36 +12,39 @@ from steembi.parse_hist_op import ParseAccountHist
 
 if __name__ == "__main__":
     accounts = ["steembasicincome", "sbi2", "sbi3", "sbi4", "sbi5", "sbi6", "sbi7", "sbi8"]
-    database_ops = "sbi.sqlite"
-    database_transfer = "sbi_tranfer.sqlite"
+    database_ops = "sbi_ops.sqlite"
     path = ""
     path = "E:\\sbi\\"
+    load_ops_from_database = True
     # Update current node list from @fullnodeupdate
 
     nodes = NodeList()
     nodes.update_nodes()
     stm = Steem(node=nodes.get_nodes())
     set_shared_steem_instance(stm)
-    tt = []
 
     for account in accounts:
         
         account = Account(account)
         print(account["name"])
         pah = ParseAccountHist(account, path)
-        ops = db_load(path, database_ops, account["name"])
+        
         op_index = pah.trxStorage.get_all_op_index(account["name"])
-        start_index = ops[-1]["index"] + 1
         if len(op_index) == 0:
             start_index = 0
         else:
             start_index = op_index[-1] + 1
         print("start_index %d" % start_index)
         # ops = []
-        # for op in account.history(start=start_index, use_block_num=False): 
-        for op in ops[start_index:]:
-            pah.parse_op(op)
-            # ops.append(op)
+        # 
+        if load_ops_from_database:
+            ops = db_load(path, database_ops, account["name"])
+            if ops[-1]["index"] < start_index:
+                return
+            for op in ops[start_index:]:
+                pah.parse_op(op)
+        else:
+            for op in account.history(start=start_index, use_block_num=False):
+                pah.parse_op(op)
 
-            # db_extend(path, database_ops, account["name"], ops)
 
