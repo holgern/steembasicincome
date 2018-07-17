@@ -41,7 +41,8 @@ class ParseAccountHist(list):
                                    'sponsee', 'sponsoring', 'sponser', 'one', 'you', 'thank', 'enroll',
                                    'sponsering:', 'sponsoring;', 'sponsoring:', 'would', 'like', 'too', 'enroll:',
                                    'sponsor:']
-
+        from .storage import (trxStorage)
+        self.trxStorage = trxStorage
         self.transfer_table = transfer_table
 
     def update_delegation(self, timestamp, delegated_in=None, delegated_out=None):
@@ -230,7 +231,7 @@ class ParseAccountHist(list):
         if amount.symbol == "SBD":
             
             shares = -amount.amount
-            self.new_transfer_record(op["index"], op["to"], "", shares, op["timestamp"], share_type=share_type)
+            # self.new_transfer_record(op["index"], op["to"], "", shares, op["timestamp"], share_type="Refund")
             if self.path is None:
                 return
             with open(self.path + 'sbi_skipped_SBD_transfer_out.txt', 'a') as the_file:
@@ -296,8 +297,9 @@ class ParseAccountHist(list):
         self.new_transfer_record(index, account, sponsor, sponsee, shares, timestamp, share_type=share_type)
 
     def new_transfer_record(self, index, account, sponsor, sponsee, shares, timestamp, share_age=1, status="valid", share_type="standard"):
-        data = {"index": index, "account": account, "sponsor": sponsor, "sponsee": sponsee, "shares": shares, "timestamp": timestamp,
+        data = {"index": index, "pool": self.account["name"], "account": account, "sponsor": sponsor, "sponsee": sponsee, "shares": shares, "timestamp": timestamp,
                 "share_age": share_age, "status": status, "share_type": share_type}
+        self.trxStorage.add(index, self.account["name"], account, sponsor, json.dumps(sponsee), shares, timestamp, share_age, status, share_type)
         self.transfer_table.append(data)
         if self.path is None:
             return        
