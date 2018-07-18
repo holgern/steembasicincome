@@ -17,6 +17,7 @@ import logging
 from binascii import hexlify
 import random
 import hashlib
+import dataset
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 log.addHandler(logging.StreamHandler())

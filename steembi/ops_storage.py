@@ -9,14 +9,14 @@ import os
 from steembi.sqlite_dict import db_store, db_load, db_append, db_extend, db_has_database, db_has_key
 
 
-def store_all_ops(path, database, account):
+def store_all_ops(path, database, account, only_ops = []):
     account = Account(account)
     print("account %s" % account["name"])
     # Go trough all transfer ops
     cnt = 0
     if not db_has_key(path, database, account["name"]):
         ops = []
-        for op in account.history():
+        for op in account.history(only_ops=only_ops):
             ops.append(op)
             if cnt % 1000 == 0:
                 print(op["timestamp"])
@@ -26,7 +26,7 @@ def store_all_ops(path, database, account):
         ops = db_load(path, database, account["name"])
         print("account %s - %d ops  %s - %s" %(account["name"], len(ops), ops[0]["timestamp"], ops[-1]["timestamp"]))
         start_index = ops[-1]["index"] + 1
-        for op in account.history(start=start_index, use_block_num=False):
+        for op in account.history(start=start_index, use_block_num=False, only_ops=only_ops):
             ops.append(op)
             if cnt % 1000 == 0:
                 print(op["timestamp"])

@@ -40,7 +40,7 @@ if __name__ == "__main__":
         if load_ops_from_database:
             ops = db_load(path, database_ops, account["name"])
             if ops[-1]["index"] < start_index:
-                return
+                continue
             for op in ops[start_index:]:
                 pah.parse_op(op)
         else:

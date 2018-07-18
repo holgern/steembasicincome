@@ -21,20 +21,19 @@ if __name__ == "__main__":
     nodes.update_nodes()
     stm = Steem(node=nodes.get_nodes())
     data = trxStorage.get_all_data()
-    delegation = {}
-    sum_sp = {}
-    for account in accounts:
-        delegation[account] = {}
-        sum_sp[account] = 0
-
-    for d in data:
-        if d["share_type"] == "Delegation":
-            delegation[d["source"]][d["account"]] = stm.vests_to_sp(d["vests"])
-        elif d["share_type"] == "RemovedDelegation":
-            delegation[d["source"]][d["account"]] = 0
-    
-    for account in accounts:
-        dd = delegation[account]
-        for d in dd:
-            sum_sp[account] += dd[d]
-        print("%s: %.6f SP" % (account, sum_sp[account]))
+    status = {}
+    share_type = {}
+    for op in data:
+        if op["status"] in status:
+            status[op["status"]] += 1
+        else:
+            status[op["status"]] = 1
+        if op["share_type"] in share_type:
+            share_type[op["share_type"]] += 1
+        else:
+            share_type[op["share_type"]] = 1
+    print("the trx database has %d records" % (len(data)))
+    for s in status:
+        print("%d status entries with %s" % (status[s], s))
+    for s in share_type:
+        print("%d share_type entries with %s" % (share_type[s], s))
