@@ -18,6 +18,7 @@ from binascii import hexlify
 import random
 import hashlib
 import dataset
+from sqlalchemy import and_
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 log.addHandler(logging.StreamHandler())
@@ -172,8 +173,8 @@ class TransferTrx(DataDir):
                  "trx_in_block smallint NOT NULL,"
                  "op_in_trx smallint NOT NULL,"
                  "timestamp datetime DEFAULT NULL,"
-                 "from_account varchar(50) DEFAULT NULL,"
-                 "to_account varchar(50) DEFAULT NULL,"
+                 "'from' varchar(50) DEFAULT NULL,"
+                 "'to' varchar(50) DEFAULT NULL,"
                  "amount decimal(15,6) DEFAULT NULL,"
                  "amount_symbol varchar(5) DEFAULT NULL,"
                  "memo varchar(2048) DEFAULT NULL,"
@@ -185,121 +186,23 @@ class TransferTrx(DataDir):
         # cursor.execute(query)
         connection.commit()
 
-    def get_all_data(self):
-        """ Returns the public keys stored in the database
-        """
-        query = ("SELECT block, op_acc_index, op_acc_name, trx_in_block, op_in_trx, timestamp, from_account, to_account,"
-                 "amount, amount_symbol, memo, op_type from {0} ".format(self.__tablename__))
-        connection = sqlite3.connect(self.sqlDataBaseFile)
-        cursor = connection.cursor()
-        try:
-            cursor.execute(query)
-            results = cursor.fetchall()
-            return [{"block": ret[0], "op_acc_index": ret[1], "op_acc_name": ret[2], "trx_in_block": ret[3], "op_in_trx": ret[4],  "timestamp": ret[5], "from": ret[6], "to": ret[7],
-                    "amount": ret[8], "amount_symbol": ret[9], "memo": ret[10], "op_type": ret[11]} for ret in results]
-        except sqlite3.OperationalError:
-            return []
+    def find(self, memo, to):
+        db = dataset.connect(self.url + self.sqlDataBaseFile)
+        table = db[self.__tablename__].table
+        statement = table.select(and_(table.c.memo.like("%" + memo + "%"), table.c.to == to))
+        result = db.query(statement)
+        ret = []
+        for r in result:
+            ret.append(r)
+        return ret
 
-    def get_all_index(self, ):
-        """ Returns all ids
-        """
-        query = ("SELECT op_acc_index, op_acc_name from {0}".format(self.__tablename__))
-        connection = sqlite3.connect(self.sqlDataBaseFile)
-        cursor = connection.cursor()
-        try:
-            cursor.execute(query)
-            results = cursor.fetchall()
-            return [x for x in results]
-        except sqlite3.OperationalError:
-            return []
-
-    def get_all_op_index(self, op_acc_name):
-        """ Returns all ids
-        """
-        query = ("SELECT op_acc_index from {0} where op_acc_name=?".format(self.__tablename__), (op_acc_name,))
-        connection = sqlite3.connect(self.sqlDataBaseFile)
-        cursor = connection.cursor()
-        try:
-            cursor.execute(*query)
-            results = cursor.fetchall()
-            return [x[0] for x in results]
-        except sqlite3.OperationalError:
-            return []
-
-    def get_latest_index(self, op_acc_name):
-        """ Returns all ids
-        """
-        connection = dataset.connect(self.url + self.sqlDataBaseFile)
-        table = connection[self.__tablename__]
-        query = ("SELECT op_acc_index from {0} ORDER BY op_acc_index DESC where op_acc_name=?".format(self.__tablename__), (op_acc_name,))
-        connection = sqlite3.connect(self.sqlDataBaseFile)
-        cursor = connection.cursor()
-        try:
-            cursor.execute(*query)
-            result = cursor.fetchone()
-            return result
-        except sqlite3.OperationalError:
-            return []
-
-    def get_account_from_op(self, op_acc_name, _from):
-        """ Returns all entries for given value
-
-        """
-        query = ("SELECT block, op_acc_index, op_acc_name, trx_in_block, op_in_trx, timestamp, from_account, to_account,"
-                 "amount, amount_symbol, memo, op_type from {0} WHERE op_acc_name=? and from=?".format(self.__tablename__), (op_acc_name, _from,))
-        connection = sqlite3.connect(self.sqlDataBaseFile)
-        cursor = connection.cursor()
-        cursor.execute(*query)
-        results = cursor.fetchall()
-        if results:
-            return [{"block": ret[0], "op_acc_index": ret[1], "op_acc_name": ret[2], "trx_in_block": ret[3], "op_in_trx": ret[4],  "timestamp": ret[5], "from": ret[6], "to": ret[7],
-                    "amount": ret[8], "amount_symbol": ret[9], "memo": ret[10], "op_type": ret[11]} for ret in results]
-        else:
-            return None
-
-    def get_account_to_op(self, op_acc_name, to):
-        """ Returns all entries for given value
-
-        """
-        query = ("SELECT block, op_acc_index, op_acc_name, trx_in_block, op_in_trx, timestamp, from_account, to_account,"
-                 "amount, amount_symbol, memo, op_type from {0} WHERE op_acc_name=? and to=?".format(self.__tablename__), (op_acc_name, to,))
-        connection = sqlite3.connect(self.sqlDataBaseFile)
-        cursor = connection.cursor()
-        cursor.execute(*query)
-        results = cursor.fetchall()
-        if results:
-            return [{"block": ret[0], "op_acc_index": ret[1], "op_acc_name": ret[2], "trx_in_block": ret[3], "op_in_trx": ret[4],  "timestamp": ret[5], "from": ret[6], "to": ret[7],
-                    "amount": ret[8], "amount_symbol": ret[9], "memo": ret[10], "op_type": ret[11]} for ret in results]
-        else:
-            return None
-
-    def get(self, value, where="id"):
-        """ Returns all entries for given value
-
-        """
-        query = ("SELECT block, op_acc_index, op_acc_name, trx_in_block, op_in_trx, timestamp, from_account, to_account,"
-                 "amount, amount_symbol, memo, op_type from {0} WHERE {1}=?".format(self.__tablename__, where), (value,))
-        connection = sqlite3.connect(self.sqlDataBaseFile)
-        cursor = connection.cursor()
-        cursor.execute(*query)
-        results = cursor.fetchall()
-        if results:
-            return [{"block": ret[0], "op_acc_index": ret[1], "op_acc_name": ret[2], "trx_in_block": ret[3], "op_in_trx": ret[4],  "timestamp": ret[5], "from": ret[6], "to": ret[7],
-                    "amount": ret[8], "amount_symbol": ret[9], "memo": ret[10], "op_type": ret[11]} for ret in results]
-        else:
-            return None
-
-    def add(self, block, op_acc_index, op_acc_name, trx_in_block, op_in_trx, timestamp, _from, to, amount, amount_symbol, memo, op_type):
+    def add(self, data):
         """ Add a new data set
 
         """
-        query = ("INSERT INTO {0} (block, op_acc_index, op_acc_name, trx_in_block, op_in_trx, timestamp, from_account, to_account,"
-                 "amount, amount_symbol, memo, op_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-                 "".format(self.__tablename__), (block, op_acc_index, op_acc_name, trx_in_block, op_in_trx, timestamp,
-                                                 _from, to, amount, amount_symbol, memo, op_type))
-        connection = sqlite3.connect(self.sqlDataBaseFile)
-        cursor = connection.cursor()
-        cursor.execute(*query)
+        connection = dataset.connect(self.url + self.sqlDataBaseFile)
+        table = connection[self.__tablename__]
+        table.insert(data)    
         connection.commit()
 
     def add_batch(self, data):
@@ -319,11 +222,9 @@ class TransferTrx(DataDir):
 
            :param int ID: database id
         """
-        query = ("DELETE FROM {0} WHERE id=?".format(self.__tablename__), (ID,))
-        connection = sqlite3.connect(self.sqlDataBaseFile)
-        cursor = connection.cursor()
-        cursor.execute(*query)
-        connection.commit()
+        connection = dataset.connect(self.url + self.sqlDataBaseFile)
+        table = connection[self.__tablename__]
+        table.delete(id=ID)
 
     def wipe(self, sure=False):
         """Purge the entire database. No data set will survive this!"""
@@ -335,10 +236,8 @@ class TransferTrx(DataDir):
             )
             return
         else:
-            query = ("DELETE FROM {0} ".format(self.__tablename__))
-            connection = sqlite3.connect(self.sqlDataBaseFile)
-            cursor = connection.cursor()
-            cursor.execute(query)
-            connection.commit()
+            connection = dataset.connect(self.url + self.sqlDataBaseFile)
+            table = connection[self.__tablename__]
+            table.drop
 
 
