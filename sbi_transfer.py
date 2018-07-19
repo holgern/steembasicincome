@@ -24,7 +24,7 @@ if __name__ == "__main__":
     set_shared_steem_instance(stm)
 
     for account in accounts:
-        
+        parse_vesting=account == "steembasicincome"
         account = Account(account)
         print(account["name"])
         pah = ParseAccountHist(account, path)
@@ -42,9 +42,9 @@ if __name__ == "__main__":
             if ops[-1]["index"] < start_index:
                 continue
             for op in ops[start_index:]:
-                pah.parse_op(op)
+                pah.parse_op(op, parse_vesting=parse_vesting)
         else:
             for op in account.history(start=start_index, use_block_num=False):
-                pah.parse_op(op)
+                pah.parse_op(op, parse_vesting=parse_vesting)
 
 

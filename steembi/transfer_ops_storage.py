@@ -52,7 +52,7 @@ class DataDir(object):
         self.data_dir = data_dir
         self.storageDatabase = storageDatabase
         self.sqlDataBaseFile = os.path.join(data_dir, storageDatabase)
-        self.url = "sqlite:///"
+        self.databaseConnector = "sqlite:///" + self.sqlDataBaseFile
         self.mkdir_p()
 
     def mkdir_p(self):
@@ -153,10 +153,10 @@ class TransferTrx(DataDir):
         """ Check if the database table exists
         """
 
-        connection = dataset.connect(self.url + self.sqlDataBaseFile)
-        if len(connection.tables) == 0:
+        db = dataset.connect(self.databaseConnector)
+        if len(db.tables) == 0:
             return False
-        if connection.tables in self.__tablename__:
+        if self.__tablename__ in db.tables:
             return True
         else:
             return False
@@ -179,15 +179,12 @@ class TransferTrx(DataDir):
                  "amount_symbol varchar(5) DEFAULT NULL,"
                  "memo varchar(2048) DEFAULT NULL,"
                  "op_type varchar(50) NOT NULL)".format(self.__tablename__))
-        connection = dataset.connect(self.url + self.sqlDataBaseFile)
-        connection.query(query)
-        # connection = sqlite3.connect(self.sqlDataBaseFile)
-        # cursor = connection.cursor()
-        # cursor.execute(query)
-        connection.commit()
+        db = dataset.connect(self.databaseConnector)
+        db.query(query)
+        db.commit()
 
     def find(self, memo, to):
-        db = dataset.connect(self.url + self.sqlDataBaseFile)
+        db = dataset.connect(self.databaseConnector)
         table = db[self.__tablename__].table
         statement = table.select(and_(table.c.memo.like("%" + memo + "%"), table.c.to == to))
         result = db.query(statement)
@@ -200,30 +197,30 @@ class TransferTrx(DataDir):
         """ Add a new data set
 
         """
-        connection = dataset.connect(self.url + self.sqlDataBaseFile)
-        table = connection[self.__tablename__]
+        db = dataset.connect(self.databaseConnector)
+        table = db[self.__tablename__]
         table.insert(data)    
-        connection.commit()
+        db.commit()
 
     def add_batch(self, data):
         """ Add a new data set
 
         """
-        connection = dataset.connect(self.url + self.sqlDataBaseFile)
-        table = connection[self.__tablename__]
-        connection.begin()
+        db = dataset.connect(self.databaseConnector)
+        table = db[self.__tablename__]
+        db.begin()
         for d in data:
             table.insert(d)
             
-        connection.commit()
+        db.commit()
 
     def delete(self, ID):
         """ Delete a data set
 
            :param int ID: database id
         """
-        connection = dataset.connect(self.url + self.sqlDataBaseFile)
-        table = connection[self.__tablename__]
+        db = dataset.connect(self.databaseConnector)
+        table = db[self.__tablename__]
         table.delete(id=ID)
 
     def wipe(self, sure=False):
@@ -236,8 +233,8 @@ class TransferTrx(DataDir):
             )
             return
         else:
-            connection = dataset.connect(self.url + self.sqlDataBaseFile)
-            table = connection[self.__tablename__]
+            db = dataset.connect(self.databaseConnector)
+            table = db[self.__tablename__]
             table.drop
 
 

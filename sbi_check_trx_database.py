@@ -16,13 +16,15 @@ if __name__ == "__main__":
     from steembi.storage import (trxStorage)
     
     # Update current node list from @fullnodeupdate
-
-    nodes = NodeList()
-    nodes.update_nodes()
-    stm = Steem(node=nodes.get_nodes())
+    print("update share age")
+    trxStorage.update_share_age()
+    # nodes = NodeList()
+    # nodes.update_nodes()
+    # stm = Steem(node=nodes.get_nodes())
     data = trxStorage.get_all_data()
     status = {}
     share_type = {}
+    n_records = 0
     for op in data:
         if op["status"] in status:
             status[op["status"]] += 1
@@ -32,7 +34,8 @@ if __name__ == "__main__":
             share_type[op["share_type"]] += 1
         else:
             share_type[op["share_type"]] = 1
-    print("the trx database has %d records" % (len(data)))
+        n_records += 1
+    print("the trx database has %d records" % (n_records))
     for s in status:
         print("%d status entries with %s" % (status[s], s))
     for s in share_type:

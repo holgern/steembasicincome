@@ -18,6 +18,7 @@ from binascii import hexlify
 import random
 import hashlib
 import dataset
+from sqlalchemy import and_
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 log.addHandler(logging.StreamHandler())
@@ -51,10 +52,13 @@ class DataDir(object):
 
     data_dir = user_data_dir(appname, appauthor)
     sqlDataBaseFile = os.path.join(data_dir, storageDatabase)
+    databaseConnector = "sqlite:///" + sqlDataBaseFile
+    db = dataset.connect(databaseConnector)
 
     def __init__(self):
         #: Storage
-        self.mkdir_p()
+        if self.databaseConnector[:6] == "sqlite":
+            self.mkdir_p()
 
     def mkdir_p(self):
         """ Ensure that the directory in which the data is stored
@@ -153,24 +157,19 @@ class Trx(DataDir):
     def exists_table(self):
         """ Check if the database table exists
         """
-        query = ("SELECT name FROM sqlite_master "
-                 "WHERE type='table' AND name=?", (self.__tablename__, ))
-        try:
-            connection = sqlite3.connect(self.sqlDataBaseFile)
-            cursor = connection.cursor()
-            cursor.execute(*query)
-            return True if cursor.fetchone() else False
-        except sqlite3.OperationalError:
-            self.sqlDataBaseFile = ":memory:"
-            log.warning("Could not read(database: %s)" % (self.sqlDataBaseFile))
+        if len(self.db.tables) == 0:
+            return False
+        if self.__tablename__ in self.db.tables:
             return True
+        else:
+            return False
 
     def create_table(self):
         """ Create the new table in the SQLite database
         """
         query = ("CREATE TABLE {0} ("
                  "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                 "op_index int,"
+                 "'index' int,"
                  "source varchar(50) DEFAULT NULL,"
                  "memo text,"
                  "account varchar(50) DEFAULT NULL,"
@@ -182,124 +181,112 @@ class Trx(DataDir):
                  "share_age int,"
                  "status varchar(50) DEFAULT NULL,"
                  "share_type varchar(50) DEFAULT NULL)".format(self.__tablename__))
-        connection = sqlite3.connect(self.sqlDataBaseFile)
-        cursor = connection.cursor()
-        cursor.execute(query)
-        connection.commit()
+        self.db.query(query)
+        self.db.commit()
 
     def get_all_data(self):
         """ Returns the public keys stored in the database
         """
-        query = ("SELECT id, op_index, source, account, sponsor, sponsee, shares, vests,"
-                 "timestamp, share_age, status, share_type from {0} ".format(self.__tablename__))
-        connection = sqlite3.connect(self.sqlDataBaseFile)
-        cursor = connection.cursor()
-        try:
-            cursor.execute(query)
-            results = cursor.fetchall()
-            return [{"ID": ret[0], "op_index": ret[1], "source": ret[2],  "account": ret[3], "sponsor": ret[4], "sponsee": ret[5],
-                    "shares": ret[6], "vests": ret[7], "timestamp": ret[8], "share_age": ret[9], "status": ret[10], "share_type": ret[11]} for ret in results]
-        except sqlite3.OperationalError:
-            return []
+        return self.db[self.__tablename__].all()
 
     def get_all_ids(self):
         """ Returns all ids
         """
-        query = ("SELECT ID from {0} ".format(self.__tablename__))
-        connection = sqlite3.connect(self.sqlDataBaseFile)
-        cursor = connection.cursor()
-        try:
-            cursor.execute(query)
-            results = cursor.fetchall()
-            return [x[0] for x in results]
-        except sqlite3.OperationalError:
-            return []
+        table = self.db[self.__tablename__]
+        id_list = []
+        for trx in table:
+            id_list.append(trx["id"])
+        return id_list
 
     def get_all_op_index(self, source):
         """ Returns all ids
         """
-        query = ("SELECT op_index from {0} where source=?".format(self.__tablename__), (source,))
-        connection = sqlite3.connect(self.sqlDataBaseFile)
-        cursor = connection.cursor()
-        try:
-            cursor.execute(*query)
-            results = cursor.fetchall()
-            return [x[0] for x in results]
-        except sqlite3.OperationalError:
-            return []
+        table = self.db[self.__tablename__]
+        id_list = []
+        for trx in table.find(source=source):
+            id_list.append(trx["id"])
+        return id_list
 
     def get_account(self, account, share_type="standard"):
         """ Returns all entries for given value
 
         """
-        query = ("SELECT id, op_index, source, account, sponsor, sponsee, shares, vests,"
-                 "timestamp, share_age, status, share_type from {0} WHERE account=? and share_type=?".format(self.__tablename__), (account, share_type,))
-        connection = sqlite3.connect(self.sqlDataBaseFile)
-        cursor = connection.cursor()
-        cursor.execute(*query)
-        results = cursor.fetchall()
-        if results:
-            return [{"ID": ret[0], "op_index": ret[1], "source": ret[2],  "account": ret[3], "sponsor": ret[4], "sponsee": ret[5],
-                    "shares": ret[6], "vests": ret[7], "timestamp": ret[8], "share_age": ret[9], "status": ret[10], "share_type": ret[11]} for ret in results]
-        else:
-            return None
+        table = self.db[self.__tablename__]
+        id_list = []
+        for trx in table.find(account=account, share_type=share_type):
+            id_list.append(trx)
+        return id_list        
 
-    def get(self, value, where="id"):
+    def get(self, ID):
         """ Returns all entries for given value
 
         """
-        query = ("SELECT id, op_index, source, account, sponsor, sponsee, shares, vests,"
-                 "timestamp, share_age, status, share_type from {0} WHERE {1}=?".format(self.__tablename__, where), (value,))
-        connection = sqlite3.connect(self.sqlDataBaseFile)
-        cursor = connection.cursor()
-        cursor.execute(*query)
-        results = cursor.fetchall()
-        if results:
-            return [{"ID": ret[0], "op_index": ret[1], "source": ret[2],  "account": ret[3], "sponsor": ret[4], "sponsee": ret[5],
-                    "shares": ret[6], "vests": ret[7], "timestamp": ret[8], "share_age": ret[9], "status": ret[10], "share_type": ret[11]} for ret in results]
-        else:
-            return None
+        table = self.db[self.__tablename__]
+        return table.find_one(id=ID)
+
+    def get_SBD_transfer(self, account, shares, timestamp):
+        """ Returns all entries for given value
+
+        """
+        table = self.db[self.__tablename__]
+        found_trx = None
+        for trx in table.find(account=account, shares=-shares, share_type="SBD"):
+            if addTzInfo(trx["timestamp"]) < addTzInfo(timestamp):
+                found_trx = trx
+        return found_trx
 
     def update_share_age(self):
         """ Change share_age depending on timestamp
 
         """
+        table = self.db[self.__tablename__]        
         id_list = self.get_all_ids()
-        if ID in id_list:
+        for ID in id_list:
             data = self.get(ID)
             if data["status"].lower() == "refunded":
                 return
-            age = addTzInfo(datetime.utcnow()) - formatTimeString(data["timestamp"])
+            age = (datetime.utcnow()) - (data["timestamp"])
             share_age = int(age.total_seconds() / 60 / 60 / 24)
-            query = ("UPDATE {0} SET share_age=? WHERE id=?".format(self.__tablename__), (share_age, ID))
-            connection = sqlite3.connect(self.sqlDataBaseFile)
-            cursor = connection.cursor()
-            cursor.execute(*query)
-            connection.commit()
+            data = dict(id=ID, share_age=share_age)
+            table.update(data, ['id'])
 
-    def add(self, index, source, memo, account, sponsor, sponsee, shares, vests, timestamp, share_age, status, share_type):
+    def update_delegation_shares(self, source, account, shares):
+        """ Change share_age depending on timestamp
+
+        """
+        table = self.db[self.__tablename__]
+        found_trx = None
+        for trx in table.find(source=source, account=account, status="Valid", share_type="Delegation"):
+            found_trx = trx
+        data = dict(id=found_trx["id"], shares=shares)
+        table.update(data, ['id'])
+
+    def update_delegation_state(self, source, account, share_type_old, share_type_new):
+        """ Change share_age depending on timestamp
+
+        """
+        table = self.db[self.__tablename__]
+        found_trx = None
+        for trx in table.find(source=source, account=account, share_type=share_type_old):
+            found_trx = trx
+        data = dict(id=found_trx["id"], share_type=share_type_new)
+        table.update(data, ['id'])
+
+    def add(self, data):
         """ Add a new data set
 
         """
-        query = ("INSERT INTO {0} (op_index, source, memo, account, sponsor, sponsee, shares, vests,"
-                 "timestamp, share_age, status, share_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-                 "".format(self.__tablename__), (index, source, memo, account, sponsor, sponsee, shares, vests,
-                                                 timestamp, share_age, status, share_type))
-        connection = sqlite3.connect(self.sqlDataBaseFile)
-        cursor = connection.cursor()
-        cursor.execute(*query)
-        connection.commit()
+        table = self.db[self.__tablename__]
+        table.insert(data)    
+        self.db.commit()
 
     def delete(self, ID):
         """ Delete a data set
 
            :param int ID: database id
         """
-        query = ("DELETE FROM {0} WHERE id=?".format(self.__tablename__), (ID,))
-        connection = sqlite3.connect(self.sqlDataBaseFile)
-        cursor = connection.cursor()
-        cursor.execute(*query)
-        connection.commit()
+        table = self.db[self.__tablename__]
+        table.delete(id=ID)
 
     def wipe(self, sure=False):
         """Purge the entire database. No data set will survive this!"""
@@ -311,12 +298,121 @@ class Trx(DataDir):
             )
             return
         else:
-            query = ("DELETE FROM {0} ".format(self.__tablename__))
-            connection = sqlite3.connect(self.sqlDataBaseFile)
-            cursor = connection.cursor()
-            cursor.execute(query)
-            connection.commit()
+            table = self.db[self.__tablename__]
+            table.drop
 
+
+class Member(DataDir):
+    """ This is the trx storage class
+    """
+    __tablename__ = 'member'
+
+    def __init__(self):
+        super(Member, self).__init__()
+
+    def exists_table(self):
+        """ Check if the database table exists
+        """
+        if len(self.db.tables) == 0:
+            return False
+        if self.__tablename__ in self.db.tables:
+            return True
+        else:
+            return False
+
+    def create_table(self):
+        """ Create the new table in the SQLite database
+        """
+        query = ("CREATE TABLE {0} ("
+                 "account varchar(50) PRIMARY KEY,"
+                 "note text DEFAULT NULL,"
+                 "shares int,"
+                 "total_share_days int,"
+                 "avg_share_age float,"
+                 "last_comment datetime DEFAULT NULL,"
+                 "last_post datetime DEFAULT NULL,"
+                 "original_enrollment datetime DEFAULT NULL,"
+                 "latest_enrollment datetime DEFAULT NULL,"
+                 "flags text DEFAULT NULL,"
+                 "earned_rshares int DEFAULT NULL,"
+                 "rewarded_rshares int DEFAULT NULL,"
+                 "balance_rshares int DEFAULT NULL,"
+                 "upvote_delay float DEFAULT NULL,"
+                 "comment_upvote bool DEFAULT NULL)".format(self.__tablename__))
+        self.db.query(query)
+        self.db.commit()
+
+    def get_all_data(self):
+        """ Returns the public keys stored in the database
+        """
+        return self.db[self.__tablename__].all()
+    
+    def get_all_accounts(self):
+        """ Returns all ids
+        """
+        table = self.db[self.__tablename__]
+        id_list = []
+        for trx in table:
+            id_list.append(trx["account"])
+        return id_list
+    
+    def add(self, data):
+        """ Add a new data set
+    
+        """
+        table = self.db[self.__tablename__]
+        table.insert(data)
+        self.db.commit()
+
+
+    def add_batch(self, data):
+        """ Add a new data set
+
+        """
+        table = self.db[self.__tablename__]
+        self.db.begin()
+        for d in data:
+            table.insert(d)
+     
+        self.db.commit()
+    
+    def get(self, account):
+        """ Change share_age depending on timestamp
+    
+        """
+        table = self.db[self.__tablename__]
+        return table.find_one(account=account)
+        
+    def update_shares(self, account, add_shares, datetime):
+        """ Change share_age depending on timestamp
+    
+        """
+        table = self.db[self.__tablename__]
+        member = table.find_one(account=account)
+        shares = member["shares"] + add_shares
+        data = dict(account=account, shares=shares, latest_enrollment=datetime)
+        table.update(data, ['account'])
+    
+    def delete(self, account):
+        """ Delete a data set
+    
+           :param int ID: database id
+        """
+        table = self.db[self.__tablename__]
+        table.delete(account=account)
+    
+    def wipe(self, sure=False):
+        """Purge the entire database. No data set will survive this!"""
+        if not sure:
+            log.error(
+                "You need to confirm that you are sure "
+                "and understand the implications of "
+                "wiping your wallet!"
+            )
+            return
+        else:
+            table = self.db[self.__tablename__]
+            table.drop
 
 
 class Configuration(DataDir):
@@ -482,6 +578,7 @@ class Configuration(DataDir):
 
 # Create keyStorage
 trxStorage = Trx()
+memberStorage = Member()
 configStorage = Configuration()
 
 # Create Tables if database is brand new
@@ -492,3 +589,8 @@ newTrxStorage = False
 if not trxStorage.exists_table():
     newTrxStorage = True
     trxStorage.create_table()
+
+newMemberStorage = False
+if not memberStorage.exists_table():
+    newMemberStorage = True
+    memberStorage.create_table()
