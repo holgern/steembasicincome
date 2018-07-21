@@ -327,6 +327,7 @@ class Member(DataDir):
                  "account varchar(50) PRIMARY KEY,"
                  "note text DEFAULT NULL,"
                  "shares int,"
+                 "bonus_shares int,"
                  "total_share_days int,"
                  "avg_share_age float,"
                  "last_comment datetime DEFAULT NULL,"
@@ -382,6 +383,10 @@ class Member(DataDir):
         """
         table = self.db[self.__tablename__]
         return table.find_one(account=account)
+
+    def get_highest_avg_share_age(self):
+        table = self.db[self.__tablename__]
+        return table.find_one(order_by='avg_share_age')
         
     def update_shares(self, account, add_shares, datetime):
         """ Change share_age depending on timestamp
