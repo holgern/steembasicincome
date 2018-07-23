@@ -16,6 +16,16 @@ if __name__ == "__main__":
     path = ""
     path = "E:\\sbi\\"
     load_ops_from_database = True
+    
+    with open('config.json') as json_data_file:
+        config_data = json.load(json_data_file)
+    print(config_data)
+    accounts = config_data["accounts"]
+    path = config_data["path"]
+    database = config_data["database"]
+    database_transfer = config_data["database_transfer"]
+    databaseConnector = config_data["databaseConnector"]
+    other_accounts = config_data["other_accounts"]    
     # Update current node list from @fullnodeupdate
 
     nodes = NodeList()

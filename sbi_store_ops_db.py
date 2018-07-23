@@ -60,7 +60,7 @@ if __name__ == "__main__":
             start_index = accountTrxStorage.get_latest_index(account["name"])
             if start_index is not None:
                 start_index = start_index["op_acc_index"] + 1
-            print(start_index)
+                print(start_index)
         data = []
         for op in account.history(start=start_index, use_block_num=False):
             virtual_op = op["virtual_op"]
@@ -88,6 +88,7 @@ if __name__ == "__main__":
         trxStorage.create_table()
     for account in other_accounts:
         account = Account(account)
+        print("account %s" % account["name"])
         cnt = 0
         if newTrxStorage:
             ops = []
@@ -96,17 +97,18 @@ if __name__ == "__main__":
             start_index = trxStorage.get_latest_index(account["name"])
             if start_index is not None:
                 start_index = start_index["op_acc_index"] + 1            
-            print(start_index)
+                print(start_index)
         data = []
         for op in account.history(start=start_index, use_block_num=False, only_ops=["transfer"]):
             amount = Amount(op["amount"])
             virtual_op = op["virtual_op"]
             trx_in_block = op["trx_in_block"]
             if virtual_op > 0:
-                trx_in_block = -1            
+                trx_in_block = -1
+            memo = ascii(op["memo"])
             d = {"block": op["block"], "op_acc_index": op["index"], "op_acc_name": account["name"], "trx_in_block": trx_in_block,
                  "op_in_trx": op["op_in_trx"], "virtual_op": virtual_op, "timestamp": formatTimeString(op["timestamp"]), "from": op["from"], "to": op["to"],
-                    "amount": amount.amount, "amount_symbol": amount.symbol, "memo": op["memo"], "op_type": op["type"]}
+                    "amount": amount.amount, "amount_symbol": amount.symbol, "memo": memo, "op_type": op["type"]}
             data.append(d)
             if cnt % 1000 == 0:
                 print(op["timestamp"])
