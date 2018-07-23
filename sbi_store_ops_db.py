@@ -62,7 +62,7 @@ if __name__ == "__main__":
         data = []
         for op in account.history(start=start_index, use_block_num=False):
             d = {"block": op["block"], "op_acc_index": op["index"], "op_acc_name": account["name"], "trx_in_block": op["trx_in_block"],
-                 "op_in_trx": op["op_in_trx"],  "timestamp": formatTimeString(op["timestamp"]), "op_dict": json.dumps(op)}
+                 "op_in_trx": op["op_in_trx"], "virtual_op": op["virtual_op"],  "timestamp": formatTimeString(op["timestamp"]), "op_dict": json.dumps(op)}
             data.append(d)
             if cnt % 1000 == 0:
                 print(op["timestamp"])
@@ -93,7 +93,7 @@ if __name__ == "__main__":
         for op in account.history(start=start_index, use_block_num=False, only_ops=["transfer"]):
             amount = Amount(op["amount"])
             d = {"block": op["block"], "op_acc_index": op["index"], "op_acc_name": account["name"], "trx_in_block": op["trx_in_block"],
-                 "op_in_trx": op["op_in_trx"],  "timestamp": formatTimeString(op["timestamp"]), "from": op["from"], "to": op["to"],
+                 "op_in_trx": op["op_in_trx"], "virtual_op": op["virtual_op"], "timestamp": formatTimeString(op["timestamp"]), "from": op["from"], "to": op["to"],
                     "amount": amount.amount, "amount_symbol": amount.symbol, "memo": op["memo"], "op_type": op["type"]}
             data.append(d)
             if cnt % 1000 == 0:
