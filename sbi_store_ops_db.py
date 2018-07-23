@@ -63,11 +63,17 @@ if __name__ == "__main__":
             print(start_index)
         data = []
         for op in account.history(start=start_index, use_block_num=False):
-            d = {"block": op["block"], "op_acc_index": op["index"], "op_acc_name": account["name"], "trx_in_block": op["trx_in_block"],
-                 "op_in_trx": op["op_in_trx"], "virtual_op": op["virtual_op"],  "timestamp": formatTimeString(op["timestamp"]), "op_dict": json.dumps(op)}
-            accountTrxStorage.add(d)
+            virtual_op = op["virtual_op"]
+            trx_in_block = op["trx_in_block"]
+            if virtual_op > 0:
+                trx_in_block = -1
+            d = {"block": op["block"], "op_acc_index": op["index"], "op_acc_name": account["name"], "trx_in_block": trx_in_block,
+                 "op_in_trx": op["op_in_trx"], "virtual_op": virtual_op,  "timestamp": formatTimeString(op["timestamp"]), "op_dict": json.dumps(op)}
+            data.append(d)
             if cnt % 1000 == 0:
                 print(op["timestamp"])
+                accountTrxStorage.add_batch(data)
+                data = []
             cnt += 1
     
    
@@ -91,12 +97,19 @@ if __name__ == "__main__":
             if start_index is not None:
                 start_index = start_index["op_acc_index"] + 1            
             print(start_index)
+        data = []
         for op in account.history(start=start_index, use_block_num=False, only_ops=["transfer"]):
             amount = Amount(op["amount"])
-            d = {"block": op["block"], "op_acc_index": op["index"], "op_acc_name": account["name"], "trx_in_block": op["trx_in_block"],
-                 "op_in_trx": op["op_in_trx"], "virtual_op": op["virtual_op"], "timestamp": formatTimeString(op["timestamp"]), "from": op["from"], "to": op["to"],
+            virtual_op = op["virtual_op"]
+            trx_in_block = op["trx_in_block"]
+            if virtual_op > 0:
+                trx_in_block = -1            
+            d = {"block": op["block"], "op_acc_index": op["index"], "op_acc_name": account["name"], "trx_in_block": trx_in_block,
+                 "op_in_trx": op["op_in_trx"], "virtual_op": virtual_op, "timestamp": formatTimeString(op["timestamp"]), "from": op["from"], "to": op["to"],
                     "amount": amount.amount, "amount_symbol": amount.symbol, "memo": op["memo"], "op_type": op["type"]}
-            trxStorage.add(d)
+            data.append(d)
             if cnt % 1000 == 0:
                 print(op["timestamp"])
+                trxStorage.add_batch(data)
+                data = []
             cnt += 1
