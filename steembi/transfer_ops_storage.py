@@ -47,12 +47,15 @@ class DataDir(object):
          in the `backups/` directory every now and then.
     """
 
-    def __init__(self, data_dir, storageDatabase):
+    def __init__(self, data_dir, storageDatabase, databaseConnector=None):
         #: Storage
         self.data_dir = data_dir
         self.storageDatabase = storageDatabase
         self.sqlDataBaseFile = os.path.join(data_dir, storageDatabase)
-        self.databaseConnector = "sqlite:///" + self.sqlDataBaseFile
+        if databaseConnector is None:
+            self.databaseConnector = "sqlite:///" + self.sqlDataBaseFile
+        else:
+            self.databaseConnector = databaseConnector
         self.mkdir_p()
 
     def mkdir_p(self):
@@ -141,6 +144,93 @@ class DataDir(object):
         self.clean_data()
 
 
+class AccountTrx(DataDir):
+    """ This is the trx storage class
+    """
+    __tablename__ = 'sbi_ops'
+
+    def __init__(self, data_dir, storageDatabase):
+        super(AccountTrx, self).__init__(data_dir, storageDatabase)
+
+    def exists_table(self):
+        """ Check if the database table exists
+        """
+
+        db = dataset.connect(self.databaseConnector)
+        if len(db.tables) == 0:
+            return False
+        if self.__tablename__ in db.tables:
+            return True
+        else:
+            return False
+ 
+
+    def create_table(self):
+        """ Create the new table in the SQLite database
+        """
+        query = ("CREATE TABLE {0} ("
+                 "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                 "op_acc_index int NOT NULL,"
+                 "op_acc_name varchar(50) NOT NULL,"
+                 "block int NOT NULL,"
+                 "trx_in_block smallint NOT NULL,"
+                 "op_in_trx smallint NOT NULL,"
+                 "timestamp datetime DEFAULT NULL,"                 
+                 "op_dict text NOT NULL)".format(self.__tablename__))
+        db = dataset.connect(self.databaseConnector)
+        db.query(query)
+        db.commit()
+
+    def add(self, data):
+        """ Add a new data set
+
+        """
+        db = dataset.connect(self.databaseConnector)
+        table = db[self.__tablename__]
+        table.insert(data)    
+        db.commit()
+
+    def add_batch(self, data):
+        """ Add a new data set
+
+        """
+        db = dataset.connect(self.databaseConnector)
+        table = db[self.__tablename__]
+        db.begin()
+        for d in data:
+            table.insert(d)
+            
+        db.commit()
+
+    def get_latest_index(self, account_name):
+        table = self.db[self.__tablename__]
+        return table.find_one(op_acc_name=account_name, order_by='-op_acc_index')
+
+    def delete(self, ID):
+        """ Delete a data set
+
+           :param int ID: database id
+        """
+        db = dataset.connect(self.databaseConnector)
+        table = db[self.__tablename__]
+        table.delete(id=ID)
+
+    def wipe(self, sure=False):
+        """Purge the entire database. No data set will survive this!"""
+        if not sure:
+            log.error(
+                "You need to confirm that you are sure "
+                "and understand the implications of "
+                "wiping your wallet!"
+            )
+            return
+        else:
+            db = dataset.connect(self.databaseConnector)
+            table = db[self.__tablename__]
+            table.drop
+
+
+
 class TransferTrx(DataDir):
     """ This is the trx storage class
     """
@@ -213,6 +303,10 @@ class TransferTrx(DataDir):
             table.insert(d)
             
         db.commit()
+
+    def get_latest_index(self, account_name):
+        table = self.db[self.__tablename__]
+        return table.find_one(op_acc_name=account_name, order_by='-op_acc_index')
 
     def delete(self, ID):
         """ Delete a data set
