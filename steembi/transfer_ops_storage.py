@@ -26,140 +26,21 @@ log.addHandler(logging.StreamHandler())
 timeformat = "%Y%m%d-%H%M%S"
 
 
-class DataDir(object):
-    """ This class ensures that the user's data is stored in its OS
-        preotected user directory:
-
-        **OSX:**
-
-         * `~/Library/Application Support/<AppName>`
-
-        **Windows:**
-
-         * `C:\\Documents and Settings\\<User>\\Application Data\\Local Settings\\<AppAuthor>\\<AppName>`
-         * `C:\\Documents and Settings\\<User>\\Application Data\\<AppAuthor>\\<AppName>`
-
-        **Linux:**
-
-         * `~/.local/share/<AppName>`
-
-         Furthermore, it offers an interface to generated backups
-         in the `backups/` directory every now and then.
-    """
-
-    def __init__(self, data_dir, storageDatabase, databaseConnector=None):
-        #: Storage
-        self.data_dir = data_dir
-        self.storageDatabase = storageDatabase
-        self.sqlDataBaseFile = os.path.join(data_dir, storageDatabase)
-        if databaseConnector is None:
-            self.databaseConnector = "sqlite:///" + self.sqlDataBaseFile
-        else:
-            self.databaseConnector = databaseConnector
-        self.mkdir_p()
-
-    def mkdir_p(self):
-        """ Ensure that the directory in which the data is stored
-            exists
-        """
-        if os.path.isdir(self.data_dir):
-            return
-        else:
-            try:
-                os.makedirs(self.data_dir)
-            except FileExistsError:
-                self.sqlDataBaseFile = ":memory:"
-                return
-            except OSError:
-                self.sqlDataBaseFile = ":memory:"
-                return
-
-    def sqlite3_backup(self, backupdir):
-        """ Create timestamped database copy
-        """
-        if self.sqlDataBaseFile == ":memory:":
-            return
-        if not os.path.isdir(backupdir):
-            os.mkdir(backupdir)
-        backup_file = os.path.join(
-            backupdir,
-            os.path.basename(self.storageDatabase) +
-            datetime.utcnow().strftime("-" + timeformat))
-        self.sqlite3_copy(self.sqlDataBaseFile, backup_file)
-        configStorage["lastBackup"] = datetime.utcnow().strftime(timeformat)
-
-    def sqlite3_copy(self, src, dst):
-        """Copy sql file from src to dst"""
-        if self.sqlDataBaseFile == ":memory:":
-            return
-        if not os.path.isfile(src):
-            return
-        connection = sqlite3.connect(self.sqlDataBaseFile)
-        cursor = connection.cursor()
-        # Lock database before making a backup
-        cursor.execute('begin immediate')
-        # Make new backup file
-        shutil.copyfile(src, dst)
-        log.info("Creating {}...".format(dst))
-        # Unlock database
-        connection.rollback()
-
-    def recover_with_latest_backup(self, backupdir="backups"):
-        """ Replace database with latest backup"""
-        file_date = 0
-        if self.sqlDataBaseFile == ":memory:":
-            return
-        if not os.path.isdir(backupdir):
-            backupdir = os.path.join(self.data_dir, backupdir)
-        if not os.path.isdir(backupdir):
-            return
-        newest_backup_file = None
-        for filename in os.listdir(backupdir):
-            backup_file = os.path.join(backupdir, filename)
-            if os.stat(backup_file).st_ctime > file_date:
-                if os.path.isfile(backup_file):
-                    file_date = os.stat(backup_file).st_ctime
-                    newest_backup_file = backup_file
-        if newest_backup_file is not None:
-            self.sqlite3_copy(newest_backup_file, self.sqlDataBaseFile)
-
-    def clean_data(self):
-        """ Delete files older than 70 days
-        """
-        if self.sqlDataBaseFile == ":memory:":
-            return
-        log.info("Cleaning up old backups")
-        for filename in os.listdir(self.data_dir):
-            backup_file = os.path.join(self.data_dir, filename)
-            if os.stat(backup_file).st_ctime < (time.time() - 70 * 86400):
-                if os.path.isfile(backup_file):
-                    os.remove(backup_file)
-                    log.info("Deleting {}...".format(backup_file))
-
-    def refreshBackup(self):
-        """ Make a new backup
-        """
-        backupdir = os.path.join(self.data_dir, "backups")
-        self.sqlite3_backup(backupdir)
-        self.clean_data()
-
-
-class AccountTrx(DataDir):
+class AccountTrx(object):
     """ This is the trx storage class
     """
     __tablename__ = 'sbi_ops'
 
-    def __init__(self, data_dir, storageDatabase):
-        super(AccountTrx, self).__init__(data_dir, storageDatabase)
+    def __init__(self, db):
+        self.db = db
 
     def exists_table(self):
         """ Check if the database table exists
         """
 
-        db = dataset.connect(self.databaseConnector)
-        if len(db.tables) == 0:
+        if len(self.db.tables) == 0:
             return False
-        if self.__tablename__ in db.tables:
+        if self.__tablename__ in self.db.tables:
             return True
         else:
             return False
@@ -177,30 +58,27 @@ class AccountTrx(DataDir):
                  "op_in_trx smallint NOT NULL,"
                  "timestamp datetime DEFAULT NULL,"                 
                  "op_dict text NOT NULL)".format(self.__tablename__))
-        db = dataset.connect(self.databaseConnector)
-        db.query(query)
-        db.commit()
+        self.db.query(query)
+        self.db.commit()
 
     def add(self, data):
         """ Add a new data set
 
         """
-        db = dataset.connect(self.databaseConnector)
-        table = db[self.__tablename__]
+        table = self.db[self.__tablename__]
         table.insert(data)    
-        db.commit()
+        self.db.commit()
 
     def add_batch(self, data):
         """ Add a new data set
 
         """
-        db = dataset.connect(self.databaseConnector)
-        table = db[self.__tablename__]
-        db.begin()
+        table = self.db[self.__tablename__]
+        self.db.begin()
         for d in data:
             table.insert(d)
             
-        db.commit()
+        self.db.commit()
 
     def get_latest_index(self, account_name):
         table = self.db[self.__tablename__]
@@ -211,8 +89,7 @@ class AccountTrx(DataDir):
 
            :param int ID: database id
         """
-        db = dataset.connect(self.databaseConnector)
-        table = db[self.__tablename__]
+        table = self.db[self.__tablename__]
         table.delete(id=ID)
 
     def wipe(self, sure=False):
@@ -225,28 +102,26 @@ class AccountTrx(DataDir):
             )
             return
         else:
-            db = dataset.connect(self.databaseConnector)
-            table = db[self.__tablename__]
+            table = self.db[self.__tablename__]
             table.drop
 
 
 
-class TransferTrx(DataDir):
+class TransferTrx(object):
     """ This is the trx storage class
     """
     __tablename__ = 'transfers'
 
-    def __init__(self, data_dir, storageDatabase):
-        super(TransferTrx, self).__init__(data_dir, storageDatabase)
+    def __init__(self, db):
+        self.db = db
 
     def exists_table(self):
         """ Check if the database table exists
         """
 
-        db = dataset.connect(self.databaseConnector)
-        if len(db.tables) == 0:
+        if len(self.db.tables) == 0:
             return False
-        if self.__tablename__ in db.tables:
+        if self.__tablename__ in self.db.tables:
             return True
         else:
             return False
@@ -269,15 +144,13 @@ class TransferTrx(DataDir):
                  "amount_symbol varchar(5) DEFAULT NULL,"
                  "memo varchar(2048) DEFAULT NULL,"
                  "op_type varchar(50) NOT NULL)".format(self.__tablename__))
-        db = dataset.connect(self.databaseConnector)
-        db.query(query)
-        db.commit()
+        self.db.query(query)
+        self.db.commit()
 
     def find(self, memo, to):
-        db = dataset.connect(self.databaseConnector)
-        table = db[self.__tablename__].table
+        table = self.db[self.__tablename__].table
         statement = table.select(and_(table.c.memo.like("%" + memo + "%"), table.c.to == to))
-        result = db.query(statement)
+        result = self.db.query(statement)
         ret = []
         for r in result:
             ret.append(r)
@@ -287,22 +160,20 @@ class TransferTrx(DataDir):
         """ Add a new data set
 
         """
-        db = dataset.connect(self.databaseConnector)
-        table = db[self.__tablename__]
+        table = self.db[self.__tablename__]
         table.insert(data)    
-        db.commit()
+        self.db.commit()
 
     def add_batch(self, data):
         """ Add a new data set
 
         """
-        db = dataset.connect(self.databaseConnector)
-        table = db[self.__tablename__]
-        db.begin()
+        table = self.db[self.__tablename__]
+        self.db.begin()
         for d in data:
             table.insert(d)
             
-        db.commit()
+        self.db.commit()
 
     def get_latest_index(self, account_name):
         table = self.db[self.__tablename__]
@@ -313,8 +184,7 @@ class TransferTrx(DataDir):
 
            :param int ID: database id
         """
-        db = dataset.connect(self.databaseConnector)
-        table = db[self.__tablename__]
+        table = self.db[self.__tablename__]
         table.delete(id=ID)
 
     def wipe(self, sure=False):
@@ -327,8 +197,7 @@ class TransferTrx(DataDir):
             )
             return
         else:
-            db = dataset.connect(self.databaseConnector)
-            table = db[self.__tablename__]
+            table = self.db[self.__tablename__]
             table.drop
 
 

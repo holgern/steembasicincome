@@ -10,6 +10,7 @@ import json
 from steembi.sqlite_dict import db_store, db_load, db_append, db_extend, db_has_database, db_has_key
 from steembi.ops_storage import store_all_ops, check_all_ops
 from steembi.transfer_ops_storage import TransferTrx, AccountTrx
+import dataset
 
 
 if __name__ == "__main__":
@@ -28,6 +29,11 @@ if __name__ == "__main__":
     database_transfer = config_data["database_transfer"]
     databaseConnector = config_data["databaseConnector"]
     other_accounts = config_data["other_accounts"]
+    
+    # sqlDataBaseFile = os.path.join(path, database)
+    # databaseConnector = "sqlite:///" + sqlDataBaseFile
+    db = dataset.connect(databaseConnector)    
+    
     # Update current node list from @fullnodeupdate
     nodes = NodeList()
     nodes.update_nodes(weights={"hist": 1})
@@ -35,7 +41,7 @@ if __name__ == "__main__":
     print(str(stm))
     set_shared_steem_instance(stm)
     
-    accountTrxStorage = AccountTrx(path, database_transfer, databaseConnector)
+    accountTrxStorage = AccountTrx(db)
     
     newAccountTrxStorage = False
     if not accountTrxStorage.exists_table():
@@ -68,7 +74,7 @@ if __name__ == "__main__":
 
     
     # Create keyStorage
-    trxStorage = TransferTrx(path, database_transfer, databaseConnector)
+    trxStorage = TransferTrx(db)
     
     newTrxStorage = False
     if not trxStorage.exists_table():
