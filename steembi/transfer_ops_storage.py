@@ -49,15 +49,7 @@ class AccountTrx(object):
     def create_table(self):
         """ Create the new table in the SQLite database
         """
-        query = ("CREATE TABLE {0} ("
-                 "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                 "op_acc_index int NOT NULL,"
-                 "op_acc_name varchar(50) NOT NULL,"
-                 "block int NOT NULL,"
-                 "trx_in_block smallint NOT NULL,"
-                 "op_in_trx smallint NOT NULL,"
-                 "timestamp datetime DEFAULT NULL,"                 
-                 "op_dict text NOT NULL)".format(self.__tablename__))
+        query = ("CREATE TABLE `sbi_steem_ops`.`sbi_ops` ( `virtual_op` INT NOT NULL , `op_acc_index` INT NOT NULL , `op_acc_name` VARCHAR(50) NOT NULL , `block` INT NOT NULL , `trx_in_block` INT NOT NULL , `op_in_trx` INT NOT NULL , `timestamp` DATETIME NOT NULL , `op_dict` TEXT NOT NULL , PRIMARY KEY (`block`, `trx_in_block`, `op_in_trx`, `virtual_op`)) ENGINE = InnoDB;")
         self.db.query(query)
         self.db.commit()
 
@@ -130,20 +122,8 @@ class TransferTrx(object):
     def create_table(self):
         """ Create the new table in the SQLite database
         """
-        query = ("CREATE TABLE {0} ("
-                 "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                 "block int NOT NULL,"
-                 "op_acc_index int NOT NULL,"
-                 "op_acc_name varchar(50) NOT NULL,"
-                 "trx_in_block smallint NOT NULL,"
-                 "op_in_trx smallint NOT NULL,"
-                 "timestamp datetime DEFAULT NULL,"
-                 "'from' varchar(50) DEFAULT NULL,"
-                 "'to' varchar(50) DEFAULT NULL,"
-                 "amount decimal(15,6) DEFAULT NULL,"
-                 "amount_symbol varchar(5) DEFAULT NULL,"
-                 "memo varchar(2048) DEFAULT NULL,"
-                 "op_type varchar(50) NOT NULL)".format(self.__tablename__))
+        query = ("CREATE TABLE `sbi_steem_ops`.`transfers` ( `virtual_op` INT NOT NULL , `op_acc_index` INT NOT NULL , `op_acc_name` VARCHAR(50) NOT NULL , `block` INT NOT NULL , `trx_in_block` INT NOT NULL , `op_in_trx` INT NOT NULL , `timestamp` DATETIME NOT NULL , `from` VARCHAR(50) NOT NULL, `to` VARCHAR(50) NOT NULL, `amount` decimal(15,6) DEFAULT NULL, `amount_symbol`varchar(5) DEFAULT NULL,  `memo` varchar(2048) DEFAULT NULL, `op_type` varchar(50) NOT NULL, PRIMARY KEY (`block`, `trx_in_block`, `op_in_trx`, `virtual_op`)) ENGINE = InnoDB;")
+
         self.db.query(query)
         self.db.commit()
 
