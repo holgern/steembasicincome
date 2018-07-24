@@ -34,6 +34,7 @@ if __name__ == "__main__":
         database = config_data["database"]
         database_transfer = config_data["database_transfer"]
         databaseConnector = config_data["databaseConnector"]
+        databaseConnector2 = config_data["databaseConnector2"]
         other_accounts = config_data["other_accounts"]
     
     # sqlDataBaseFile = os.path.join(path, database)
