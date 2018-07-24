@@ -14,3 +14,7 @@ Build the trx database::
 
     python sbi_transfer.py
     
+
+## Install
+
+apt-get install libmariadbclient-dev

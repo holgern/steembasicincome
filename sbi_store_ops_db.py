@@ -3,7 +3,9 @@ from beem.amount import Amount
 from beem import Steem
 from beem.instance import set_shared_steem_instance
 from beem.nodelist import NodeList
+from beem.blockchain import Blockchain
 from beem.utils import formatTimeString
+from datetime import datetime
 import re
 import os
 import json
@@ -14,21 +16,24 @@ import dataset
 
 
 if __name__ == "__main__":
-    accounts = ["steembasicincome", "sbi2", "sbi3", "sbi4", "sbi5", "sbi6", "sbi7", "sbi8"]
-    path = "E:\\sbi\\"
-    database = "sbi_ops.sqlite"
-    database_transfer = "sbi_transfer.sqlite"
-    databaseConnector = None
-    
-    with open('config.json') as json_data_file:
-        config_data = json.load(json_data_file)
-    print(config_data)
-    accounts = config_data["accounts"]
-    path = config_data["path"]
-    database = config_data["database"]
-    database_transfer = config_data["database_transfer"]
-    databaseConnector = config_data["databaseConnector"]
-    other_accounts = config_data["other_accounts"]
+    config_file = 'config.json'
+    if not os.path.isfile(config_file):
+        accounts = ["steembasicincome", "sbi2", "sbi3", "sbi4", "sbi5", "sbi6", "sbi7", "sbi8"]
+        path = "E:\\sbi\\"
+        database = "sbi_ops.sqlite"
+        database_transfer = "sbi_transfer.sqlite"
+        databaseConnector = None
+        other_accounts = ["minnowbooster"]
+    else:
+        with open(config_file) as json_data_file:
+            config_data = json.load(json_data_file)
+        print(config_data)
+        accounts = config_data["accounts"]
+        path = config_data["path"]
+        database = config_data["database"]
+        database_transfer = config_data["database_transfer"]
+        databaseConnector = config_data["databaseConnector"]
+        other_accounts = config_data["other_accounts"]
     
     # sqlDataBaseFile = os.path.join(path, database)
     # databaseConnector = "sqlite:///" + sqlDataBaseFile
@@ -41,12 +46,18 @@ if __name__ == "__main__":
     print(str(stm))
     set_shared_steem_instance(stm)
     
+    blockchain = Blockchain()
+    
+    
     accountTrxStorage = AccountTrx(db)
     
     newAccountTrxStorage = False
     if not accountTrxStorage.exists_table():
         newAccountTrxStorage = True
-        accountTrxStorage.create_table()    
+        accountTrxStorage.create_table()
+    
+    stop_index = None
+    stop_index = datetime(2018, 7, 21, 23, 46, 00)
     
     for account in accounts:
         account = Account(account)
@@ -62,7 +73,7 @@ if __name__ == "__main__":
                 start_index = start_index["op_acc_index"] + 1
                 print(start_index)
         data = []
-        for op in account.history(start=start_index, use_block_num=False):
+        for op in account.history(start=start_index, stop=stop_index, use_block_num=False):
             virtual_op = op["virtual_op"]
             trx_in_block = op["trx_in_block"]
             if virtual_op > 0:
