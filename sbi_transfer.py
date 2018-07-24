@@ -91,10 +91,10 @@ if __name__ == "__main__":
         # 
         if True:
             ops = accountTrx[account_name].get_all(op_types=["transfer", "delegate_vesting_shares"])
-            if ops[-1]["index"] < start_index:
+            if ops[-1]["op_acc_index"] < start_index:
                 continue
             for op in ops[start_index:]:
-                pah.parse_op(op, parse_vesting=parse_vesting)
+                pah.parse_op(json.loads(op["op_dict"]), parse_vesting=parse_vesting)
                 if (op_counter % 100) == 0:
                     pah.add_mngt_shares(op_last, mgnt_shares)
                 op_counter += 1
