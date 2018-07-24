@@ -96,13 +96,13 @@ if __name__ == "__main__":
             for op in ops[start_index:]:
                 pah.parse_op(json.loads(op["op_dict"]), parse_vesting=parse_vesting)
                 if (op_counter % 100) == 0:
-                    pah.add_mngt_shares(op_last, mgnt_shares)
+                    pah.add_mngt_shares(op["op_dict"]),, mgnt_shares)
                 op_counter += 1
         else:
             for op in account.history(start=start_index, use_block_num=False):
                 pah.parse_op(op, parse_vesting=parse_vesting)
                 if (op_counter % 100) == 0:
-                    pah.add_mngt_shares(op_last, mgnt_shares)                
+                    pah.add_mngt_shares(op, mgnt_shares)                
                 op_counter += 1
 
 
