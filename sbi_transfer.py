@@ -10,6 +10,7 @@ from time import sleep
 from steembi.parse_hist_op import ParseAccountHist
 from steembi.storage import Trx, Member
 from steembi.transfer_ops_storage import TransferTrx, AccountTrx
+import dataset
     
 
 if __name__ == "__main__":
