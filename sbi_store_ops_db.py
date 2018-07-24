@@ -9,8 +9,6 @@ from datetime import datetime
 import re
 import os
 import json
-from steembi.sqlite_dict import db_store, db_load, db_append, db_extend, db_has_database, db_has_key
-from steembi.ops_storage import store_all_ops, check_all_ops
 from steembi.transfer_ops_storage import TransferTrx, AccountTrx
 import dataset
 
