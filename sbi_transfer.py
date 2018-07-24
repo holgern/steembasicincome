@@ -8,6 +8,7 @@ import os
 import json
 from time import sleep
 from steembi.parse_hist_op import ParseAccountHist
+from steembi.storage import Trx, Member
 from steembi.transfer_ops_storage import TransferTrx, AccountTrx
     
 
@@ -20,6 +21,7 @@ if __name__ == "__main__":
         database_transfer = "sbi_transfer.sqlite"
         databaseConnector = None
         other_accounts = ["minnowbooster"]
+        mgnt_shares = {"josephsavage": 3, "earthnation-bot": 1, "holger80": 1}
     else:
         with open(config_file) as json_data_file:
             config_data = json.load(json_data_file)
@@ -30,6 +32,7 @@ if __name__ == "__main__":
         database_transfer = config_data["database_transfer"]
         databaseConnector = config_data["databaseConnector"]
         other_accounts = config_data["other_accounts"]
+        mgnt_shares = config_data["mgnt_shares"]
 
     nodes = NodeList()
     nodes.update_nodes()
@@ -37,34 +40,66 @@ if __name__ == "__main__":
     set_shared_steem_instance(stm)
     
     db = dataset.connect(databaseConnector)
-    accountTrxStorage = AccountTrx(db)
+    accountTrx = {}
+    newAccountTrxStorage = False
+    for account in accounts:
+        accountTrx[account] = AccountTrx(db, account)
+        
+        if not accountTrx[account].exists_table():
+            newAccountTrxStorage = True
+            accountTrx[account].create_table()
+
+
+            
+    # Create keyStorage
+    trxStorage = Trx(db)
+    memberStorage = Member(db)
+    
+    newTrxStorage = False
+    if not trxStorage.exists_table():
+        newTrxStorage = True
+        trxStorage.create_table()
+    
+    newMemberStorage = False
+    if not memberStorage.exists_table():
+        newMemberStorage = True
+        memberStorage.create_table()
+
+
     
     stop_index = None
     stop_index = datetime(2018, 7, 21, 23, 46, 00)    
 
-    for account in accounts:
+    for account_name in accounts:
         parse_vesting = (account == "steembasicincome")
-        account = Account(account)
+        account = Account(account_name)
         print(account["name"])
-        pah = ParseAccountHist(account, path)
+        pah = ParseAccountHist(account, path, trxStorage)
         
-        op_index = pah.trxStorage.get_all_op_index(account["name"])
+        op_index = trxStorage.get_all_op_index(account["name"])
         if len(op_index) == 0:
             start_index = 0
+            op_counter = 0
         else:
             start_index = op_index[-1] + 1
+            op_counter = op_index[-1] + 1
         print("start_index %d" % start_index)
         # ops = []
         # 
         if load_ops_from_database:
-            ops = accountTrxStorage.get_all(account["name"])
-            ops = db_load(path, database_ops, account["name"])
+            ops = accountTrx[account_name].get_all(op_types=["transfer", "delegate_vesting_shares"])
             if ops[-1]["index"] < start_index:
                 continue
             for op in ops[start_index:]:
                 pah.parse_op(op, parse_vesting=parse_vesting)
+                if (op_counter % 100) == 0:
+                    pah.add_mngt_shares(op_last, mgnt_shares)
+                op_counter += 1
         else:
             for op in account.history(start=start_index, use_block_num=False):
                 pah.parse_op(op, parse_vesting=parse_vesting)
+                if (op_counter % 100) == 0:
+                    pah.add_mngt_shares(op_last, mgnt_shares)                
+                op_counter += 1
 
 

@@ -25,7 +25,7 @@ log = logging.getLogger(__name__)
 
 class ParseAccountHist(list):
     
-    def __init__(self, account, path, steem_instance=None):
+    def __init__(self, account, path, trxStorage, steem_instance=None):
         self.steem = steem_instance or shared_steem_instance()
         self.account = Account(account, steem_instance=self.steem)    
         self.delegated_vests_in = {}
@@ -41,7 +41,6 @@ class ParseAccountHist(list):
                                    'sponsee', 'sponsoring', 'sponser', 'one', 'you', 'thank', 'enroll',
                                    'sponsering:', 'sponsoring;', 'sponsoring:', 'would', 'like', 'too', 'enroll:',
                                    'sponsor:']
-        from .storage import (trxStorage)
         self.trxStorage = trxStorage
 
     def update_delegation(self, op, delegated_in=None, delegated_out=None):
@@ -87,8 +86,7 @@ class ParseAccountHist(list):
                 # del new_deleg[delegated_out['account']]
 
         self.delegated_vests_out = new_deleg
-        if self.path is None:
-            return
+
         delegated_sp_in = {}
         for acc in self.delegated_vests_in:
             vests = Amount(self.delegated_vests_in[acc])
@@ -97,6 +95,9 @@ class ParseAccountHist(list):
         for acc in self.delegated_vests_out:
             vests = Amount(self.delegated_vests_out[acc])
             delegated_sp_out[acc] = str(self.steem.vests_to_sp(vests))
+
+        if self.path is None:
+            return        
         with open(self.path + 'sbi_delegation_in_'+self.account["name"]+'.txt', 'w') as the_file:
             the_file.write(str(delegated_sp_in) + '\n')
         with open(self.path + 'sbi_delegation_out_'+self.account["name"]+'.txt', 'w') as the_file:
@@ -308,14 +309,14 @@ class ParseAccountHist(list):
         
         self.new_transfer_record(index, ascii(op["memo"]), account, sponsor, json.dumps(sponsee), shares, timestamp, share_type=share_type)
 
-    def new_transfer_record(self, index, memo, account, sponsor, sponsee, shares, timestamp, share_age=1, status="Valid", share_type="Standard"):
+    def new_transfer_record(self, index, memo, account, sponsor, sponsee, shares, timestamp,  status="Valid", share_type="Standard"):
         data = {"index": index, "source": self.account["name"], "memo": memo, "account": account, "sponsor": sponsor, "sponsee": sponsee, "shares": shares, "vests": float(0), "timestamp": formatTimeString(timestamp),
-                "share_age": share_age, "status": status, "share_type": share_type}
+                 "status": status, "share_type": share_type}
         self.trxStorage.add(data)
 
-    def new_delegation_record(self, index, account, vests, timestamp, share_age=1, status="Valid", share_type="Delegation"):
+    def new_delegation_record(self, index, account, vests, timestamp, status="Valid", share_type="Delegation"):
         data = {"index": index, "source": self.account["name"], "memo": "", "account": account, "sponsor": account, "sponsee": json.dumps({}), "shares": 0, "vests": float(vests), "timestamp": formatTimeString(timestamp),
-                "share_age": share_age, "status": status, "share_type": share_type}
+                "status": status, "share_type": share_type}
         self.trxStorage.add(data)
 
     def parse_op(self, op, parse_vesting=True):
@@ -342,4 +343,17 @@ class ParseAccountHist(list):
                 
             # print(op, vests)
             # self.update(ts, vests, 0, 0)
-            return        
+            return
+
+    def add_mngt_shares(self, last_op, mgnt_shares):
+        
+        index = last_op["index"]
+        timestamp = last_op["timestamp"]
+        sponsee = {}
+        memo = ""
+        for account in mgnt_shares:
+            shares = mgnt_shares[account]
+            sponsor = account
+            data = {"index": 0, "source": "mgmt", "memo": "", "account": account, "sponsor": sponsor, "sponsee": sponsee, "shares": shares, "vests": float(0), "timestamp": formatTimeString(timestamp),
+                     "status": "Valid", "share_type": "Mgmt"}
+            self.trxStorage.add(data)
