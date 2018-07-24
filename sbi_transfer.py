@@ -89,7 +89,7 @@ if __name__ == "__main__":
         print("start_index %d" % start_index)
         # ops = []
         # 
-        if load_ops_from_database:
+        if True:
             ops = accountTrx[account_name].get_all(op_types=["transfer", "delegate_vesting_shares"])
             if ops[-1]["index"] < start_index:
                 continue
