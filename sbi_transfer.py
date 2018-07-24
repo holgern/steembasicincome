@@ -52,8 +52,6 @@ if __name__ == "__main__":
         if not accountTrx[account].exists_table():
             newAccountTrxStorage = True
             accountTrx[account].create_table()
-
-
             
     # Create keyStorage
     trxStorage = Trx(db2)
@@ -73,16 +71,19 @@ if __name__ == "__main__":
 
     for account_name in accounts:
         parse_vesting = (account_name == "steembasicincome")
+        accountTrx[account_name].db = dataset.connect(databaseConnector)
         account = Account(account_name)
         print(account["name"])
         pah = ParseAccountHist(account, path, trxStorage)
         
         op_index = trxStorage.get_all_op_index(account["name"])
+        
         if len(op_index) == 0:
             start_index = 0
             op_counter = 0
         else:
-            start_index = op_index[-1] + 1
+            op = trxStorage.get(op_index[-1])
+            start_index = op["index"] + 1
             op_counter = op_index[-1] + 1
         print("start_index %d" % start_index)
         # ops = []
@@ -91,7 +92,9 @@ if __name__ == "__main__":
             ops = accountTrx[account_name].get_all(op_types=["transfer", "delegate_vesting_shares"])
             if ops[-1]["op_acc_index"] < start_index:
                 continue
-            for op in ops[start_index:]:
+            for op in ops:
+                if op["op_acc_index"] < start_index:
+                    continue
                 pah.parse_op(json.loads(op["op_dict"]), parse_vesting=parse_vesting)
                 if (op_counter % 100) == 0:
                     pah.add_mngt_shares(json.loads(op["op_dict"]), mgnt_shares)
