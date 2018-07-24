@@ -102,21 +102,6 @@ class Trx(object):
                 found_trx = trx
         return found_trx
 
-    def update_share_age(self):
-        """ Change share_age depending on timestamp
-
-        """
-        table = self.db[self.__tablename__]        
-        id_list = self.get_all_ids()
-        for ID in id_list:
-            data = self.get(ID)
-            if data["status"].lower() == "refunded":
-                return
-            age = (datetime.utcnow()) - (data["timestamp"])
-            share_age = int(age.total_seconds() / 60 / 60 / 24)
-            data = dict(id=ID, share_age=share_age)
-            table.update(data, ['id'])
-
     def update_delegation_shares(self, source, account, shares):
         """ Change share_age depending on timestamp
 

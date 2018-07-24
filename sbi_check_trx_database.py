@@ -5,19 +5,41 @@ from beem.instance import set_shared_steem_instance
 from beem.nodelist import NodeList
 import re
 import os
+import dataset
 from time import sleep
-from steembi.sqlite_dict import db_store, db_load, db_append, db_extend, db_has_database, db_has_key
 from steembi.parse_hist_op import ParseAccountHist
-    
+from steembi.storage import Trx, Member
+
 
 if __name__ == "__main__":
-    accounts = ["steembasicincome", "sbi2", "sbi3", "sbi4", "sbi5", "sbi6", "sbi7", "sbi8"]
-    
-    from steembi.storage import (trxStorage)
+    config_file = 'config.json'
+    if not os.path.isfile(config_file):
+        accounts = ["steembasicincome", "sbi2", "sbi3", "sbi4", "sbi5", "sbi6", "sbi7", "sbi8"]
+        path = "E:\\sbi\\"
+        database = "sbi_ops.sqlite"
+        database_transfer = "sbi_transfer.sqlite"
+        databaseConnector = None
+        other_accounts = ["minnowbooster"]
+        mgnt_shares = {"josephsavage": 3, "earthnation-bot": 1, "holger80": 1}
+    else:
+        with open(config_file) as json_data_file:
+            config_data = json.load(json_data_file)
+        print(config_data)
+        accounts = config_data["accounts"]
+        path = config_data["path"]
+        database = config_data["database"]
+        database_transfer = config_data["database_transfer"]
+        databaseConnector = config_data["databaseConnector"]
+        databaseConnector2 = config_data["databaseConnector2"]
+        other_accounts = config_data["other_accounts"]
+        mgnt_shares = config_data["mgnt_shares"]
+
+    db2 = dataset.connect(databaseConnector2)
+    # Create keyStorage
+    trxStorage = Trx(db2)
+    memberStorage = Member(db2)
     
     # Update current node list from @fullnodeupdate
-    print("update share age")
-    trxStorage.update_share_age()
     # nodes = NodeList()
     # nodes.update_nodes()
     # stm = Steem(node=nodes.get_nodes())
