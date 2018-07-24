@@ -66,7 +66,6 @@ if __name__ == "__main__":
                 sponsor = op["sponsor"]
                 sponsee = json.loads(op["sponsee"])
                 shares = op["shares"]
-                share_age = op["share_age"]
               
                 if isinstance(op["timestamp"], str):
                     timestamp = formatTimeString(op["timestamp"])
