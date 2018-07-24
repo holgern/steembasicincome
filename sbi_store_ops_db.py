@@ -60,6 +60,7 @@ if __name__ == "__main__":
             accountTrx[account].create_table()
 
     stop_index = addTzInfo(datetime(2018, 7, 21, 23, 46, 00))
+    stop_index = formatTimeString("2018-07-21T23:46:09")
     
     for account_name in accounts:
         account = Account(account_name)
@@ -88,6 +89,10 @@ if __name__ == "__main__":
                 accountTrx[account_name].add_batch(data)
                 data = []
             cnt += 1
+        if len(data) > 0:
+            print(op["timestamp"])
+            accountTrx[account_name].add_batch(data)
+            data = []            
 
     
     # Create keyStorage
@@ -126,3 +131,7 @@ if __name__ == "__main__":
                 trxStorage.add_batch(data)
                 data = []
             cnt += 1
+        if len(data) > 0:
+            print(op["timestamp"])
+            trxStorage.add_batch(data)
+            data = []
