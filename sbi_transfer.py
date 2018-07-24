@@ -68,6 +68,8 @@ if __name__ == "__main__":
         memberStorage.create_table()
 
     stop_index = None
+    stop_index = addTzInfo(datetime(2018, 7, 21, 23, 46, 00))
+    stop_index = formatTimeString("2018-07-21T23:46:09")    
 
     for account_name in accounts:
         parse_vesting = (account_name == "steembasicincome")
@@ -94,6 +96,8 @@ if __name__ == "__main__":
                 continue
             for op in ops:
                 if op["op_acc_index"] < start_index:
+                    continue
+                if stop_index is not None and formatTimeString(op["timestamp"]) > stop_index:
                     continue
                 pah.parse_op(json.loads(op["op_dict"]), parse_vesting=parse_vesting)
                 if (op_counter % 100) == 0:
