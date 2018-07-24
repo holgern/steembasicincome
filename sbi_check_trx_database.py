@@ -6,6 +6,7 @@ from beem.nodelist import NodeList
 import re
 import os
 import dataset
+import json
 from time import sleep
 from steembi.parse_hist_op import ParseAccountHist
 from steembi.storage import Trx, Member
