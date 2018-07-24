@@ -49,18 +49,19 @@ if __name__ == "__main__":
     blockchain = Blockchain()
     
     
-    accountTrxStorage = AccountTrx(db)
-    
+    accountTrx = {}
     newAccountTrxStorage = False
-    if not accountTrxStorage.exists_table():
-        newAccountTrxStorage = True
-        accountTrxStorage.create_table()
-    
-    stop_index = None
+    for account in accounts:
+        accountTrx[account] = AccountTrx(db, account)
+        
+        if not accountTrx[account].exists_table():
+            newAccountTrxStorage = True
+            accountTrx[account].create_table()
+
     stop_index = datetime(2018, 7, 21, 23, 46, 00)
     
-    for account in accounts:
-        account = Account(account)
+    for account_name in accounts:
+        account = Account(account_name)
         print("account %s" % account["name"])
         # Go trough all transfer ops
         cnt = 0
@@ -68,7 +69,7 @@ if __name__ == "__main__":
             ops = []
             start_index = None
         else:
-            start_index = accountTrxStorage.get_latest_index(account["name"])
+            start_index = accountTrx[account_name].get_latest_index()
             if start_index is not None:
                 start_index = start_index["op_acc_index"] + 1
                 print(start_index)
@@ -79,15 +80,13 @@ if __name__ == "__main__":
             if virtual_op > 0:
                 trx_in_block = -1
             d = {"block": op["block"], "op_acc_index": op["index"], "op_acc_name": account["name"], "trx_in_block": trx_in_block,
-                 "op_in_trx": op["op_in_trx"], "virtual_op": virtual_op,  "timestamp": formatTimeString(op["timestamp"]), "op_dict": json.dumps(op)}
+                 "op_in_trx": op["op_in_trx"], "virtual_op": virtual_op,  "timestamp": formatTimeString(op["timestamp"]), "type": op["type"], "op_dict": json.dumps(op)}
             data.append(d)
             if cnt % 1000 == 0:
                 print(op["timestamp"])
-                accountTrxStorage.add_batch(data)
+                accountTrx[account_name].add_batch(data)
                 data = []
             cnt += 1
-    
-   
 
     
     # Create keyStorage

@@ -29,10 +29,11 @@ timeformat = "%Y%m%d-%H%M%S"
 class AccountTrx(object):
     """ This is the trx storage class
     """
-    __tablename__ = 'sbi_ops'
+    
 
-    def __init__(self, db):
+    def __init__(self, db, account):
         self.db = db
+        self.__tablename__ = "%s_ops" % account
 
     def exists_table(self):
         """ Check if the database table exists
@@ -49,7 +50,7 @@ class AccountTrx(object):
     def create_table(self):
         """ Create the new table in the SQLite database
         """
-        query = ("CREATE TABLE `sbi_steem_ops`.`sbi_ops` ( `virtual_op` INT NOT NULL , `op_acc_index` INT NOT NULL , `op_acc_name` VARCHAR(50) NOT NULL , `block` INT NOT NULL , `trx_in_block` INT NOT NULL , `op_in_trx` INT NOT NULL , `timestamp` DATETIME NOT NULL , `op_dict` TEXT NOT NULL , PRIMARY KEY (`op_acc_index`, `op_acc_name`)) ENGINE = InnoDB;")
+        query = ("CREATE TABLE `sbi_steem_ops`.`%s` ( `virtual_op` INT NOT NULL , `op_acc_index` INT NOT NULL , `op_acc_name` VARCHAR(50) NOT NULL , `block` INT NOT NULL , `trx_in_block` INT NOT NULL , `op_in_trx` INT NOT NULL , `timestamp` DATETIME NOT NULL , `type` VARCHAR(50) NOT NULL, `op_dict` TEXT NOT NULL , PRIMARY KEY (`op_acc_index`)) ENGINE = InnoDB;" % self.__tablename__)
         self.db.query(query)
         self.db.commit()
 
@@ -60,6 +61,14 @@ class AccountTrx(object):
         table = self.db[self.__tablename__]
         table.insert(data)    
         self.db.commit()
+
+    def get_all(self, op_types = []):
+        ops = []
+        table = self.db[self.__tablename__]
+        for op in table.find():
+            if op["type"] in op_types or len(op_types) == 0:
+                ops.append(op)
+        return ops
 
     def add_batch(self, data):
         """ Add a new data set
@@ -72,9 +81,9 @@ class AccountTrx(object):
             
         self.db.commit()
 
-    def get_latest_index(self, account_name):
+    def get_latest_index(self):
         table = self.db[self.__tablename__]
-        return table.find_one(op_acc_name=account_name, order_by='-op_acc_index')
+        return table.find_one(order_by='-op_acc_index')
 
     def delete(self, ID):
         """ Delete a data set
@@ -82,7 +91,7 @@ class AccountTrx(object):
            :param int ID: database id
         """
         table = self.db[self.__tablename__]
-        table.delete(id=ID)
+        table.delete(op_acc_index=ID)
 
     def wipe(self, sure=False):
         """Purge the entire database. No data set will survive this!"""
