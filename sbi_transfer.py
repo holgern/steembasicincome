@@ -32,6 +32,7 @@ if __name__ == "__main__":
         database = config_data["database"]
         database_transfer = config_data["database_transfer"]
         databaseConnector = config_data["databaseConnector"]
+        databaseConnector2 = config_data["databaseConnector2"]
         other_accounts = config_data["other_accounts"]
         mgnt_shares = config_data["mgnt_shares"]
 
@@ -41,6 +42,7 @@ if __name__ == "__main__":
     set_shared_steem_instance(stm)
     
     db = dataset.connect(databaseConnector)
+    db2 = dataset.connect(databaseConnector2)
     accountTrx = {}
     newAccountTrxStorage = False
     for account in accounts:
@@ -53,8 +55,8 @@ if __name__ == "__main__":
 
             
     # Create keyStorage
-    trxStorage = Trx(db)
-    memberStorage = Member(db)
+    trxStorage = Trx(db2)
+    memberStorage = Member(db2)
     
     newTrxStorage = False
     if not trxStorage.exists_table():
