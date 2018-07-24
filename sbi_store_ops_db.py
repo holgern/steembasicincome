@@ -5,7 +5,6 @@ from beem.instance import set_shared_steem_instance
 from beem.nodelist import NodeList
 from beem.blockchain import Blockchain
 from beem.utils import formatTimeString, addTzInfo
-
 from datetime import datetime
 import re
 import os

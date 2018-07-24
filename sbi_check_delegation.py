@@ -11,7 +11,7 @@ import dataset
 from steembi.parse_hist_op import ParseAccountHist
 from steembi.transfer_ops_storage import TransferTrx
 from steembi.storage import Trx, Member
-    
+
 
 if __name__ == "__main__":
     config_file = 'config.json'
@@ -36,8 +36,14 @@ if __name__ == "__main__":
         other_accounts = config_data["other_accounts"]
         mgnt_shares = config_data["mgnt_shares"]
 
+    nodes = NodeList()
+    nodes.update_nodes()
+    stm = Steem(node=nodes.get_nodes())
+    set_shared_steem_instance(stm)
+    
+    db = dataset.connect(databaseConnector)
     db2 = dataset.connect(databaseConnector2)
-    # Create keyStorage
+    transferStorage = TransferTrx(db)
     trxStorage = Trx(db2)
     memberStorage = Member(db2)
     
