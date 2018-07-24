@@ -4,7 +4,8 @@ from beem import Steem
 from beem.instance import set_shared_steem_instance
 from beem.nodelist import NodeList
 from beem.blockchain import Blockchain
-from beem.utils import formatTimeString
+from beem.utils import formatTimeString, addTzInfo
+
 from datetime import datetime
 import re
 import os
@@ -58,7 +59,7 @@ if __name__ == "__main__":
             newAccountTrxStorage = True
             accountTrx[account].create_table()
 
-    stop_index = datetime(2018, 7, 21, 23, 46, 00)
+    stop_index = addTzInfo(datetime(2018, 7, 21, 23, 46, 00))
     
     for account_name in accounts:
         account = Account(account_name)
