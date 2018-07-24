@@ -69,12 +69,10 @@ if __name__ == "__main__":
         newMemberStorage = True
         memberStorage.create_table()
 
-
-    
     stop_index = None
 
     for account_name in accounts:
-        parse_vesting = (account == "steembasicincome")
+        parse_vesting = (account_name == "steembasicincome")
         account = Account(account_name)
         print(account["name"])
         pah = ParseAccountHist(account, path, trxStorage)
