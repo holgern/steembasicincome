@@ -51,6 +51,7 @@ if __name__ == "__main__":
     for m in member_accounts:
         member_data[m] = memberStorage.get(m)
 
+    print("update bonus shares")
     for op in data:
         if op["status"].lower() == "valid":
             share_type = op["share_type"]
@@ -93,12 +94,13 @@ if __name__ == "__main__":
                             share_age_member[s] = []                        
                         share_age_member[s].append(share_age)
                     
-                    
+    print("update share age")
     for m in share_age_member:
         if m in member_data:
             member_data[m]["total_share_days"] = sum(share_age_member[m])
             member_data[m]["avg_share_age"] = sum(share_age_member[m]) / len(share_age_member[m])
 
+    print("update last post and comment date")
     for m in member_data:
         acc = Account(m)
         latest_post = acc.get_blog(limit=1)
@@ -110,6 +112,8 @@ if __name__ == "__main__":
         if latest_comment is not None:
             member_data[m]["last_comment"] = latest_comment["created"]
 
+    print("write member database")
+    memberStorage.db = dataset.connect(databaseConnector2)
     for m in member_data:
         data = member_data[m]
         memberStorage.update(data)
