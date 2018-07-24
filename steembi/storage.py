@@ -233,6 +233,13 @@ class Member(object):
         shares = member["shares"] + add_shares
         data = dict(account=account, shares=shares, latest_enrollment=datetime)
         table.update(data, ['account'])
+
+    def update(self, data):
+        """ Change share_age depending on timestamp
+    
+        """
+        table = self.db[self.__tablename__]
+        table.update(data, ['account'])
     
     def delete(self, account):
         """ Delete a data set

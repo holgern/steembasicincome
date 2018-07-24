@@ -56,12 +56,12 @@ if __name__ == "__main__":
             share_type = op["share_type"]
             if share_type.lower() in ["delegation"]:
                 if op["shares"] > 0 and op["sponsor"] in member_data:
-                    print("del. bonus_shares: %s - %d" % (op["sponsor"], op["shares"]))
+                    # print("del. bonus_shares: %s - %d" % (op["sponsor"], op["shares"]))
                     member_data[op["sponsor"]]["bonus_shares"] += op["shares"]
             elif share_type.lower() in ["mgmt", "mgmttransfer"]:
                 if op["shares"] > 0 and op["sponsor"] in member_data:
                     member_data[op["sponsor"]]["bonus_shares"] += op["shares"]
-                    print("mngt bonus_shares: %s - %d" % (op["sponsor"], op["shares"]))
+                    # print("mngt bonus_shares: %s - %d" % (op["sponsor"], op["shares"]))
             else:
                 sponsor = op["sponsor"]
                 sponsee = json.loads(op["sponsee"])
@@ -109,3 +109,7 @@ if __name__ == "__main__":
             member_data[m]["last_post"] = latest_post[0]["created"]
         if latest_comment is not None:
             member_data[m]["last_comment"] = latest_comment["created"]
+
+    for m in member_data:
+        data = member_data[m]
+        memberStorage.update(data)
