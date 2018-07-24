@@ -11,6 +11,7 @@ from steembi.parse_hist_op import ParseAccountHist
 from steembi.storage import Trx, Member
 from steembi.transfer_ops_storage import TransferTrx, AccountTrx
 import dataset
+from datetime import datetime
     
 
 if __name__ == "__main__":
@@ -71,7 +72,6 @@ if __name__ == "__main__":
 
     
     stop_index = None
-    stop_index = datetime(2018, 7, 21, 23, 46, 00)    
 
     for account_name in accounts:
         parse_vesting = (account == "steembasicincome")
