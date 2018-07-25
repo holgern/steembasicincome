@@ -12,6 +12,7 @@ import json
 import time
 from steembi.transfer_ops_storage import TransferTrx, AccountTrx
 from steembi.storage import Trx, Member
+from steembi.parse_hist_op import ParseAccountHist
 import dataset
 
 
