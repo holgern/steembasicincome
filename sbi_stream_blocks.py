@@ -169,7 +169,7 @@ if __name__ == "__main__":
             for op in ops:
                 if op["op_acc_index"] < start_index:
                     continue
-                if stop_index is not None and (op["timestamp"]) > stop_index:
+                if stop_index is not None and addTzInfo(op["timestamp"]) > stop_index:
                     continue
                 op = json.loads(op["op_dict"])
                 
