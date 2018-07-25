@@ -182,7 +182,6 @@ if __name__ == "__main__":
                     #if op['delegatee'] == account_name:
                     #    delegation = {'account': op['delegator'], 'amount': vests}
                     #    pah.update_delegation(op, delegation, 0)
-                    #    return
         
                 elif op['type'] == "transfer":
                     amount = Amount(op['amount'])
@@ -195,7 +194,7 @@ if __name__ == "__main__":
                         
                     # print(op, vests)
                     # self.update(ts, vests, 0, 0)
-                    return                
+                                    
                 
                 
                 
