@@ -137,13 +137,71 @@ if __name__ == "__main__":
                 
         db2 = dataset.connect(databaseConnector2)
         trxStorage = Trx(db2)
-        memberStorage = Member(db2)        
+        memberStorage = Member(db2)    
         
         stop_index = None
         stop_index = addTzInfo(datetime(2018, 7, 21, 23, 46, 00))
         stop_index = formatTimeString("2018-07-21T23:46:09")
         
+        for account_name in accounts:
+            parse_vesting = (account_name == "steembasicincome")
+            accountTrx[account_name].db = dataset.connect(databaseConnector)
+            account = Account(account_name)
+            print(account["name"])
+            pah = ParseAccountHist(account, path, trxStorage)
+            
+            op_index = trxStorage.get_all_op_index(account["name"])
+            
+            if len(op_index) == 0:
+                start_index = 0
+                op_counter = 0
+            else:
+                op = trxStorage.get(op_index[-1])
+                start_index = op["index"] + 1
+                op_counter = op_index[-1] + 1
+            print("start_index %d" % start_index)
+            # ops = []
+            # 
+            ops = accountTrx[account_name].get_all(op_types=["transfer", "delegate_vesting_shares"])
+            if ops[-1]["op_acc_index"] < start_index:
+                continue
+            for op in ops:
+                if op["op_acc_index"] < start_index:
+                    continue
+                if stop_index is not None and formatTimeString(op["timestamp"]) > stop_index:
+                    continue
+                op = json.loads(op["op_dict"])
+                
+                if op['type'] == "delegate_vesting_shares" and parse_vesting:
+                    vests = Amount(op['vesting_shares'])
+                    print(op)
+                    #if op['delegator'] == account_name:
+                    #    delegation = {'account': op['delegatee'], 'amount': vests}
+                    #    pah.update_delegation(op, 0, delegation)
+                    #    return
+                    #if op['delegatee'] == account_name:
+                    #    delegation = {'account': op['delegator'], 'amount': vests}
+                    #    pah.update_delegation(op, delegation, 0)
+                    #    return
         
+                elif op['type'] == "transfer":
+                    amount = Amount(op['amount'])
+                    print(op)
+                    #if op['from'] == account_name and op["to"] not in pah.excluded_accounts:
+                    #    pah.parse_transfer_out_op(op)
+        
+                    #if op['to'] == account_name and op["from"] not in pah.excluded_accounts:
+                    #    pah.parse_transfer_in_op(op)
+                        
+                    # print(op, vests)
+                    # self.update(ts, vests, 0, 0)
+                    return                
+                
+                
+                
+                #if (op_counter % 100) == 0 and (account_name == "steembasicincome"):
+                #    pah.add_mngt_shares(json.loads(op["op_dict"]), mgnt_shares)
+                op_counter += 1
         
         print("sleeping now...")
         time.sleep(60)

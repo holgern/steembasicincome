@@ -100,13 +100,13 @@ if __name__ == "__main__":
                 if stop_index is not None and formatTimeString(op["timestamp"]) > stop_index:
                     continue
                 pah.parse_op(json.loads(op["op_dict"]), parse_vesting=parse_vesting)
-                if (op_counter % 100) == 0:
+                if (op_counter % 100) == 0 and (account_name == "steembasicincome"):
                     pah.add_mngt_shares(json.loads(op["op_dict"]), mgnt_shares)
                 op_counter += 1
         else:
             for op in account.history(start=start_index, use_block_num=False):
                 pah.parse_op(op, parse_vesting=parse_vesting)
-                if (op_counter % 100) == 0:
+                if (op_counter % 100) == 0 and (account_name == "steembasicincome"):
                     pah.add_mngt_shares(op, mgnt_shares)                
                 op_counter += 1
 
