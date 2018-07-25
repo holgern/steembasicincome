@@ -42,7 +42,7 @@ if __name__ == "__main__":
     while True:
     
         db = dataset.connect(databaseConnector)    
-        db2 = dataset.connect(databaseConnector2)
+        
         
         # Update current node list from @fullnodeupdate
         nodes = NodeList()
@@ -52,9 +52,7 @@ if __name__ == "__main__":
         set_shared_steem_instance(stm)
         
         blockchain = Blockchain()
-        
-        trxStorage = Trx(db2)
-        memberStorage = Member(db2)
+
         
         accountTrx = {}
         newAccountTrxStorage = False
@@ -136,4 +134,16 @@ if __name__ == "__main__":
                 print(op["timestamp"])
                 trxStorage.add_batch(data)
                 data = []
+                
+        db2 = dataset.connect(databaseConnector2)
+        trxStorage = Trx(db2)
+        memberStorage = Member(db2)        
+        
+        stop_index = None
+        stop_index = addTzInfo(datetime(2018, 7, 21, 23, 46, 00))
+        stop_index = formatTimeString("2018-07-21T23:46:09")
+        
+        
+        
+        print("sleeping now...")
         time.sleep(60)
