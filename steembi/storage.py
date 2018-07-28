@@ -26,7 +26,7 @@ log.addHandler(logging.StreamHandler())
 timeformat = "%Y%m%d-%H%M%S"
 
 
-class Trx(object):
+class TrxDB(object):
     """ This is the trx storage class
     """
     __tablename__ = 'trx'
@@ -154,7 +154,7 @@ class Trx(object):
             table.drop
 
 
-class Member(object):
+class MemberDB(object):
     """ This is the trx storage class
     """
     __tablename__ = 'member'
@@ -264,7 +264,7 @@ class Member(object):
 
 
 
-class Configuration(object):
+class ConfigurationDB(object):
     """ This is the trx storage class
     """
     __tablename__ = 'configuration'
@@ -339,7 +339,7 @@ class Configuration(object):
             table.drop
 
 
-class Keys(object):
+class KeysDB(object):
     """ This is the trx storage class
     """
     __tablename__ = 'keys'

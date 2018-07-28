@@ -4,5 +4,6 @@ __all__ = [
     'parse_hist_op',
     'storage',
     'transfer_ops_storage',
-    'memo_parser'
+    'memo_parser',
+    'member'
 ]

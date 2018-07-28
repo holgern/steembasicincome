@@ -15,7 +15,7 @@ from steembi.storage import Trx, Member
 if __name__ == "__main__":
     config_file = 'config.json'
     if not os.path.isfile(config_file):
-        accounts = ["steembasicincome", "sbi2", "sbi3", "sbi4", "sbi5", "sbi6", "sbi7", "sbi8"]
+        accounts = ["steembasicincome", "sbi2", "sbi3", "sbi4", "sbi5", "sbi6", "sbi7", "sbi8", "sbi9"]
         path = "E:\\sbi\\"
         database = "sbi_ops.sqlite"
         database_transfer = "sbi_transfer.sqlite"

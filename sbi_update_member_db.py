@@ -10,13 +10,14 @@ import os
 from time import sleep
 import dataset
 from steembi.parse_hist_op import ParseAccountHist
-from steembi.storage import Trx, Member
+from steembi.storage import TrxDB, MemberDB
+from steembi.member import Member
     
 
 if __name__ == "__main__":
     config_file = 'config.json'
     if not os.path.isfile(config_file):
-        accounts = ["steembasicincome", "sbi2", "sbi3", "sbi4", "sbi5", "sbi6", "sbi7", "sbi8"]
+        accounts = ["steembasicincome", "sbi2", "sbi3", "sbi4", "sbi5", "sbi6", "sbi7", "sbi8", "sbi9"]
         path = "E:\\sbi\\"
         database = "sbi_ops.sqlite"
         database_transfer = "sbi_transfer.sqlite"
@@ -38,8 +39,8 @@ if __name__ == "__main__":
 
     db2 = dataset.connect(databaseConnector2)
     # Create keyStorage
-    trxStorage = Trx(db2)
-    memberStorage = Member(db2)
+    trxStorage = TrxDB(db2)
+    memberStorage = MemberDB(db2)
     print("update member database")
     # memberStorage.wipe(True)
     member_accounts = memberStorage.get_all_accounts()
@@ -49,13 +50,13 @@ if __name__ == "__main__":
     n_records = 0
     share_age_member = {}    
     for m in member_accounts:
-        member_data[m] = memberStorage.get(m)
+        member_data[m] = Member(memberStorage.get(m))
         
     # clear shares
     for m in member_data:
         member_data[m]["shares"] = 0
         member_data[m]["bonus_shares"] = 0
-        share_age_member[m] = []
+        member_data[m].reset_share_age_list()
     
     last_mgmt_op = {}
         
@@ -82,34 +83,28 @@ if __name__ == "__main__":
                 else:
                     timestamp = op["timestamp"]
     
-                age = (datetime.utcnow()) - (timestamp)
-                share_age = int(age.total_seconds() / 60 / 60 / 24)  
                 if shares == 0:
                     continue
                 if sponsor not in member_data:
-                    member = {"account": sponsor, "shares": shares, "bonus_shares": 0, "total_share_days": 0, "avg_share_age": float(0),
-                              "original_enrollment": timestamp, "latest_enrollment": timestamp, "earned_rshares": 0, "rewarded_rshares": 0,
-                              "balance_rshares": 0, "comment_upvote": False}
+                    member = Member(sponsor, shares, timestamp)
+                    member.append_share_age(timestamp)
                     member_data[sponsor] = member
-                    share_age_member[sponsor] = [share_age]
                 else:
                     member_data[sponsor]["latest_enrollment"] = timestamp
                     member_data[sponsor]["shares"] += shares
-                    share_age_member[sponsor].append(share_age)
+                    member_data[sponsor].append_share_age(timestamp)
                 if len(sponsee) == 0:
                     continue
                 for s in sponsee:
                     shares = sponsee[s]
                     if s not in member_data:
-                        member = {"account": s, "shares": shares, "bonus_shares": 0, "total_share_days": 0, "avg_share_age": float(0),
-                                  "original_enrollment": timestamp, "latest_enrollment": timestamp, "earned_rshares": 0, "rewarded_rshares": 0,
-                                  "balance_rshares": 0, "comment_upvote": False}
+                        member = Member(s, shares, timestamp)
+                        member.append_share_age(timestamp)
                         member_data[s] = member
-                        share_age_member[s] = [share_age]
                     else:
                         member_data[s]["latest_enrollment"] = timestamp
                         member_data[s]["shares"] += shares
-                        share_age_member[s].append(share_age)
+                        member_data[sponsor].append_share_age(timestamp)
 
     empty_shares = []       
     for m in member_data:
@@ -121,10 +116,8 @@ if __name__ == "__main__":
     
                     
     print("update share age")
-    for m in share_age_member:
-        if m in member_data:
-            member_data[m]["total_share_days"] = sum(share_age_member[m])
-            member_data[m]["avg_share_age"] = sum(share_age_member[m]) / len(share_age_member[m])
+    for m in member_data:
+        member_data[m].calc_share_age()
     if False:
         print("update last post and comment date")
         for m in member_data:

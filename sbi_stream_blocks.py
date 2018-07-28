@@ -11,9 +11,10 @@ import os
 import json
 import time
 from steembi.transfer_ops_storage import TransferTrx, AccountTrx
-from steembi.storage import Trx, Member
+from steembi.storage import TrxDB, MemberDB
 from steembi.parse_hist_op import ParseAccountHist
 from steembi.memo_parser import MemoParser
+from steembi.member import Member
 import dataset
 
 
@@ -23,7 +24,7 @@ import dataset
 if __name__ == "__main__":
     config_file = 'config.json'
     if not os.path.isfile(config_file):
-        accounts = ["steembasicincome", "sbi2", "sbi3", "sbi4", "sbi5", "sbi6", "sbi7", "sbi8"]
+        accounts = ["steembasicincome", "sbi2", "sbi3", "sbi4", "sbi5", "sbi6", "sbi7", "sbi8", "sbi9"]
         path = "E:\\sbi\\"
         database = "sbi_ops.sqlite"
         database_transfer = "sbi_transfer.sqlite"
@@ -140,8 +141,8 @@ if __name__ == "__main__":
                 data = []
                 
         db2 = dataset.connect(databaseConnector2)
-        trxStorage = Trx(db2)
-        memberStorage = Member(db2)    
+        trxStorage = TrxDB(db2)
+        memberStorage = MemberDB(db2)    
         
         stop_index = None
         # stop_index = addTzInfo(datetime(2018, 7, 21, 23, 46, 00))
