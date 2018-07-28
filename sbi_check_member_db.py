@@ -11,7 +11,7 @@ from time import sleep
 import dataset
 import json
 from steembi.parse_hist_op import ParseAccountHist
-from steembi.storage import Trx, Member
+from steembi.storage import Trx, Member, Configuration
 
 
 if __name__ == "__main__":
@@ -41,6 +41,11 @@ if __name__ == "__main__":
     # Create keyStorage
     trxStorage = Trx(db2)
     memberStorage = Member(db2)
+    confStorage = Configuration(db2)
+    
+    nodes = NodeList()
+    nodes.update_nodes()
+    stm = Steem(node=nodes.get_nodes())    
     
     newTrxStorage = False
     if not trxStorage.exists_table():
@@ -69,6 +74,9 @@ if __name__ == "__main__":
                 if op["shares"] > 0 and op["sponsor"] in member_data:
                     # print("del. bonus_shares: %s - %d" % (op["sponsor"], op["shares"]))
                     member_data[op["sponsor"]]["bonus_shares"] += op["shares"]
+                elif op["vests"] > 0 and op["sponsor"] in member_data:
+                    sp = stm.vests_to_sp(float(d["vests"]))
+                    member_data[op["sponsor"]]["bonus_shares"] += int(sp / confStorage.get()["sp_share_ratio"])
             elif share_type.lower() in ["mgmt", "mgmttransfer"]:
                 if op["shares"] > 0 and op["sponsor"] in member_data:
                     member_data[op["sponsor"]]["bonus_shares"] += op["shares"]

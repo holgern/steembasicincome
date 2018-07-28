@@ -13,6 +13,7 @@ import time
 from steembi.transfer_ops_storage import TransferTrx, AccountTrx
 from steembi.storage import Trx, Member
 from steembi.parse_hist_op import ParseAccountHist
+from steembi.memo_parser import MemoParser
 import dataset
 
 
@@ -152,6 +153,7 @@ if __name__ == "__main__":
             account = Account(account_name)
             print(account["name"])
             pah = ParseAccountHist(account, path, trxStorage)
+            memo_parser = MemoParser()
             
             op_index = trxStorage.get_all_op_index(account["name"])
             
@@ -210,7 +212,7 @@ if __name__ == "__main__":
                             print("Error: will return %.3f to %s" % (float(amount), account))
                             continue
                             
-                        [sponsor, sponsee, not_parsed_words, account_error] = pah.parse_memo(memo, shares, account)
+                        [sponsor, sponsee, not_parsed_words, account_error] = memo_parser.parse_memo(memo, shares, account)
                         
                         sponsee_amount = 0
                         for a in sponsee:

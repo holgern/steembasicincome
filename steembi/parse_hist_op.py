@@ -19,6 +19,7 @@ from beem.vote import Vote
 from beem.instance import shared_steem_instance
 from beem.blockchain import Blockchain
 from beem.constants import STEEM_VOTE_REGENERATION_SECONDS, STEEM_1_PERCENT, STEEM_100_PERCENT
+from steembi.memo_parser import MemoParser
 
 log = logging.getLogger(__name__)
 
@@ -32,15 +33,11 @@ class ParseAccountHist(list):
         self.delegated_vests_out = {}
         self.timestamp = addTzInfo(datetime(1970, 1, 1, 0, 0, 0, 0))
         self.path = path
+        self.memo_parser = MemoParser(steem_instance=self.steem)
         self.excluded_accounts = ["minnowbooster", "smartsteem", "randowhale", "steemvoter", "jerrybanfield",
                                   "boomerang", "postpromoter", "appreciator", "buildawhale", "upme", "smartmarket",
                                   "minnowhelper", "pushup", "steembasicincome", "sbi2", "sbi3", "sbi4", "sbi5", "sbi6", "sbi7", "sbi8"]
 
-        self.allowed_memo_words = ['for', 'and', 'sponsor', 'shares', 'share', 'sponsorship',
-                                   'please', 'steem', 'thanks', 'additional',
-                                   'sponsee', 'sponsoring', 'sponser', 'one', 'you', 'thank', 'enroll',
-                                   'sponsering:', 'sponsoring;', 'sponsoring:', 'would', 'like', 'too', 'enroll:',
-                                   'sponsor:']
         self.trxStorage = trxStorage
 
     def update_delegation(self, op, delegated_in=None, delegated_out=None):
@@ -103,124 +100,7 @@ class ParseAccountHist(list):
         with open(self.path + 'sbi_delegation_out_'+self.account["name"]+'.txt', 'w') as the_file:
             the_file.write(str(delegated_sp_out) + '\n')
 
-    def parse_memo(self, memo, shares, account):
-        words_memo = memo.lower().replace(',', '  ').replace('"', '').split(" ")
-        sponsors = {}
-        no_numbers = True
-        amount_left = shares
-        word_count = 0
-        not_parsed_words = []
-        n_words = len(words_memo)
-        digit_found = None
-        sponsor = None
-        account_error = False
 
-        for w in words_memo:
-            if len(w) == 0:
-                continue            
-            if w in self.allowed_memo_words:
-                continue
-            if amount_left >= 1:
-                account_name = ""
-                account_found = False
-                w_digit = w.replace('x', '', 1).replace('-', '', 1).replace(';', '', 1)
-                if w_digit.isdigit():
-                    no_numbers = False
-                    digit_found = int(w_digit)
-                elif len(w) < 3:
-                    continue
-                elif w[:21] == 'https://steemit.com/@' and '/' not in w[21:]:
-                    try:
-                        account_name = w[21:].replace('!', '').replace('"', '').replace(';', '')
-                        if account_name[-1] == '.':
-                            account_name = account_name[:-1]                        
-                        acc = Account(account_name)
-                        account_found = True
-                    except:
-                        print(account_name + " is not an account")
-                        account_error = True
-                elif len(w.split(":")) == 2 and '/' not in w:
-                    try:
-                        account_name1 = w.split(":")[0]
-                        account_name = w.split(":")[1]
-                        if account_name1[0] == '@':
-                            account_name1 = account_name1[1:]
-                        if account_name[0] == '@':
-                            account_name = account_name[1:]                       
-                        acc1 = Account(account_name1)
-                        acc = Account(account_name)
-                        account_found = True
-                        if sponsor is None:
-                            sponsor = account_name1
-                        else:
-                            account_error = True
-                    except:
-                        print(account_name + " is not an account")
-                        account_error = True                    
-                elif w[0] == '@':
-                    
-                    try:
-                        account_name = w[1:].replace('!', '').replace('"', '').replace(';', '')
-                        if account_name[-1] == '.':
-                            account_name = account_name[:-1]
-                        acc = Account(account_name)
-                        account_found = True
-
-                    except:
-                        print(account_name + " is not an account")
-                        account_error = True
-                        
-                elif len(w) > 16:
-                    continue
-                
-                else:
-                    try:
-                        account_name = w.replace('!', '').replace('"', '')
-                        if account_name[-1] == '.':
-                            account_name = account_name[:-1]
-                        acc = Account(account_name)
-                        account_found = True
-                    except:
-                        print(account_name + " is not an account")                
-                        not_parsed_words.append(w)
-                        word_count += 1
-                        account_error = True
-                if account_found and account_name != '' and account_name != account:
-                    if digit_found is not None:
-                        sponsors[account_name] = digit_found
-                        amount_left -= digit_found
-                        digit_found = None
-                    elif account_name in sponsors:
-                        sponsors[account_name] += 1
-                        amount_left -= 1                        
-                    else:
-                        sponsors[account_name] = 1
-                        amount_left -= 1                
-        if n_words == 1 and len(sponsors) == 0:
-            try:
-                account_name = words_memo[0].replace(',', ' ').replace('!', ' ').replace('"', '').replace('/', ' ')
-                if account_name[-1] == '.':
-                    account_name = account_name[:-1]                        
-                Account(account_name)
-                if account_name != account:
-                    sponsors[account_name] = 1
-                    amount_left -= 1
-            except:
-                print(account_name + " is not an account")
-        if len(sponsors) == 1 and shares > 1 and no_numbers:
-            for a in sponsors:
-                sponsors[a] = shares
-        elif len(sponsors) == 1 and shares > 1 and not no_numbers and digit_found is not None:
-            for a in sponsors:
-                sponsors[a] = digit_found
-        elif len(sponsors) > 0 and shares % len(sponsors) == 0 and no_numbers:
-            for a in sponsors:
-                sponsors[a] = shares // len(sponsors)
-        if sponsor is None:
-            sponsor = account
-        if account_error and len(sponsors) == shares:
-            account_error = False
-        return sponsor, sponsors, not_parsed_words, account_error
 
     def parse_transfer_out_op(self, op):
         amount = Amount(op["amount"], steem_instance=self.steem)
@@ -275,7 +155,7 @@ class ParseAccountHist(list):
         if memo.lower().replace(',', '  ').replace('"', '') == "":
             self.new_transfer_record(index, ascii(op["memo"]), account, account, json.dumps(sponsee), shares, timestamp)
             return
-        [sponsor, sponsee, not_parsed_words, account_error] = self.parse_memo(memo, shares, account)
+        [sponsor, sponsee, not_parsed_words, account_error] = self.memo_parser.parse_memo(memo, shares, account)
         
         sponsee_amount = 0
         for a in sponsee:
