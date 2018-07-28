@@ -17,6 +17,8 @@ import dataset
 
 
 
+
+
 if __name__ == "__main__":
     config_file = 'config.json'
     if not os.path.isfile(config_file):
@@ -175,7 +177,7 @@ if __name__ == "__main__":
                 
                 if op['type'] == "delegate_vesting_shares" and parse_vesting:
                     vests = Amount(op['vesting_shares'])
-                    print(op)
+                    #print(op)
                     #if op['delegator'] == account_name:
                     #    delegation = {'account': op['delegatee'], 'amount': vests}
                     #    pah.update_delegation(op, 0, delegation)
@@ -186,17 +188,49 @@ if __name__ == "__main__":
         
                 elif op['type'] == "transfer":
                     amount = Amount(op['amount'])
-                    print(op)
+                    # print(op)
                     #if op['from'] == account_name and op["to"] not in pah.excluded_accounts:
                     #    pah.parse_transfer_out_op(op)
         
-                    #if op['to'] == account_name and op["from"] not in pah.excluded_accounts:
+                    if op['to'] == account_name and op["from"] not in pah.excluded_accounts:
                     #    pah.parse_transfer_in_op(op)
+                        share_type = "Standard"
+                        if amount.amount < 1:
+                            continue
+                        if amount.symbol == "SBD":
+                            share_type = "SBD"
+                
+                        index = op["index"]
+                        account = op["from"]
+                        timestamp = op["timestamp"]
+                        sponsee = {}
+                        memo = op["memo"]
+                        shares = int(amount.amount)
+                        if memo.lower().replace(',', '  ').replace('"', '') == "":
+                            print("Error: will return %.3f to %s" % (float(amount), account))
+                            continue
+                            
+                        [sponsor, sponsee, not_parsed_words, account_error] = pah.parse_memo(memo, shares, account)
                         
+                        sponsee_amount = 0
+                        for a in sponsee:
+                            sponsee_amount += sponsee[a]                  
+                        if sponsee_amount == 0 and not account_error:
+                            print("Error: will return %.3f to %s" % (float(amount), account))
+                            continue
+                        if sponsee_amount != shares and not account_error:
+                            print("Error: will return %.3f to %s" % (float(amount), account))
+                            continue
+                        if account_error:
+                            print("Error: will return %.3f to %s" % (float(amount), account))
+                            continue
+                        print("Sucess: accept %d shares for %s and %s" % (shares, sponsor, str(sponsee)))
+                                      
                     # print(op, vests)
                     # self.update(ts, vests, 0, 0)
                                     
-                
+                # update member table
+                # add rshares
                 
                 
                 #if (op_counter % 100) == 0 and (account_name == "steembasicincome"):

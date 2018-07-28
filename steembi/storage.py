@@ -198,7 +198,7 @@ class Member(object):
     
         """
         table = self.db[self.__tablename__]
-        table.insert(data)
+        table.upsert(data, ["account"])
         self.db.commit()
 
 
@@ -209,7 +209,7 @@ class Member(object):
         table = self.db[self.__tablename__]
         self.db.begin()
         for d in data:
-            table.insert(d)
+            table.upsert(d, ["account"])
      
         self.db.commit()
     
@@ -261,4 +261,134 @@ class Member(object):
         else:
             table = self.db[self.__tablename__]
             table.drop
+
+
+
+class Configuration(object):
+    """ This is the trx storage class
+    """
+    __tablename__ = 'configuration'
+
+    def __init__(self, db):
+        self.db = db
+
+    def exists_table(self):
+        """ Check if the database table exists
+        """
+        if len(self.db.tables) == 0:
+            return False
+        if self.__tablename__ in self.db.tables:
+            return True
+        else:
+            return False
+
+    def create_table(self):
+        """ Create the new table in the SQLite database
+        """
+        query = ("CREATE TABLE `sbi`.`configuration` (`id` enum('1') NOT NULL, `share_cycle_min` float NOT NULL, `sp_share_ratio` float NOT NULL, `rshares_per_cycle` INT,  `comment_vote_divider` float,  `comment_vote_timeout_h` float, `last_cycle` DATETIME,  PRIMARY KEY (`id`)) ENGINE = InnoDB;")
+        self.db.query(query)
+        self.db.commit()
+
+    def get(self):
+        """ Returns the public keys stored in the database
+        """
+        table = self.db[self.__tablename__]
+        return table.find_one(id=1)
+    
+    def set(self, data):
+        """ Add a new data set
+    
+        """
+        table = self.db[self.__tablename__]
+        table.upsert(data, ["id"])
+        self.db.commit()
+
+
+        """ Change share_age depending on timestamp
+    
+        """
+        table = self.db[self.__tablename__]
+        return table.find_one(account=account)
+
+    def update(self, data):
+        """ Change share_age depending on timestamp
+    
+        """
+        table = self.db[self.__tablename__]
+        table.update(data, ['id'])
+    
+    def delete(self, account):
+        """ Delete a data set
+    
+           :param int ID: database id
+        """
+        table = self.db[self.__tablename__]
+        table.delete(account=account)
+    
+    def wipe(self, sure=False):
+        """Purge the entire database. No data set will survive this!"""
+        if not sure:
+            log.error(
+                "You need to confirm that you are sure "
+                "and understand the implications of "
+                "wiping your wallet!"
+            )
+            return
+        else:
+            table = self.db[self.__tablename__]
+            table.drop
+
+
+class Keys(object):
+    """ This is the trx storage class
+    """
+    __tablename__ = 'keys'
+
+    def __init__(self, db):
+        self.db = db
+
+    def exists_table(self):
+        """ Check if the database table exists
+        """
+        if len(self.db.tables) == 0:
+            return False
+        if self.__tablename__ in self.db.tables:
+            return True
+        else:
+            return False
+
+    def create_table(self):
+        """ Create the new table in the SQLite database
+        """
+        query = ("CREATE TABLE `sbi`.`keys` (`key_type` VARCHAR(50) NOT NULL, `account` VARCHAR(50) NOT NULL, `wif` VARCHAR(50) NOT NULL,  PRIMARY KEY (`account`, `key_type`)) ENGINE = InnoDB;")
+        self.db.query(query)
+        self.db.commit()
+
+    def get(self, account, key_type):
+        """ Returns the public keys stored in the database
+        """
+        table = self.db[self.__tablename__]
+        return table.find_one(account=account, key_type=key_type)
+    
+    def delete(self, account):
+        """ Delete a data set
+    
+           :param int ID: database id
+        """
+        table = self.db[self.__tablename__]
+        table.delete(account=account)
+    
+    def wipe(self, sure=False):
+        """Purge the entire database. No data set will survive this!"""
+        if not sure:
+            log.error(
+                "You need to confirm that you are sure "
+                "and understand the implications of "
+                "wiping your wallet!"
+            )
+            return
+        else:
+            table = self.db[self.__tablename__]
+            table.drop
+
 

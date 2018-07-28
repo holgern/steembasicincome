@@ -23,7 +23,8 @@ tests_require = ['mock >= 2.0.0', 'pytest', 'pytest-mock', 'parameterized']
 requires = [
     "beem",
     "sqlitedict",
-    "dataset"
+    "dataset",
+    "mysqlclient"
 ]
 
 
