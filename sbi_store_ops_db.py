@@ -56,8 +56,8 @@ if __name__ == "__main__":
             newAccountTrxStorage = True
             accountTrx[account].create_table()
 
-    stop_index = addTzInfo(datetime(2018, 7, 21, 23, 46, 00))
-    stop_index = formatTimeString("2018-07-21T23:46:09")
+    # stop_index = addTzInfo(datetime(2018, 7, 21, 23, 46, 00))
+    # stop_index = formatTimeString("2018-07-21T23:46:09")
     
     for account_name in accounts:
         account = Account(account_name)
@@ -73,7 +73,7 @@ if __name__ == "__main__":
                 start_index = start_index["op_acc_index"] + 1
                 print(start_index)
         data = []
-        for op in account.history(start=start_index, stop=stop_index, use_block_num=False):
+        for op in account.history(start=start_index, use_block_num=False):
             virtual_op = op["virtual_op"]
             trx_in_block = op["trx_in_block"]
             if virtual_op > 0:

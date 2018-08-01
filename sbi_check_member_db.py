@@ -11,7 +11,7 @@ from time import sleep
 import dataset
 import json
 from steembi.parse_hist_op import ParseAccountHist
-from steembi.storage import Trx, Member, Configuration
+from steembi.storage import TrxDB, MemberDB, ConfigurationDB
 
 
 if __name__ == "__main__":
@@ -39,9 +39,9 @@ if __name__ == "__main__":
 
     db2 = dataset.connect(databaseConnector2)
     # Create keyStorage
-    trxStorage = Trx(db2)
-    memberStorage = Member(db2)
-    confStorage = Configuration(db2)
+    trxStorage = TrxDB(db2)
+    memberStorage = MemberDB(db2)
+    confStorage = ConfigurationDB(db2)
     
     nodes = NodeList()
     nodes.update_nodes()
@@ -58,7 +58,7 @@ if __name__ == "__main__":
         memberStorage.create_table()
 
     # Update current node list from @fullnodeupdate
-    print("build member database")
+    print("check member database")
     # memberStorage.wipe(True)
     member_accounts = memberStorage.get_all_accounts()
     data = trxStorage.get_all_data()
@@ -75,7 +75,7 @@ if __name__ == "__main__":
                     # print("del. bonus_shares: %s - %d" % (op["sponsor"], op["shares"]))
                     member_data[op["sponsor"]]["bonus_shares"] += op["shares"]
                 elif op["vests"] > 0 and op["sponsor"] in member_data:
-                    sp = stm.vests_to_sp(float(d["vests"]))
+                    sp = stm.vests_to_sp(float(op["vests"]))
                     member_data[op["sponsor"]]["bonus_shares"] += int(sp / confStorage.get()["sp_share_ratio"])
             elif share_type.lower() in ["mgmt", "mgmttransfer"]:
                 if op["shares"] > 0 and op["sponsor"] in member_data:

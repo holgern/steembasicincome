@@ -21,12 +21,13 @@ from beem.blockchain import Blockchain
 from beem.constants import STEEM_VOTE_REGENERATION_SECONDS, STEEM_1_PERCENT, STEEM_100_PERCENT
 from steembi.memo_parser import MemoParser
 
+
 log = logging.getLogger(__name__)
 
 
 class ParseAccountHist(list):
     
-    def __init__(self, account, path, trxStorage, steem_instance=None):
+    def __init__(self, account, path, trxStorage, transactionStorage, transactionOutStorage, steem_instance=None):
         self.steem = steem_instance or shared_steem_instance()
         self.account = Account(account, steem_instance=self.steem)    
         self.delegated_vests_in = {}
@@ -39,6 +40,8 @@ class ParseAccountHist(list):
                                   "minnowhelper", "pushup", "steembasicincome", "sbi2", "sbi3", "sbi4", "sbi5", "sbi6", "sbi7", "sbi8"]
 
         self.trxStorage = trxStorage
+        self.transactionStorage = transactionStorage
+        self.transactionOutStorage = transactionOutStorage
 
     def update_delegation(self, op, delegated_in=None, delegated_out=None):
         """ Updates the internal state arrays
@@ -104,20 +107,20 @@ class ParseAccountHist(list):
 
     def parse_transfer_out_op(self, op):
         amount = Amount(op["amount"], steem_instance=self.steem)
+        index = op["index"]
+        account = op["from"]
+        timestamp = op["timestamp"]
+        memo = op["memo"]        
         if amount.amount < 1:
-            if self.path is None:
-                return
-            with open(self.path + 'sbi_skipped_transfer_out.txt', 'a') as the_file:
-                the_file.write(ascii(op) + '\n')
+            data = {"index": index, "sender": account, "to": op["to"], "memo": ascii(op["memo"]), "encrypted": False, "referenced_accounts": None, "amount": amount.amount, "amount_symbol": amount.symbol, "timestamp": timestamp}
+            self.transactionOutStorage.add(data)            
             return
         if amount.symbol == "SBD":
             # self.trxStorage.get_account(op["to"], share_type="SBD")
             shares = -int(amount.amount)
             if "http" in op["memo"] or "STEEM" not in op["memo"]:
-                if self.path is None:
-                    return
-                with open(self.path + 'sbi_skipped_SBD_transfer_out.txt', 'a') as the_file:
-                    the_file.write(ascii(op) + '\n')
+                data = {"index": index, "sender": account, "to": op["to"], "memo": ascii(op["memo"]), "encrypted": False, "referenced_accounts": None, "amount": amount.amount, "amount_symbol": amount.symbol, "timestamp": timestamp}
+                self.transactionOutStorage.add(data)                
                 return
             trx = self.trxStorage.get_SBD_transfer(op["to"], shares, formatTimeString(op["timestamp"]))
             sponsee = json.dumps({})
@@ -125,27 +128,18 @@ class ParseAccountHist(list):
                 sponsee = trx["sponsee"]
             self.new_transfer_record(op["index"], ascii(op["memo"]), op["to"], op["to"], sponsee, shares, op["timestamp"], share_type="Refund")
             # self.new_transfer_record(op["index"], op["to"], "", shares, op["timestamp"], share_type="Refund")
+            data = {"index": index, "sender": account, "to": op["to"], "memo": ascii(op["memo"]), "encrypted": False, "referenced_accounts": sponsee, "amount": amount.amount, "amount_symbol": amount.symbol, "timestamp": timestamp}
+            self.transactionOutStorage.add(data)             
             return
 
         else:
-            if self.path is None:
-                return
-            with open(self.path + 'sbi_skipped_STEEM_transfer_out.txt', 'a') as the_file:
-                the_file.write(ascii(op) + '\n')
+            data = {"index": index, "sender": account, "to": op["to"], "memo": ascii(op["memo"]), "encrypted": False, "referenced_accounts": None, "amount": amount.amount, "amount_symbol": amount.symbol, "timestamp": timestamp}
+            self.transactionOutStorage.add(data)
             return            
 
     def parse_transfer_in_op(self, op):
         amount = Amount(op["amount"], steem_instance=self.steem)
         share_type = "Standard"
-        if amount.amount < 1:
-            if self.path is None:
-                return
-            with open(self.path + 'sbi_skipped_transfer.txt', 'a') as the_file:
-                the_file.write(ascii(op) + '\n')
-            return
-        if amount.symbol == "SBD":
-            share_type = "SBD"
-
         index = op["index"]
         account = op["from"]
         timestamp = op["timestamp"]
@@ -155,7 +149,13 @@ class ParseAccountHist(list):
         if memo.lower().replace(',', '  ').replace('"', '') == "":
             self.new_transfer_record(index, ascii(op["memo"]), account, account, json.dumps(sponsee), shares, timestamp)
             return
-        [sponsor, sponsee, not_parsed_words, account_error] = self.memo_parser.parse_memo(memo, shares, account)
+        [sponsor, sponsee, not_parsed_words, account_error] = self.memo_parser.parse_memo(memo, shares, account)        
+        if amount.amount < 1:
+            data = {"index": index, "sender": account, "to": self.account["name"], "memo": ascii(op["memo"]), "encrypted": False, "referenced_accounts": sponsor + ";" + json.dumps(sponsee), "amount": amount.amount, "amount_symbol": amount.symbol, "timestamp": timestamp}
+            self.transactionStorage.add(data)
+            return
+        if amount.symbol == "SBD":
+            share_type = "SBD"
         
         sponsee_amount = 0
         for a in sponsee:
@@ -165,26 +165,17 @@ class ParseAccountHist(list):
         if sponsee_amount == 0 and not account_error:
             message = op["timestamp"] + " to: " + self.account["name"] + " from: " + sponsor + ' amount: ' + str(amount) + ' memo: ' + ascii(op["memo"]) + '\n'
             self.new_transfer_record(index, ascii(op["memo"]), account, sponsor, json.dumps(sponsee), shares, timestamp, status="LessOrNoSponsee", share_type=share_type)
-            if self.path is None:
-                return            
-            with open(self.path + 'sbi_no_sponsee.txt', 'a') as the_file:
-                the_file.write(message)
+
             return
         if sponsee_amount != shares and not account_error:
             message = op["timestamp"] + " to: " + self.account["name"] + " from: " + sponsor + ' amount: ' + str(amount) + ' memo: ' + ascii(op["memo"]) + '\n'
             self.new_transfer_record(index, ascii(op["memo"]), account, sponsor, json.dumps(sponsee), shares, timestamp, status="LessOrNoSponsee", share_type=share_type)            
-            if self.path is None:
-                return            
-            with open(self.path + 'sbi_wrong_amount.txt', 'a') as the_file:
-                the_file.write(message)
+
             return        
         if account_error:
             message = op["timestamp"] + " to: " + self.account["name"] + " from: " + sponsor + ' amount: ' + str(amount) + ' memo: ' + ascii(op["memo"]) + '\n'
             self.new_transfer_record(index, ascii(op["memo"]), account, sponsor, json.dumps(sponsee), shares, timestamp, status="AccountDoesNotExist", share_type=share_type)
-            if self.path is None:
-                return            
-            with open(self.path + 'sbi_wrong_account_name.txt', 'a') as the_file:
-                the_file.write(message)
+
             return
         
         self.new_transfer_record(index, ascii(op["memo"]), account, sponsor, json.dumps(sponsee), shares, timestamp, share_type=share_type)
@@ -225,15 +216,17 @@ class ParseAccountHist(list):
             # self.update(ts, vests, 0, 0)
             return
 
-    def add_mngt_shares(self, last_op, mgnt_shares):
+    def add_mngt_shares(self, last_op, mgnt_shares, op_count):
         
         index = last_op["index"]
         timestamp = last_op["timestamp"]
         sponsee = {}
         memo = ""
+        start_index = op_count / 100 * 3
         for account in mgnt_shares:
             shares = mgnt_shares[account]
             sponsor = account
-            data = {"index": 0, "source": "mgmt", "memo": "", "account": account, "sponsor": sponsor, "sponsee": sponsee, "shares": shares, "vests": float(0), "timestamp": formatTimeString(timestamp),
+            data = {"index": start_index, "source": "mgmt", "memo": "", "account": account, "sponsor": sponsor, "sponsee": sponsee, "shares": shares, "vests": float(0), "timestamp": formatTimeString(timestamp),
                      "status": "Valid", "share_type": "Mgmt"}
+            start_index += 1
             self.trxStorage.add(data)

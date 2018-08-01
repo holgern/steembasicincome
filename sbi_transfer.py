@@ -8,7 +8,7 @@ import os
 import json
 from time import sleep
 from steembi.parse_hist_op import ParseAccountHist
-from steembi.storage import Trx, Member
+from steembi.storage import TrxDB, MemberDB, TransactionMemoDB, TransactionOutDB
 from steembi.transfer_ops_storage import TransferTrx, AccountTrx
 import dataset
 from datetime import datetime
@@ -45,38 +45,40 @@ if __name__ == "__main__":
     db = dataset.connect(databaseConnector)
     db2 = dataset.connect(databaseConnector2)
     accountTrx = {}
-    newAccountTrxStorage = False
     for account in accounts:
         accountTrx[account] = AccountTrx(db, account)
         
         if not accountTrx[account].exists_table():
-            newAccountTrxStorage = True
             accountTrx[account].create_table()
             
     # Create keyStorage
-    trxStorage = Trx(db2)
-    memberStorage = Member(db2)
+    trxStorage = TrxDB(db2)
+    memberStorage = MemberDB(db2)
+    transactionStorage = TransactionMemoDB(db2)
+    transactionOutStorage = TransactionOutDB(db2)
     
-    newTrxStorage = False
     if not trxStorage.exists_table():
-        newTrxStorage = True
         trxStorage.create_table()
     
-    newMemberStorage = False
     if not memberStorage.exists_table():
-        newMemberStorage = True
         memberStorage.create_table()
 
+    if not transactionStorage.exists_table():
+        transactionStorage.create_table()
+
+    if not transactionOutStorage.exists_table():
+        transactionOutStorage.create_table()
+
     stop_index = None
-    stop_index = addTzInfo(datetime(2018, 7, 21, 23, 46, 00))
-    stop_index = formatTimeString("2018-07-21T23:46:09")    
+    # stop_index = addTzInfo(datetime(2018, 7, 21, 23, 46, 00))
+    # stop_index = formatTimeString("2018-07-21T23:46:09")    
 
     for account_name in accounts:
         parse_vesting = (account_name == "steembasicincome")
         accountTrx[account_name].db = dataset.connect(databaseConnector)
         account = Account(account_name)
         print(account["name"])
-        pah = ParseAccountHist(account, path, trxStorage)
+        pah = ParseAccountHist(account, path, trxStorage, transactionStorage, transactionOutStorage)
         
         op_index = trxStorage.get_all_op_index(account["name"])
         
@@ -84,7 +86,7 @@ if __name__ == "__main__":
             start_index = 0
             op_counter = 0
         else:
-            op = trxStorage.get(op_index[-1])
+            op = trxStorage.get(op_index[-1], account["name"])
             start_index = op["index"] + 1
             op_counter = op_index[-1] + 1
         print("start_index %d" % start_index)
@@ -101,7 +103,7 @@ if __name__ == "__main__":
                     continue
                 pah.parse_op(json.loads(op["op_dict"]), parse_vesting=parse_vesting)
                 if (op_counter % 100) == 0 and (account_name == "steembasicincome"):
-                    pah.add_mngt_shares(json.loads(op["op_dict"]), mgnt_shares)
+                    pah.add_mngt_shares(json.loads(op["op_dict"]), mgnt_shares, op_counter)
                 op_counter += 1
         else:
             for op in account.history(start=start_index, use_block_num=False):

@@ -10,7 +10,7 @@ import json
 import dataset
 from steembi.parse_hist_op import ParseAccountHist
 from steembi.transfer_ops_storage import TransferTrx
-from steembi.storage import Trx, Member
+from steembi.storage import TrxDB, MemberDB
 
 
 if __name__ == "__main__":
@@ -44,46 +44,48 @@ if __name__ == "__main__":
     db = dataset.connect(databaseConnector)
     db2 = dataset.connect(databaseConnector2)
     transferStorage = TransferTrx(db)
-    trxStorage = Trx(db2)
-    memberStorage = Member(db2)
+    trxStorage = TrxDB(db2)
+    memberStorage = MemberDB(db2)
     
-    newTrxStorage = False
     if not trxStorage.exists_table():
-        newTrxStorage = True
         trxStorage.create_table()
     
-    newMemberStorage = False
     if not memberStorage.exists_table():
-        newMemberStorage = True
         memberStorage.create_table()
     
     # Update current node list from @fullnodeupdate
 
-    data = trxStorage.get_all_data()
     delegation = {}
     sum_sp = {}
     sum_sp_shares = {}
     sum_sp_leased = {}
     account = "steembasicincome"
     delegation = {}
+    delegation_shares = {}
     sum_sp = 0
     sum_sp_leased = 0
     sum_sp_shares = 0
     shares_per_sp = 20
-
-    for d in data:
+    print("load delegation")
+    for d in trxStorage.get_share_type(share_type="Delegation"):
         if d["share_type"] == "Delegation":
             delegation[d["account"]] = stm.vests_to_sp(float(d["vests"]))
-        elif d["share_type"] == "RemovedDelegation":
+        delegation_shares[d["account"]] = d["shares"]
+    for d in trxStorage.get_share_type(share_type="RemovedDelegation"):
+        if d["share_type"] == "RemovedDelegation":
             delegation[d["account"]] = 0
+        delegation_shares[d["account"]] = 0
     
     delegation_leased = {}
     delegation_shares = {}
-
+    print("update delegation")
     delegation_account = delegation
     for acc in delegation_account:
         if delegation_account[acc] == 0:
             continue
+        if acc in delegation_shares and delegation_shares[acc] > 0:
+            continue
+        print(acc)
         leased = transferStorage.find(acc, account)
         if len(leased) == 0:
             delegation_shares[acc] = delegation_account[acc]

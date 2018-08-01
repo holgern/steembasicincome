@@ -44,6 +44,8 @@ if __name__ == "__main__":
     
     # sqlDataBaseFile = os.path.join(path, database)
     # databaseConnector = "sqlite:///" + sqlDataBaseFile
+    phase = 0
+
     while True:
     
         db = dataset.connect(databaseConnector)    
@@ -60,12 +62,10 @@ if __name__ == "__main__":
 
         
         accountTrx = {}
-        newAccountTrxStorage = False
         for account in accounts:
             accountTrx[account] = AccountTrx(db, account)
             
             if not accountTrx[account].exists_table():
-                newAccountTrxStorage = True
                 accountTrx[account].create_table()
     
         for account_name in accounts:
@@ -73,14 +73,10 @@ if __name__ == "__main__":
             print("account %s" % account["name"])
             # Go trough all transfer ops
             cnt = 0
-            if newAccountTrxStorage:
-                ops = []
-                start_index = None
-            else:
-                start_index = accountTrx[account_name].get_latest_index()
-                if start_index is not None:
-                    start_index = start_index["op_acc_index"] + 1
-                    print(start_index)
+            start_index = accountTrx[account_name].get_latest_index()
+            if start_index is not None:
+                start_index = start_index["op_acc_index"] + 1
+                print(start_index)
             data = []
             for op in account.history(start=start_index, stop=None, use_block_num=False):
                 virtual_op = op["virtual_op"]
@@ -102,22 +98,17 @@ if __name__ == "__main__":
     
         trxStorage = TransferTrx(db)
         
-        newTrxStorage = False
         if not trxStorage.exists_table():
-            newTrxStorage = True
             trxStorage.create_table()
         for account in other_accounts:
             account = Account(account)
             print("account %s" % account["name"])
             cnt = 0
-            if newTrxStorage:
-                ops = []
-                start_index = None
-            else:
-                start_index = trxStorage.get_latest_index(account["name"])
-                if start_index is not None:
-                    start_index = start_index["op_acc_index"] + 1            
-                    print(start_index)
+
+            start_index = trxStorage.get_latest_index(account["name"])
+            if start_index is not None:
+                start_index = start_index["op_acc_index"] + 1            
+                print(start_index)
             data = []
             for op in account.history(start=start_index, use_block_num=False, only_ops=["transfer"]):
                 amount = Amount(op["amount"])

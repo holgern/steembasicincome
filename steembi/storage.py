@@ -56,22 +56,13 @@ class TrxDB(object):
         """
         return self.db[self.__tablename__].all()
 
-    def get_all_ids(self):
-        """ Returns all ids
-        """
-        table = self.db[self.__tablename__]
-        id_list = []
-        for trx in table:
-            id_list.append(trx["id"])
-        return id_list
-
     def get_all_op_index(self, source):
         """ Returns all ids
         """
         table = self.db[self.__tablename__]
         id_list = []
         for trx in table.find(source=source):
-            id_list.append(trx["id"])
+            id_list.append(trx["index"])
         return id_list
 
     def get_account(self, account, share_type="standard"):
@@ -84,12 +75,18 @@ class TrxDB(object):
             id_list.append(trx)
         return id_list        
 
-    def get(self, ID):
+    def get(self, index, source):
         """ Returns all entries for given value
 
         """
         table = self.db[self.__tablename__]
-        return table.find_one(id=ID)
+        return table.find_one(index=index, source=source)
+
+    def get_share_type(self, share_type):
+        """ Returns all ids
+        """
+        table = self.db[self.__tablename__]
+        return table.find(share_type=share_type)
 
     def get_SBD_transfer(self, account, shares, timestamp):
         """ Returns all entries for given value
@@ -110,8 +107,8 @@ class TrxDB(object):
         found_trx = None
         for trx in table.find(source=source, account=account, status="Valid", share_type="Delegation"):
             found_trx = trx
-        data = dict(id=found_trx["id"], shares=shares)
-        table.update(data, ['id'])
+        data = dict(index=found_trx["index"], source=source, shares=shares)
+        table.update(data, ['index', 'source'])
 
     def update_delegation_state(self, source, account, share_type_old, share_type_new):
         """ Change share_age depending on timestamp
@@ -121,8 +118,8 @@ class TrxDB(object):
         found_trx = None
         for trx in table.find(source=source, account=account, share_type=share_type_old):
             found_trx = trx
-        data = dict(id=found_trx["id"], share_type=share_type_new)
-        table.update(data, ['id'])
+        data = dict(index=found_trx["index"], source=source, share_type=share_type_new)
+        table.update(data, ['index', 'source'])
 
     def add(self, data):
         """ Add a new data set
@@ -132,13 +129,13 @@ class TrxDB(object):
         table.insert(data)    
         self.db.commit()
 
-    def delete(self, ID):
+    def delete(self, index, source):
         """ Delete a data set
 
            :param int ID: database id
         """
         table = self.db[self.__tablename__]
-        table.delete(id=ID)
+        table.delete(index=index, source=source)
 
     def wipe(self, sure=False):
         """Purge the entire database. No data set will survive this!"""
@@ -239,7 +236,7 @@ class MemberDB(object):
     
         """
         table = self.db[self.__tablename__]
-        table.update(data, ['account'])
+        table.upsert(data, ['account'])
     
     def delete(self, account):
         """ Delete a data set
@@ -392,3 +389,287 @@ class KeysDB(object):
             table.drop
 
 
+class TransactionMemoDB(object):
+    """ This is the trx storage class
+    """
+    __tablename__ = 'transaction_memo'
+
+    def __init__(self, db):
+        self.db = db
+
+    def exists_table(self):
+        """ Check if the database table exists
+        """
+        if len(self.db.tables) == 0:
+            return False
+        if self.__tablename__ in self.db.tables:
+            return True
+        else:
+            return False
+
+    def create_table(self):
+        """ Create the new table in the SQLite database
+        """
+        query = ("CREATE TABLE `sbi`.`transaction_memo` ( `index` INT, `sender` VARCHAR(16) NOT NULL, `to` VARCHAR(16) DEFAULT NULL, `memo` text, `encrypted` BOOLEAN DEFAULT FALSE, `referenced_accounts` text, `amount` decimal(15,6) DEFAULT NULL, `amount_symbol` varchar(5) DEFAULT NULL, `timestamp` DATETIME NOT NULL ,  `id` INTEGER NOT NULL AUTO_INCREMENT, PRIMARY KEY (`id`)) ENGINE = InnoDB;")
+        self.db.query(query)
+        self.db.commit()
+
+    def get_all_data(self):
+        """ Returns the public keys stored in the database
+        """
+        return self.db[self.__tablename__].all()
+
+    def get_all_ids(self):
+        """ Returns all ids
+        """
+        table = self.db[self.__tablename__]
+        id_list = []
+        for trx in table:
+            id_list.append(trx["id"])
+        return id_list
+
+    def get_all_op_index(self, source):
+        """ Returns all ids
+        """
+        table = self.db[self.__tablename__]
+        id_list = []
+        for trx in table.find(source=source):
+            id_list.append(trx["id"])
+        return id_list
+
+    def get_sender(self, sender):
+        """ Returns all entries for given value
+
+        """
+        table = self.db[self.__tablename__]
+        id_list = []
+        for trx in table.find(sender=sender):
+            id_list.append(trx)
+        return id_list        
+
+    def get(self, ID):
+        """ Returns all entries for given value
+
+        """
+        table = self.db[self.__tablename__]
+        return table.find_one(id=ID)
+
+    def add(self, data):
+        """ Add a new data set
+
+        """
+        table = self.db[self.__tablename__]
+        table.insert(data)    
+        self.db.commit()
+
+    def delete(self, ID):
+        """ Delete a data set
+
+           :param int ID: database id
+        """
+        table = self.db[self.__tablename__]
+        table.delete(id=ID)
+
+    def wipe(self, sure=False):
+        """Purge the entire database. No data set will survive this!"""
+        if not sure:
+            log.error(
+                "You need to confirm that you are sure "
+                "and understand the implications of "
+                "wiping your wallet!"
+            )
+            return
+        else:
+            table = self.db[self.__tablename__]
+            table.drop
+
+
+class TransactionOutDB(object):
+    """ This is the trx storage class
+    """
+    __tablename__ = 'transaction_out'
+
+    def __init__(self, db):
+        self.db = db
+
+    def exists_table(self):
+        """ Check if the database table exists
+        """
+        if len(self.db.tables) == 0:
+            return False
+        if self.__tablename__ in self.db.tables:
+            return True
+        else:
+            return False
+
+    def create_table(self):
+        """ Create the new table in the SQLite database
+        """
+        query = ("CREATE TABLE `sbi`.`transaction_memo` ( `index` INT, `sender` VARCHAR(16) NOT NULL, `to` VARCHAR(16) DEFAULT NULL, `memo` text, `encrypted` BOOLEAN DEFAULT FALSE, `referenced_accounts` text, `amount` decimal(15,6) DEFAULT NULL, `amount_symbol` varchar(5) DEFAULT NULL, `timestamp` DATETIME NOT NULL ,  `id` INTEGER NOT NULL AUTO_INCREMENT, PRIMARY KEY (`id`)) ENGINE = InnoDB;")
+        self.db.query(query)
+        self.db.commit()
+
+    def get_all_data(self):
+        """ Returns the public keys stored in the database
+        """
+        return self.db[self.__tablename__].all()
+
+    def get_all_ids(self):
+        """ Returns all ids
+        """
+        table = self.db[self.__tablename__]
+        id_list = []
+        for trx in table:
+            id_list.append(trx["id"])
+        return id_list
+
+    def get_all_op_index(self, source):
+        """ Returns all ids
+        """
+        table = self.db[self.__tablename__]
+        id_list = []
+        for trx in table.find(source=source):
+            id_list.append(trx["id"])
+        return id_list
+
+    def get_sender(self, sender):
+        """ Returns all entries for given value
+
+        """
+        table = self.db[self.__tablename__]
+        id_list = []
+        for trx in table.find(sender=sender):
+            id_list.append(trx)
+        return id_list        
+
+    def get(self, ID):
+        """ Returns all entries for given value
+
+        """
+        table = self.db[self.__tablename__]
+        return table.find_one(id=ID)
+
+    def add(self, data):
+        """ Add a new data set
+
+        """
+        table = self.db[self.__tablename__]
+        table.insert(data)    
+        self.db.commit()
+
+    def delete(self, ID):
+        """ Delete a data set
+
+           :param int ID: database id
+        """
+        table = self.db[self.__tablename__]
+        table.delete(id=ID)
+
+    def wipe(self, sure=False):
+        """Purge the entire database. No data set will survive this!"""
+        if not sure:
+            log.error(
+                "You need to confirm that you are sure "
+                "and understand the implications of "
+                "wiping your wallet!"
+            )
+            return
+        else:
+            table = self.db[self.__tablename__]
+            table.drop
+
+
+class PendingRefundDB(object):
+    """ This is the trx storage class
+    """
+    __tablename__ = 'pending_refunds'
+
+    def __init__(self, db):
+        self.db = db
+
+    def exists_table(self):
+        """ Check if the database table exists
+        """
+        if len(self.db.tables) == 0:
+            return False
+        if self.__tablename__ in self.db.tables:
+            return True
+        else:
+            return False
+
+    def create_table(self):
+        """ Create the new table in the SQLite database
+        """
+        query = ("CREATE TABLE `sbi`.`transaction_memo` ( `index` INT, `sender` VARCHAR(16) NOT NULL, `to` VARCHAR(16) DEFAULT NULL, `memo` text, `encrypted` BOOLEAN DEFAULT FALSE, `referenced_accounts` text, `amount` decimal(15,6) DEFAULT NULL, `amount_symbol` varchar(5) DEFAULT NULL, `timestamp` DATETIME NOT NULL ,  `id` INTEGER NOT NULL AUTO_INCREMENT, PRIMARY KEY (`id`)) ENGINE = InnoDB;")
+        self.db.query(query)
+        self.db.commit()
+
+    def get_all_data(self):
+        """ Returns the public keys stored in the database
+        """
+        return self.db[self.__tablename__].all()
+
+    def get_all_ids(self):
+        """ Returns all ids
+        """
+        table = self.db[self.__tablename__]
+        id_list = []
+        for trx in table:
+            id_list.append(trx["id"])
+        return id_list
+
+    def get_all_op_index(self, source):
+        """ Returns all ids
+        """
+        table = self.db[self.__tablename__]
+        id_list = []
+        for trx in table.find(source=source):
+            id_list.append(trx["id"])
+        return id_list
+
+    def get_sender(self, sender):
+        """ Returns all entries for given value
+
+        """
+        table = self.db[self.__tablename__]
+        id_list = []
+        for trx in table.find(sender=sender):
+            id_list.append(trx)
+        return id_list        
+
+    def get(self, ID):
+        """ Returns all entries for given value
+
+        """
+        table = self.db[self.__tablename__]
+        return table.find_one(id=ID)
+
+    def add(self, data):
+        """ Add a new data set
+
+        """
+        table = self.db[self.__tablename__]
+        table.insert(data)    
+        self.db.commit()
+
+    def delete(self, ID):
+        """ Delete a data set
+
+           :param int ID: database id
+        """
+        table = self.db[self.__tablename__]
+        table.delete(id=ID)
+
+    def wipe(self, sure=False):
+        """Purge the entire database. No data set will survive this!"""
+        if not sure:
+            log.error(
+                "You need to confirm that you are sure "
+                "and understand the implications of "
+                "wiping your wallet!"
+            )
+            return
+        else:
+            table = self.db[self.__tablename__]
+            table.drop
+    

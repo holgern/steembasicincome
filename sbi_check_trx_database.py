@@ -9,7 +9,7 @@ import dataset
 import json
 from time import sleep
 from steembi.parse_hist_op import ParseAccountHist
-from steembi.storage import Trx, Member
+from steembi.storage import TrxDB, MemberDB
 
 
 if __name__ == "__main__":
@@ -37,8 +37,8 @@ if __name__ == "__main__":
 
     db2 = dataset.connect(databaseConnector2)
     # Create keyStorage
-    trxStorage = Trx(db2)
-    memberStorage = Member(db2)
+    trxStorage = TrxDB(db2)
+    memberStorage = MemberDB(db2)
     
     # Update current node list from @fullnodeupdate
     # nodes = NodeList()
