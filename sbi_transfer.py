@@ -27,7 +27,7 @@ if __name__ == "__main__":
     else:
         with open(config_file) as json_data_file:
             config_data = json.load(json_data_file)
-        print(config_data)
+        # print(config_data)
         accounts = config_data["accounts"]
         path = config_data["path"]
         database = config_data["database"]
@@ -38,7 +38,7 @@ if __name__ == "__main__":
         mgnt_shares = config_data["mgnt_shares"]
 
     nodes = NodeList()
-    nodes.update_nodes()
+    # nodes.update_nodes()
     stm = Steem(node=nodes.get_nodes())
     set_shared_steem_instance(stm)
     
@@ -102,14 +102,17 @@ if __name__ == "__main__":
                 if stop_index is not None and formatTimeString(op["timestamp"]) > stop_index:
                     continue
                 pah.parse_op(json.loads(op["op_dict"]), parse_vesting=parse_vesting)
+                op_counter += 1
                 if (op_counter % 100) == 0 and (account_name == "steembasicincome"):
                     pah.add_mngt_shares(json.loads(op["op_dict"]), mgnt_shares, op_counter)
-                op_counter += 1
+                    op_counter += len(mgnt_shares)
+                
         else:
             for op in account.history(start=start_index, use_block_num=False):
                 pah.parse_op(op, parse_vesting=parse_vesting)
+                op_counter += 1
                 if (op_counter % 100) == 0 and (account_name == "steembasicincome"):
                     pah.add_mngt_shares(op, mgnt_shares)                
-                op_counter += 1
+                
 
 

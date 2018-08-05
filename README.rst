@@ -18,3 +18,17 @@ Build the trx database::
 ## Install
 
 apt-get install libmariadbclient-dev
+
+
+## Creating a service script
+
+useradd -r -s /bin/false sbiuser
+chown -R sbiuser:sbiuser /etc/sbi
+
+cp systemd/sbirunner.service to /etc/systemd/system/sbirunner.service
+
+
+systemctl enable sbirunner
+systemctl start sbirunner
+
+systemctl status sbirunner

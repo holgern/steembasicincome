@@ -30,7 +30,7 @@ if __name__ == "__main__":
     else:
         with open(config_file) as json_data_file:
             config_data = json.load(json_data_file)
-        print(config_data)
+        # print(config_data)
         accounts = config_data["accounts"]
         path = config_data["path"]
         database = config_data["database"]
@@ -55,18 +55,25 @@ if __name__ == "__main__":
     print("update member database")
     # memberStorage.wipe(True)
     member_accounts = memberStorage.get_all_accounts()
-    data = trxStorage.get_all_data()
+    # data = trxStorage.get_all_data()
     
     # Update current node list from @fullnodeupdate
     nodes = NodeList()
-    nodes.update_nodes()
+    # nodes.update_nodes()
     stm = Steem(node=nodes.get_nodes())    
     
     member_data = {}
     n_records = 0
-    share_age_member = {}    
+    share_age_member = {}
+    updated_at = None
     for m in member_accounts:
         member_data[m] = Member(memberStorage.get(m))
+        if updated_at is None:
+            updated_at = member_data[m]["updated_at"]
+            last_updated_member = m
+        elif member_data[m]["updated_at"] < updated_at:
+            updated_at = member_data[m]["updated_at"]
+            last_updated_member = m
     
     
     empty_shares = []
@@ -90,7 +97,7 @@ if __name__ == "__main__":
         
     print("update last post and comment date")
     new_member = []
-    for m in member_data:
+    for m in [last_updated_member]:
         if addTzInfo(member_data[m]["original_enrollment"]) > date_28_before:
             new_member.append(m)
             continue
@@ -139,6 +146,7 @@ if __name__ == "__main__":
         member_data[m]["norm_post_hist_7"] = post_count_28 / 4.0
         if len(latest_comment) > 0:
             member_data[m]["last_comment"] = latest_comment[-1]["timestamp"]
+        member_data[m]["updated_at"] = latest_enrollment
     print("update new accounts")
     for m in new_member:
         print(m)
@@ -161,6 +169,7 @@ if __name__ == "__main__":
             member_data[m]["upvote_weight_28"] = 0
         else:
             member_data[m]["upvote_weight_28"] = upvote_weight_28 / upvote_count_28 / 100.
+        member_data[m]["updated_at"] = latest_enrollment
 
         latest_post = acc.get_blog(limit=100)
         latest_comment = None
@@ -179,11 +188,19 @@ if __name__ == "__main__":
         member_data[m]["post_hist_28"] = post_count_28
         member_data[m]["post_hist_7"] = post_count_7
         member_data[m]["norm_post_hist_7"] = post_count_28 / 4.0
-          
-    
+        member_data[m]["updated_at"] = latest_enrollment
 
-    print("write member database")
     memberStorage.db = dataset.connect(databaseConnector2)
-    for m in member_data:
-        data = member_data[m]
+    print("write member database")
+    for m in [last_updated_member]:
+        data = Member(memberStorage.get(m))
+        data["last_comment"] = member_data[m]["last_comment"]
+        data["last_post"] = member_data[m]["last_post"]
+        data["post_hist_28"] = member_data[m]["post_hist_28"]
+        data["post_hist_7"] = member_data[m]["post_hist_7"]
+        data["norm_post_hist_7"] = member_data[m]["norm_post_hist_7"]
+        data["upvote_count_28"] = member_data[m]["upvote_count_28"]
+        data["upvote_weight_28"] = member_data[m]["upvote_weight_28"]
+        data["updated_at"] = member_data[m]["updated_at"]
+
         memberStorage.update(data)

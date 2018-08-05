@@ -25,7 +25,7 @@ if __name__ == "__main__":
     else:
         with open(config_file) as json_data_file:
             config_data = json.load(json_data_file)
-        print(config_data)
+        # print(config_data)
         accounts = config_data["accounts"]
         path = config_data["path"]
         database = config_data["database"]
@@ -39,7 +39,7 @@ if __name__ == "__main__":
     
     # Update current node list from @fullnodeupdate
     nodes = NodeList()
-    nodes.update_nodes(weights={"hist": 1})
+    # nodes.update_nodes(weights={"hist": 1})
     stm = Steem(node=nodes.get_nodes(appbase=False, https=False))
     print(str(stm))
     set_shared_steem_instance(stm)
@@ -48,12 +48,9 @@ if __name__ == "__main__":
     
     
     accountTrx = {}
-    newAccountTrxStorage = False
     for account in accounts:
         accountTrx[account] = AccountTrx(db, account)
-        
         if not accountTrx[account].exists_table():
-            newAccountTrxStorage = True
             accountTrx[account].create_table()
 
     # stop_index = addTzInfo(datetime(2018, 7, 21, 23, 46, 00))
@@ -64,14 +61,11 @@ if __name__ == "__main__":
         print("account %s" % account["name"])
         # Go trough all transfer ops
         cnt = 0
-        if newAccountTrxStorage:
-            ops = []
-            start_index = None
-        else:
-            start_index = accountTrx[account_name].get_latest_index()
-            if start_index is not None:
-                start_index = start_index["op_acc_index"] + 1
-                print(start_index)
+
+        start_index = accountTrx[account_name].get_latest_index()
+        if start_index is not None:
+            start_index = start_index["op_acc_index"] + 1
+            print(start_index)
         data = []
         for op in account.history(start=start_index, use_block_num=False):
             virtual_op = op["virtual_op"]
@@ -95,22 +89,17 @@ if __name__ == "__main__":
     # Create keyStorage
     trxStorage = TransferTrx(db)
     
-    newTrxStorage = False
     if not trxStorage.exists_table():
-        newTrxStorage = True
         trxStorage.create_table()
     for account in other_accounts:
         account = Account(account)
         print("account %s" % account["name"])
         cnt = 0
-        if newTrxStorage:
-            ops = []
-            start_index = None
-        else:
-            start_index = trxStorage.get_latest_index(account["name"])
-            if start_index is not None:
-                start_index = start_index["op_acc_index"] + 1            
-                print(start_index)
+
+        start_index = trxStorage.get_latest_index(account["name"])
+        if start_index is not None:
+            start_index = start_index["op_acc_index"] + 1            
+            print(start_index)
         data = []
         for op in account.history(start=start_index, use_block_num=False, only_ops=["transfer"]):
             amount = Amount(op["amount"])

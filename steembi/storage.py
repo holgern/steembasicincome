@@ -220,6 +220,10 @@ class MemberDB(object):
     def get_highest_avg_share_age(self):
         table = self.db[self.__tablename__]
         return table.find_one(order_by='avg_share_age')
+
+    def get_last_updated_member(self):
+        table = self.db[self.__tablename__]
+        return table.find_one(order_by='-update_at')    
         
     def update_shares(self, account, add_shares, datetime):
         """ Change share_age depending on timestamp

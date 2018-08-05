@@ -30,7 +30,7 @@ if __name__ == "__main__":
     else:
         with open(config_file) as json_data_file:
             config_data = json.load(json_data_file)
-        print(config_data)
+        # print(config_data)
         accounts = config_data["accounts"]
         path = config_data["path"]
         database = config_data["database"]
@@ -56,7 +56,7 @@ if __name__ == "__main__":
     
     # Update current node list from @fullnodeupdate
     nodes = NodeList()
-    nodes.update_nodes()
+    # nodes.update_nodes()
     stm = Steem(node=nodes.get_nodes())    
     
     member_data = {}

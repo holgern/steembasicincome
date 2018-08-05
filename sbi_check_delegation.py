@@ -36,6 +36,8 @@ if __name__ == "__main__":
         other_accounts = config_data["other_accounts"]
         mgnt_shares = config_data["mgnt_shares"]
 
+
+    shares_per_sp = 10
     nodes = NodeList()
     nodes.update_nodes()
     stm = Steem(node=nodes.get_nodes())
@@ -65,7 +67,7 @@ if __name__ == "__main__":
     sum_sp = 0
     sum_sp_leased = 0
     sum_sp_shares = 0
-    shares_per_sp = 20
+    
     print("load delegation")
     for d in trxStorage.get_share_type(share_type="Delegation"):
         if d["share_type"] == "Delegation":
@@ -83,8 +85,8 @@ if __name__ == "__main__":
     for acc in delegation_account:
         if delegation_account[acc] == 0:
             continue
-        if acc in delegation_shares and delegation_shares[acc] > 0:
-            continue
+        # if acc in delegation_shares and delegation_shares[acc] > 0:
+        #    continue
         print(acc)
         leased = transferStorage.find(acc, account)
         if len(leased) == 0:
