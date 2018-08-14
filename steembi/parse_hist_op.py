@@ -16,6 +16,7 @@ from beem.utils import formatTimeString, formatTimedelta, remove_from_dict, repu
 from beem.amount import Amount
 from beem.account import Account
 from beem.vote import Vote
+from beem.memo import Memo
 from beem.instance import shared_steem_instance
 from beem.blockchain import Blockchain
 from beem.constants import STEEM_VOTE_REGENERATION_SECONDS, STEEM_1_PERCENT, STEEM_100_PERCENT
@@ -110,30 +111,37 @@ class ParseAccountHist(list):
         index = op["index"]
         account = op["from"]
         timestamp = op["timestamp"]
-        memo = op["memo"]        
+        memo = op["memo"]
+        encrypted = False
+        processed_memo = ascii(memo).replace('\n', '')
+        if len(processed_memo) > 1 and (processed_memo[0] == '#' or processed_memo[1] == '#') and account == "steembasicincome":
+            memo = Memo(account, op["to"], steem_instance=self.steem)
+            processed_memo = ascii(memo.decrypt(memo)).replace('\n', '')
+            encrypted = True
+        
         if amount.amount < 1:
-            data = {"index": index, "sender": account, "to": op["to"], "memo": ascii(op["memo"]), "encrypted": False, "referenced_accounts": None, "amount": amount.amount, "amount_symbol": amount.symbol, "timestamp": timestamp}
+            data = {"index": index, "sender": account, "to": op["to"], "memo": processed_memo, "encrypted": encrypted, "referenced_accounts": None, "amount": amount.amount, "amount_symbol": amount.symbol, "timestamp": timestamp}
             self.transactionOutStorage.add(data)            
             return
         if amount.symbol == "SBD":
             # self.trxStorage.get_account(op["to"], share_type="SBD")
             shares = -int(amount.amount)
             if "http" in op["memo"] or "STEEM" not in op["memo"]:
-                data = {"index": index, "sender": account, "to": op["to"], "memo": ascii(op["memo"]), "encrypted": False, "referenced_accounts": None, "amount": amount.amount, "amount_symbol": amount.symbol, "timestamp": timestamp}
+                data = {"index": index, "sender": account, "to": op["to"], "memo": processed_memo, "encrypted": encrypted, "referenced_accounts": None, "amount": amount.amount, "amount_symbol": amount.symbol, "timestamp": timestamp}
                 self.transactionOutStorage.add(data)                
                 return
             trx = self.trxStorage.get_SBD_transfer(op["to"], shares, formatTimeString(op["timestamp"]))
             sponsee = json.dumps({})
             if trx:
                 sponsee = trx["sponsee"]
-            self.new_transfer_record(op["index"], ascii(op["memo"]), op["to"], op["to"], sponsee, shares, op["timestamp"], share_type="Refund")
+            self.new_transfer_record(op["index"], processed_memo, op["to"], op["to"], sponsee, shares, op["timestamp"], share_type="Refund")
             # self.new_transfer_record(op["index"], op["to"], "", shares, op["timestamp"], share_type="Refund")
-            data = {"index": index, "sender": account, "to": op["to"], "memo": ascii(op["memo"]), "encrypted": False, "referenced_accounts": sponsee, "amount": amount.amount, "amount_symbol": amount.symbol, "timestamp": timestamp}
+            data = {"index": index, "sender": account, "to": op["to"], "memo": processed_memo, "encrypted": encrypted, "referenced_accounts": sponsee, "amount": amount.amount, "amount_symbol": amount.symbol, "timestamp": timestamp}
             self.transactionOutStorage.add(data)             
             return
 
         else:
-            data = {"index": index, "sender": account, "to": op["to"], "memo": ascii(op["memo"]), "encrypted": False, "referenced_accounts": None, "amount": amount.amount, "amount_symbol": amount.symbol, "timestamp": timestamp}
+            data = {"index": index, "sender": account, "to": op["to"], "memo": processed_memo, "encrypted": encrypted, "referenced_accounts": None, "amount": amount.amount, "amount_symbol": amount.symbol, "timestamp": timestamp}
             self.transactionOutStorage.add(data)
             return            
 
@@ -145,13 +153,19 @@ class ParseAccountHist(list):
         timestamp = op["timestamp"]
         sponsee = {}
         memo = op["memo"]
+        processed_memo = ascii(memo).replace('\n', '')
+        processed_memo = ascii(memo).replace('\n', '')
+        if len(processed_memo) > 1 and (processed_memo[0] == '#' or processed_memo[1] == '#') and account == "steembasicincome":
+            memo = Memo(account, op["to"], steem_instance=self.steem)
+            processed_memo = ascii(memo.decrypt(memo)).replace('\n', '')
+
         shares = int(amount.amount)
         if memo.lower().replace(',', '  ').replace('"', '') == "":
-            self.new_transfer_record(index, ascii(op["memo"]), account, account, json.dumps(sponsee), shares, timestamp)
+            self.new_transfer_record(index, processed_memo, account, account, json.dumps(sponsee), shares, timestamp)
             return
         [sponsor, sponsee, not_parsed_words, account_error] = self.memo_parser.parse_memo(memo, shares, account)        
         if amount.amount < 1:
-            data = {"index": index, "sender": account, "to": self.account["name"], "memo": ascii(op["memo"]), "encrypted": False, "referenced_accounts": sponsor + ";" + json.dumps(sponsee), "amount": amount.amount, "amount_symbol": amount.symbol, "timestamp": timestamp}
+            data = {"index": index, "sender": account, "to": self.account["name"], "memo": processed_memo, "encrypted": False, "referenced_accounts": sponsor + ";" + json.dumps(sponsee), "amount": amount.amount, "amount_symbol": amount.symbol, "timestamp": timestamp}
             self.transactionStorage.add(data)
             return
         if amount.symbol == "SBD":
@@ -163,22 +177,22 @@ class ParseAccountHist(list):
         
         
         if sponsee_amount == 0 and not account_error:
-            message = op["timestamp"] + " to: " + self.account["name"] + " from: " + sponsor + ' amount: ' + str(amount) + ' memo: ' + ascii(op["memo"]) + '\n'
-            self.new_transfer_record(index, ascii(op["memo"]), account, sponsor, json.dumps(sponsee), shares, timestamp, status="LessOrNoSponsee", share_type=share_type)
+            message = op["timestamp"] + " to: " + self.account["name"] + " from: " + sponsor + ' amount: ' + str(amount) + ' memo: ' + processed_memo + '\n'
+            self.new_transfer_record(index, processed_memo, account, sponsor, json.dumps(sponsee), shares, timestamp, status="LessOrNoSponsee", share_type=share_type)
 
             return
         if sponsee_amount != shares and not account_error:
             message = op["timestamp"] + " to: " + self.account["name"] + " from: " + sponsor + ' amount: ' + str(amount) + ' memo: ' + ascii(op["memo"]) + '\n'
-            self.new_transfer_record(index, ascii(op["memo"]), account, sponsor, json.dumps(sponsee), shares, timestamp, status="LessOrNoSponsee", share_type=share_type)            
+            self.new_transfer_record(index, processed_memo, account, sponsor, json.dumps(sponsee), shares, timestamp, status="LessOrNoSponsee", share_type=share_type)            
 
             return        
         if account_error:
             message = op["timestamp"] + " to: " + self.account["name"] + " from: " + sponsor + ' amount: ' + str(amount) + ' memo: ' + ascii(op["memo"]) + '\n'
-            self.new_transfer_record(index, ascii(op["memo"]), account, sponsor, json.dumps(sponsee), shares, timestamp, status="AccountDoesNotExist", share_type=share_type)
+            self.new_transfer_record(index, processed_memo, account, sponsor, json.dumps(sponsee), shares, timestamp, status="AccountDoesNotExist", share_type=share_type)
 
             return
         
-        self.new_transfer_record(index, ascii(op["memo"]), account, sponsor, json.dumps(sponsee), shares, timestamp, share_type=share_type)
+        self.new_transfer_record(index, processed_memo, account, sponsor, json.dumps(sponsee), shares, timestamp, share_type=share_type)
 
     def new_transfer_record(self, index, memo, account, sponsor, sponsee, shares, timestamp,  status="Valid", share_type="Standard"):
         data = {"index": index, "source": self.account["name"], "memo": memo, "account": account, "sponsor": sponsor, "sponsee": sponsee, "shares": shares, "vests": float(0), "timestamp": formatTimeString(timestamp),

@@ -343,7 +343,7 @@ class ConfigurationDB(object):
 class KeysDB(object):
     """ This is the trx storage class
     """
-    __tablename__ = 'keys'
+    __tablename__ = 'steem_keys'
 
     def __init__(self, db):
         self.db = db

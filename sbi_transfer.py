@@ -8,7 +8,7 @@ import os
 import json
 from time import sleep
 from steembi.parse_hist_op import ParseAccountHist
-from steembi.storage import TrxDB, MemberDB, TransactionMemoDB, TransactionOutDB
+from steembi.storage import TrxDB, MemberDB, TransactionMemoDB, TransactionOutDB, KeysDB
 from steembi.transfer_ops_storage import TransferTrx, AccountTrx
 import dataset
 from datetime import datetime
@@ -37,10 +37,7 @@ if __name__ == "__main__":
         other_accounts = config_data["other_accounts"]
         mgnt_shares = config_data["mgnt_shares"]
 
-    nodes = NodeList()
-    # nodes.update_nodes()
-    stm = Steem(node=nodes.get_nodes())
-    set_shared_steem_instance(stm)
+
     
     db = dataset.connect(databaseConnector)
     db2 = dataset.connect(databaseConnector2)
@@ -54,8 +51,19 @@ if __name__ == "__main__":
     # Create keyStorage
     trxStorage = TrxDB(db2)
     memberStorage = MemberDB(db2)
+    keyStorage = KeysDB(db2)
     transactionStorage = TransactionMemoDB(db2)
     transactionOutStorage = TransactionOutDB(db2)
+    
+    key_list = []
+    
+    key = keyStorage.get("steembasicincome", "memo")
+    if key is not None:
+        key_list.append(key)
+    nodes = NodeList()
+    # nodes.update_nodes()
+    stm = Steem(node=nodes.get_nodes(), keys=key_list)
+    set_shared_steem_instance(stm)    
     
     if not trxStorage.exists_table():
         trxStorage.create_table()
@@ -78,7 +86,7 @@ if __name__ == "__main__":
         accountTrx[account_name].db = dataset.connect(databaseConnector)
         account = Account(account_name)
         print(account["name"])
-        pah = ParseAccountHist(account, path, trxStorage, transactionStorage, transactionOutStorage)
+        pah = ParseAccountHist(account, path, trxStorage, transactionStorage, transactionOutStorage, steem_instance=stm)
         
         op_index = trxStorage.get_all_op_index(account["name"])
         
