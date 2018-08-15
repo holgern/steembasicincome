@@ -29,3 +29,4 @@ ALTER TABLE `member` ADD `updated_at` DATETIME NOT NULL DEFAULT '1970-01-01 00:0
 
 CREATE TABLE `sbi`.`keys` (`key_type` VARCHAR(50) NOT NULL, `account` VARCHAR(50) NOT NULL, `wif` VARCHAR(50) NOT NULL,  PRIMARY KEY (`account`, `key_type`)) ENGINE = InnoDB;
 CREATE TABLE `sbi`.`configuration` (`id` enum('1') NOT NULL, `share_cycle_min` float NOT NULL, `sp_share_ratio` float NOT NULL, `rshares_per_cycle` INT,  `comment_vote_divider` float,  `comment_vote_timeout_h` float, `last_cycle` DATETIME,  PRIMARY KEY (`id`)) ENGINE = InnoDB;
+ALTER TABLE `member` ADD `first_cycle_at` DATETIME NOT NULL DEFAULT '1970-01-01 00:00:00' AFTER `updated_at`;

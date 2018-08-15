@@ -236,7 +236,11 @@ class ParseAccountHist(list):
         timestamp = last_op["timestamp"]
         sponsee = {}
         memo = ""
-        start_index = op_count / 100 * 3
+        latest_share = self.trxStorage.get_lastest_share_type("Mgmt")
+        if latest_share is not None:
+            start_index = latest_share["index"] + 1
+        else:
+            start_index = op_count / 100 * 3
         for account in mgnt_shares:
             shares = mgnt_shares[account]
             sponsor = account

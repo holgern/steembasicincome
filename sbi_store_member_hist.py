@@ -4,7 +4,8 @@ from beem import Steem
 from beem.instance import set_shared_steem_instance
 from beem.nodelist import NodeList
 from beem.blockchain import Blockchain
-from beem.utils import formatTimeString, addTzInfo
+from beem.vote import Vote
+from beem.utils import formatTimeString, addTzInfo, construct_authorperm
 from datetime import datetime, timedelta
 import re
 import time
@@ -44,6 +45,13 @@ if __name__ == "__main__":
     memberStorage = MemberDB(db2)
     confStorage = ConfigurationDB(db2)
     
+    conf_setup = confStorage.get()
+    
+    last_cycle = conf_setup["last_cycle"]
+    share_cycle_min = conf_setup["share_cycle_min"]
+    sp_share_ratio = conf_setup["sp_share_ratio"]
+    rshares_per_cycle = conf_setup["rshares_per_cycle"]    
+    
     member_accounts = memberStorage.get_all_accounts()
     
     member_data = {}
@@ -58,6 +66,8 @@ if __name__ == "__main__":
         
     print("latest member enrollment %s" % str(latest_enrollment))
     
+    
+    updated_member_data = []
     db = dataset.connect(databaseConnector)
     
     # Update current node list from @fullnodeupdate
@@ -157,10 +167,20 @@ if __name__ == "__main__":
             data["permlink"] = op["permlink"]
             data["author"] = op["author"]
         elif op["type"] == "vote":
-            if op["author"] not in accounts:
+            if op["author"] not in accounts or op["author"] not in member_accounts:
                 continue
-            if op["voter"] not in member_accounts:
-                continue            
+            if op["voter"] not in member_accounts or op["voter"] not in accounts:
+                continue
+            if op["author"] in member_accounts and op["voter"] in accounts:
+                vote = Vote(op["voter"], authorperm=construct_authorperm(op["author"], op["permlink"]), steem_incstance=stm)
+                member_data[op["author"]]["rewarded_rshares"] += int(vote["rshares"])
+                member_data[op["author"]]["balance_rshares"] -= int(vote["rshares"])
+                updated_member_data.append(member_data[op["author"]])
+            if op["author"] in accounts and op["voter"] in member_accounts:
+                vote = Vote(op["voter"], authorperm=construct_authorperm(op["author"], op["permlink"]), steem_incstance=stm)
+                member_data[op["voter"]]["balance_rshares"] += int(vote["rshares"])
+                member_data[op["voter"]]["earned_rshares"] += int(vote["rshares"])
+                updated_member_data.append(member_data[op["voter"]])
             data["permlink"] = op["permlink"]
             data["author"] = op["author"]
             data["voter"] = op["voter"]
@@ -192,6 +212,9 @@ if __name__ == "__main__":
             accountTrx.db = db
             accountTrx.add_batch(db_data)
             db_data = []
+            if len(updated_member_data) > 0:
+                memberStorage.add_batch(updated_member_data)
+                updated_member_data = []
         cnt += 1
     if len(db_data) > 0:
         print(op["timestamp"])
@@ -199,3 +222,6 @@ if __name__ == "__main__":
         accountTrx.db = db        
         accountTrx.add_batch(db_data)
         db_data = []
+        if len(updated_member_data) > 0:
+            memberStorage.add_batch(updated_member_data)
+            updated_member_data = []        

@@ -88,6 +88,10 @@ class TrxDB(object):
         table = self.db[self.__tablename__]
         return table.find(share_type=share_type)
 
+    def get_lastest_share_type(self, share_type):
+        table = self.db[self.__tablename__]
+        return table.find_one(order_by='-index')    
+
     def get_SBD_transfer(self, account, shares, timestamp):
         """ Returns all entries for given value
 
@@ -300,6 +304,7 @@ class ConfigurationDB(object):
         """ Add a new data set
     
         """
+        data["id"]= 1
         table = self.db[self.__tablename__]
         table.upsert(data, ["id"])
         self.db.commit()
@@ -315,6 +320,7 @@ class ConfigurationDB(object):
         """ Change share_age depending on timestamp
     
         """
+        data["id"]= 1
         table = self.db[self.__tablename__]
         table.update(data, ['id'])
     
