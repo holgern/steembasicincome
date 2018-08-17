@@ -62,7 +62,7 @@ if __name__ == "__main__":
         key_list.append(key)
     nodes = NodeList()
     # nodes.update_nodes()
-    stm = Steem(node=nodes.get_nodes(), keys=key_list)
+    stm = Steem(keys=key_list)
     set_shared_steem_instance(stm)    
     
     if not trxStorage.exists_table():

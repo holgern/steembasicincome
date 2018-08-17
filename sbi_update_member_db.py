@@ -56,6 +56,7 @@ if __name__ == "__main__":
     share_cycle_min = conf_setup["share_cycle_min"]
     sp_share_ratio = conf_setup["sp_share_ratio"]
     rshares_per_cycle = conf_setup["rshares_per_cycle"]
+    print("last_cycle: %s - %.2f min" % (formatTimeString(last_cycle), (datetime.utcnow() - last_cycle).total_seconds() / 60))
     if last_cycle is None:
         last_cycle = datetime.utcnow() - timedelta(seconds = 60 * 145)
         confStorage.update({"last_cycle": last_cycle})
@@ -73,8 +74,8 @@ if __name__ == "__main__":
         # Update current node list from @fullnodeupdate
         nodes = NodeList()
         # nodes.update_nodes()
-        stm = Steem(node=nodes.get_nodes())    
-        
+        #stm = Steem(node=nodes.get_nodes())    
+        stm = Steem()
         member_data = {}
         n_records = 0
         share_age_member = {}    
@@ -166,14 +167,16 @@ if __name__ == "__main__":
         for m in member_data:
             if member_data[m]["first_cycle_at"] < datetime(2000, 1 , 1, 0, 0, 0):
                 member_data[m]["first_cycle_at"] = current_cycle
-            member_data[m]["balance_rshares"] += member_data[m]["shares"] * rshares_per_cycle
-            member_data[m]["earned_rshares"] += member_data[m]["shares"] * rshares_per_cycle
+            member_data[m]["balance_rshares"] += (member_data[m]["shares"] + member_data[m]["bonus_shares"]) * rshares_per_cycle
+            member_data[m]["earned_rshares"] += (member_data[m]["shares"] + member_data[m]["bonus_shares"]) * rshares_per_cycle
             member_data[m].calc_share_age()
         
     
     
         print("write member database")
         memberStorage.db = dataset.connect(databaseConnector2)
+        member_data_list = []
         for m in member_data:
-            data = member_data[m]
-            memberStorage.update(data)
+            member_data_list.append(member_data[m])
+        memberStorage.add_batch(member_data_list)
+        member_data_list = []

@@ -60,7 +60,8 @@ if __name__ == "__main__":
     # Update current node list from @fullnodeupdate
     nodes = NodeList()
     # nodes.update_nodes()
-    stm = Steem(node=nodes.get_nodes())    
+    # stm = Steem(node=nodes.get_nodes())
+    stm = Steem()
     
     member_data = {}
     n_records = 0
