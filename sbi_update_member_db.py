@@ -165,7 +165,9 @@ if __name__ == "__main__":
     
         print("update share age")
         for m in member_data:
-            if member_data[m]["first_cycle_at"] < datetime(2000, 1 , 1, 0, 0, 0):
+            if "first_cycle_at" not  in member_data[m]:
+                member_data[m]["first_cycle_at"] = current_cycle
+            elif member_data[m]["first_cycle_at"] < datetime(2000, 1 , 1, 0, 0, 0):
                 member_data[m]["first_cycle_at"] = current_cycle
             member_data[m]["balance_rshares"] += (member_data[m]["shares"] + member_data[m]["bonus_shares"]) * rshares_per_cycle
             member_data[m]["earned_rshares"] += (member_data[m]["shares"] + member_data[m]["bonus_shares"]) * rshares_per_cycle
