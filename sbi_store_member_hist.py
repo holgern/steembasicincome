@@ -175,18 +175,19 @@ if __name__ == "__main__":
             data["permlink"] = op["permlink"]
             data["author"] = op["author"]
         elif op["type"] == "vote":
-            if op["author"] not in accounts or op["voter"] not in member_accounts:
+            if op["author"] not in accounts and op["author"] not in member_accounts:
                 continue
-            if op["author"] not in member_accounts or op["voter"] not in accounts:
+            if op["voter"] not in member_accounts and op["voter"] not in accounts:
                 continue
             if op["author"] in member_accounts and op["voter"] in accounts:
+                
+                vote = Vote(op["voter"], authorperm=construct_authorperm(op["author"], op["permlink"]), steem_instance=stm)
                 print("member %s upvoted with %d" % (op["author"], int(vote["rshares"])))
-                vote = Vote(op["voter"], authorperm=construct_authorperm(op["author"], op["permlink"]), steem_incstance=stm)
                 member_data[op["author"]]["rewarded_rshares"] += int(vote["rshares"])
                 member_data[op["author"]]["balance_rshares"] -= int(vote["rshares"])
                 updated_member_data.append(member_data[op["author"]])
             #if op["author"] in accounts and op["voter"] in member_accounts:
-            #    vote = Vote(op["voter"], authorperm=construct_authorperm(op["author"], op["permlink"]), steem_incstance=stm)
+            #    vote = Vote(op["voter"], authorperm=construct_authorperm(op["author"], op["permlink"]), steem_instance=stm)
             #    member_data[op["voter"]]["balance_rshares"] += int(vote["rshares"])
             #    member_data[op["voter"]]["earned_rshares"] += int(vote["rshares"])
             #    updated_member_data.append(member_data[op["voter"]])
@@ -201,7 +202,7 @@ if __name__ == "__main__":
         db_data.append(data)
         last_trx_id = op["trx_id"]
 
-        if cnt % 1000 == 0:
+        if cnt % 1000 == 0 and cnt > 0:
             time_for_blocks = time.time() - start_time
             block_diff_for_db_storage = block_num - last_block_num
             if block_diff_for_db_storage == 0:
