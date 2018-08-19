@@ -69,7 +69,7 @@ if __name__ == "__main__":
         member_accounts = memberStorage.get_all_accounts()
         data = trxStorage.get_all_data()
         
-        
+        data = sorted(data, key=lambda x: (datetime.utcnow() - x["timestamp"]).total_seconds(), reverse=True)
         
         # Update current node list from @fullnodeupdate
         nodes = NodeList()
@@ -81,6 +81,38 @@ if __name__ == "__main__":
         share_age_member = {}    
         for m in member_accounts:
             member_data[m] = Member(memberStorage.get(m))
+            
+        
+        # del management shares
+        if False:
+            print("Delete all mgmt trx data")
+            trxStorage.delete_all("mgmt")
+            shares_sum = 0
+            mngt_shares_sum = 0
+            for op in data:
+                if op["status"] == "Valid":
+                    share_type = op["share_type"]            
+                    if share_type.lower() not in ["delegation", "RemovedDelegation", "DelegationLeased", "mgmt", "mgmttransfer"]:
+                        shares = op["shares"]
+                        shares_sum += shares
+                        mngt_shares_sum += shares
+                        if mngt_shares_sum >= 100:
+                            mngt_shares_sum -= 100
+                            timestamp = op["timestamp"]
+                            sponsee = {}
+                            memo = ""
+                            latest_share = trxStorage.get_lastest_share_type("Mgmt")
+                            if latest_share is not None:
+                                start_index = latest_share["index"] + 1
+                            else:
+                                start_index = 0
+                            for account in mgnt_shares:
+                                shares = mgnt_shares[account]
+                                sponsor = account
+                                mngtData = {"index": start_index, "source": "mgmt", "memo": "", "account": account, "sponsor": sponsor, "sponsee": sponsee, "shares": shares, "vests": float(0), "timestamp": formatTimeString(timestamp),
+                                         "status": "Valid", "share_type": "Mgmt"}
+                                start_index += 1
+                                trxStorage.add(mngtData)                            
         
         # clear shares
         for m in member_data:
@@ -88,6 +120,10 @@ if __name__ == "__main__":
             member_data[m]["bonus_shares"] = 0
             member_data[m].reset_share_age_list()
         
+        shares_sum = 0
+        latest_share = trxStorage.get_lastest_share_type("Mgmt")
+        mngt_shares_sum = (latest_share["index"] + 1) / len(mgnt_shares) * 100
+        print("mngt_shares sum %d" % mngt_shares_sum)
         latest_data_timestamp = None
         for op in data:
             if op["status"] == "Valid":
@@ -121,6 +157,21 @@ if __name__ == "__main__":
         
                     if shares == 0:
                         continue
+                    shares_sum += shares
+                    if (shares_sum - mngt_shares_sum) >= 100:
+                        mngt_shares_sum += 100
+                        print("add mngt shares")
+                        latest_share = trxStorage.get_lastest_share_type("Mgmt")
+                        if latest_share is not None:
+                            start_index = latest_share["index"] + 1
+                        else:
+                            start_index = 0
+                        for account in mgnt_shares:
+                            shares = mgnt_shares[account]
+                            mgmt_data = {"index": start_index, "source": "mgmt", "memo": "", "account": account, "sponsor": account, "sponsee": {}, "shares": shares, "vests": float(0), "timestamp": formatTimeString(timestamp),
+                                     "status": "Valid", "share_type": "Mgmt"}
+                            start_index += 1
+                            trxStorage.add(mgmt_data)                          
                     if sponsor not in member_data:
                         member = Member(sponsor, shares, timestamp)
                         member.append_share_age(timestamp)

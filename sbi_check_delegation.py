@@ -10,7 +10,7 @@ import json
 import dataset
 from steembi.parse_hist_op import ParseAccountHist
 from steembi.transfer_ops_storage import TransferTrx
-from steembi.storage import TrxDB, MemberDB
+from steembi.storage import TrxDB, MemberDB, ConfigurationDB
 
 
 if __name__ == "__main__":
@@ -26,7 +26,7 @@ if __name__ == "__main__":
     else:
         with open(config_file) as json_data_file:
             config_data = json.load(json_data_file)
-        print(config_data)
+        # print(config_data)
         accounts = config_data["accounts"]
         path = config_data["path"]
         database = config_data["database"]
@@ -37,14 +37,23 @@ if __name__ == "__main__":
         mgnt_shares = config_data["mgnt_shares"]
 
 
-    shares_per_sp = 10
+    db = dataset.connect(databaseConnector)
+    db2 = dataset.connect(databaseConnector2)
+    confStorage = ConfigurationDB(db2)
+    
+    conf_setup = confStorage.get()
+    
+    last_cycle = conf_setup["last_cycle"]
+    share_cycle_min = conf_setup["share_cycle_min"]
+    sp_share_ratio = conf_setup["sp_share_ratio"]
+    rshares_per_cycle = conf_setup["rshares_per_cycle"]    
+    
     nodes = NodeList()
     nodes.update_nodes()
     stm = Steem(node=nodes.get_nodes())
     set_shared_steem_instance(stm)
     
-    db = dataset.connect(databaseConnector)
-    db2 = dataset.connect(databaseConnector2)
+
     transferStorage = TransferTrx(db)
     trxStorage = TrxDB(db2)
     memberStorage = MemberDB(db2)
@@ -91,7 +100,7 @@ if __name__ == "__main__":
         leased = transferStorage.find(acc, account)
         if len(leased) == 0:
             delegation_shares[acc] = delegation_account[acc]
-            shares = int(delegation_account[acc] / shares_per_sp)
+            shares = int(delegation_account[acc] / sp_share_ratio)
             trxStorage.update_delegation_shares(account, acc, shares)
             continue
         delegation_leased[acc] = delegation_account[acc]

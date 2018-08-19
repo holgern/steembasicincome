@@ -90,7 +90,7 @@ class TrxDB(object):
 
     def get_lastest_share_type(self, share_type):
         table = self.db[self.__tablename__]
-        return table.find_one(order_by='-index')    
+        return table.find_one(order_by='-index', share_type=share_type)    
 
     def get_SBD_transfer(self, account, shares, timestamp):
         """ Returns all entries for given value
@@ -140,6 +140,14 @@ class TrxDB(object):
         """
         table = self.db[self.__tablename__]
         table.delete(index=index, source=source)
+
+    def delete_all(self, source):
+        """ Delete a data set
+
+           :param int ID: database id
+        """
+        table = self.db[self.__tablename__]
+        table.delete(source=source)
 
     def wipe(self, sure=False):
         """Purge the entire database. No data set will survive this!"""

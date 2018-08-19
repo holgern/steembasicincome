@@ -59,7 +59,8 @@ if __name__ == "__main__":
     
     key = keyStorage.get("steembasicincome", "memo")
     if key is not None:
-        key_list.append(key)
+        key_list.append(key["wif"])
+    #print(key_list)
     nodes = NodeList()
     # nodes.update_nodes()
     stm = Steem(keys=key_list)
@@ -110,10 +111,10 @@ if __name__ == "__main__":
                 if stop_index is not None and formatTimeString(op["timestamp"]) > stop_index:
                     continue
                 pah.parse_op(json.loads(op["op_dict"]), parse_vesting=parse_vesting)
-                op_counter += 1
-                if (op_counter % 100) == 0 and (account_name == "steembasicincome"):
-                    pah.add_mngt_shares(json.loads(op["op_dict"]), mgnt_shares, op_counter)
-                    op_counter += len(mgnt_shares)
+                # op_counter += 1
+                # if (op_counter % 100) == 0 and op_counter > 0 and (account_name == "steembasicincome") and False:
+                #    pah.add_mngt_shares(json.loads(op["op_dict"]), mgnt_shares, op_counter)
+                #    op_counter += len(mgnt_shares)
                 
         else:
             for op in account.history(start=start_index, use_block_num=False):
