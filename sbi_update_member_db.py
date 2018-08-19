@@ -1,9 +1,11 @@
 from beem.account import Account
+from beem.comment import Comment
+from beem.vote import ActiveVotes
 from beem.amount import Amount
 from beem import Steem
 from beem.instance import set_shared_steem_instance
 from beem.nodelist import NodeList
-from beem.utils import addTzInfo, resolve_authorperm, formatTimeString
+from beem.utils import addTzInfo, resolve_authorperm, formatTimeString, construct_authorperm
 from datetime import datetime, timedelta
 import re
 import json
@@ -56,6 +58,10 @@ if __name__ == "__main__":
     share_cycle_min = conf_setup["share_cycle_min"]
     sp_share_ratio = conf_setup["sp_share_ratio"]
     rshares_per_cycle = conf_setup["rshares_per_cycle"]
+    upvote_multiplier = conf_setup["upvote_multiplier"]
+    last_paid_post = conf_setup["last_paid_post"]
+    
+    
     print("last_cycle: %s - %.2f min" % (formatTimeString(last_cycle), (datetime.utcnow() - last_cycle).total_seconds() / 60))
     if last_cycle is None:
         last_cycle = datetime.utcnow() - timedelta(seconds = 60 * 145)
@@ -224,7 +230,25 @@ if __name__ == "__main__":
             member_data[m]["earned_rshares"] += (member_data[m]["shares"] + member_data[m]["bonus_shares"]) * rshares_per_cycle
             member_data[m].calc_share_age()
         
-    
+        print("reward voted steembasicincome post")
+        account = Account("steembasicincome")
+        blog = account.get_blog(limit=10)[::-1]
+        if last_paid_post is None:
+            post = blog[-2]
+            last_paid_post = post["created"]
+        for post in blog:
+            if post["created"] < last_paid_post:
+                continue
+            last_paid_post = post["created"]
+            all_votes = ActiveVotes(post["authorperm"])
+            for vote in all_votes:
+                if vote["voter"] in member_data:
+                    rshares = vote["rshares"] * upvote_multiplier
+                    if rshares < rshares_per_cycle:
+                        rshares = rshares_per_cycle
+                    member_data[vote["voter"]]["earned_rshares"] += rshares
+                    member_data[vote["voter"]]["balance_rshares"] += rshares
+        confStorage.update({"last_paid_post": last_paid_post})
     
         print("write member database")
         memberStorage.db = dataset.connect(databaseConnector2)
