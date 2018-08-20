@@ -83,24 +83,24 @@ if __name__ == "__main__":
                 continue
             if sponsor not in member_data:
                 member = Member(sponsor, shares, timestamp)
-                member.append_share_age(timestamp)
+                member.append_share_age(timestamp, shares)
                 member_data[sponsor] = member
             else:
                 member_data[sponsor]["latest_enrollment"] = timestamp
                 member_data[sponsor]["shares"] += shares
-                member_data[sponsor].append_share_age(timestamp)
+                member_data[sponsor].append_share_age(timestamp, shares)
             if len(sponsee) == 0:
                 continue
             for s in sponsee:
                 shares = sponsee[s]
                 if s not in member_data:
                     member = Member(s, shares, timestamp)
-                    member.append_share_age(timestamp)
+                    member.append_share_age(timestamp, shares)
                     member_data[s] = member
                 else:
                     member_data[s]["latest_enrollment"] = timestamp
                     member_data[s]["shares"] += shares
-                    member_data[s].append_share_age(timestamp)
+                    member_data[s].append_share_age(timestamp, shares)
 
     empty_shares = []       
     for m in member_data:

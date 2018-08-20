@@ -38,7 +38,7 @@ class ParseAccountHist(list):
         self.memo_parser = MemoParser(steem_instance=self.steem)
         self.excluded_accounts = ["minnowbooster", "smartsteem", "randowhale", "steemvoter", "jerrybanfield",
                                   "boomerang", "postpromoter", "appreciator", "buildawhale", "upme", "smartmarket",
-                                  "minnowhelper", "pushup", "steembasicincome", "sbi2", "sbi3", "sbi4", "sbi5", "sbi6", "sbi7", "sbi8"]
+                                  "minnowhelper", "pushup", "steembasicincome", "sbi2", "sbi3", "sbi4", "sbi5", "sbi6", "sbi7", "sbi8", "sbi9"]
 
         self.trxStorage = trxStorage
         self.transactionStorage = transactionStorage

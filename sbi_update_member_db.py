@@ -72,6 +72,7 @@ if __name__ == "__main__":
         confStorage.update({"last_cycle": last_cycle})
     elif False: # doing same maintanence
         data = trxStorage.get_all_data()
+        data = sorted(data, key=lambda x: (datetime.utcnow() - x["timestamp"]).total_seconds(), reverse=True)
         # data = sorted(data, key=lambda x: (datetime.utcnow() - x["timestamp"]).total_seconds(), reverse=True)
         if False: # deal with encrypted memos
             print("check for encrypted memos")
@@ -123,42 +124,112 @@ if __name__ == "__main__":
                     trxStorage.update_sponsee(op["source"], op["account"], op["memo"], sponsee_dict, "Valid")
                 except:
                     print("error: %s" % processed_memo)
-        # del management shares
-        if False:
-            print("Delete all mgmt trx data")
+        if False: #check all trx datasets
+            print("check trx dataset")
+            for op in data:
+                if op["status"] == "Valid":
+                    try:
+                        share_type = op["share_type"]
+                        sponsor = op["sponsor"]
+                        sponsee = json.loads(op["sponsee"])
+                        shares = op["shares"]
+                        share_age = 0
+                        if isinstance(op["timestamp"], str):
+                            timestamp = formatTimeString(op["timestamp"])
+                        else:
+                            timestamp = op["timestamp"]
+                    except:
+                        print("error at: %s" % str(op))
+        if False: #reset last cycle
+            print("reset last cycle")
+            confStorage.update({"last_cycle": last_cycle - timedelta(seconds=60 * share_cycle_min)})
+        if True: # reset management shares
+            print("Reset all mgmt trx data")
             trxStorage.delete_all("mgmt")
             shares_sum = 0
+            total_mgnt_shares_sum = 0
             mngt_shares_sum = 0
+            share_mngt_round = 0
+            for account in mgnt_shares:
+                share_mngt_round += mgnt_shares[account]
+            start_index = 0
             for op in data:
                 if op["status"] == "Valid":
                     share_type = op["share_type"]            
-                    if share_type.lower() not in ["delegation", "RemovedDelegation", "DelegationLeased", "mgmt", "mgmttransfer"]:
+                    if share_type.lower() not in ["delegation", "removeddelegation", "delegationleased", "mgmt", "mgmttransfer", "sharetransfer"]:
                         shares = op["shares"]
+                        sponsee = json.loads(op["sponsee"])
                         shares_sum += shares
                         mngt_shares_sum += shares
-                        if mngt_shares_sum >= 100:
-                            mngt_shares_sum -= 100
+                        for s in sponsee:
+                            shares_sum += sponsee[s]
+                            mngt_shares_sum += sponsee[s]
+                        if mngt_shares_sum >= (100):
+                            mngt_shares_sum -= (100)
                             timestamp = op["timestamp"]
-                            sponsee = {}
                             memo = ""
-                            latest_share = trxStorage.get_lastest_share_type("Mgmt")
-                            if latest_share is not None:
-                                start_index = latest_share["index"] + 1
-                            else:
-                                start_index = 0
                             for account in mgnt_shares:
-                                shares = mgnt_shares[account]
+                                mngt_shares = mgnt_shares[account]
+                                total_mgnt_shares_sum += mngt_shares
                                 sponsor = account
-                                mngtData = {"index": start_index, "source": "mgmt", "memo": "", "account": account, "sponsor": sponsor, "sponsee": sponsee, "shares": shares, "vests": float(0), "timestamp": formatTimeString(timestamp),
+                                mngtData = {"index": start_index, "source": "mgmt", "memo": "", "account": account, "sponsor": sponsor, "sponsee": {}, "shares": mngt_shares, "vests": float(0), "timestamp": formatTimeString(timestamp),
                                          "status": "Valid", "share_type": "Mgmt"}
                                 start_index += 1
                                 trxStorage.add(mngtData)
-                                
+            print("total_mgnt_shares_sum: %d - shares %d" % (total_mgnt_shares_sum, shares_sum))
+        # check delegation
+        if False:
+            delegation = {}
+            sum_sp = {}
+            sum_sp_shares = {}
+            sum_sp_leased = {}
+            account = "steembasicincome"
+            excluded_accounts = ["blocktrades"]
+            delegation = {}
+            delegation_shares = {}
+            sum_sp = 0
+            sum_sp_leased = 0
+            sum_sp_shares = 0
+            
+            stm = Steem()
+            print("load delegation")
+            for d in trxStorage.get_share_type(share_type="Delegation"):
+                if d["share_type"] == "Delegation":
+                    delegation[d["account"]] = stm.vests_to_sp(float(d["vests"]))
+                delegation_shares[d["account"]] = d["shares"]
+            for d in trxStorage.get_share_type(share_type="RemovedDelegation"):
+                if d["share_type"] == "RemovedDelegation":
+                    delegation[d["account"]] = 0
+                delegation_shares[d["account"]] = 0
+            
+            delegation_leased = {}
+            delegation_shares = {}
+            print("update delegation")
+            delegation_account = delegation
+            for acc in delegation_account:
+                if delegation_account[acc] == 0:
+                    continue
+                # if acc in delegation_shares and delegation_shares[acc] > 0:
+                #    continue
+                print(acc)
+                leased = transferStorage.find(acc, account)
+                if len(leased) == 0:
+                    delegation_shares[acc] = delegation_account[acc]
+                    shares = int(delegation_account[acc] / sp_share_ratio)
+                    trxStorage.update_delegation_shares(account, acc, shares)
+                    continue
+                delegation_leased[acc] = delegation_account[acc]
+                trxStorage.update_delegation_state(account, acc, "Delegation", 
+                                                  "DelegationLeased")
+                            
     elif (datetime.utcnow() - last_cycle).total_seconds() > 60 * share_cycle_min:
-        current_cycle = last_cycle + timedelta(seconds=60 * share_cycle_min)
-        confStorage.update({"last_cycle": last_cycle + timedelta(seconds=60 * share_cycle_min)})
         
-        print("update member database")
+        
+        new_cycle = (datetime.utcnow() - last_cycle).total_seconds() > 60 * share_cycle_min
+        current_cycle = last_cycle + timedelta(seconds=60 * share_cycle_min)
+        
+        
+        print("Update member database, new cycle: %s" % str(new_cycle))
         # memberStorage.wipe(True)
         member_accounts = memberStorage.get_all_accounts()
         data = trxStorage.get_all_data()
@@ -177,12 +248,15 @@ if __name__ == "__main__":
             member_data[m] = Member(memberStorage.get(m))
 
 
-               
-        
+        mngt_shares = 0
+        delegation = {}
+        delegation_timestamp = {}
         # clear shares
         for m in member_data:
             member_data[m]["shares"] = 0
             member_data[m]["bonus_shares"] = 0
+            delegation[m] = 0
+            delegation_timestamp[m] = None
             member_data[m].reset_share_age_list()
         
         shares_sum = 0
@@ -190,6 +264,7 @@ if __name__ == "__main__":
         mngt_shares_sum = (latest_share["index"] + 1) / len(mgnt_shares) * 100
         print("mngt_shares sum %d" % mngt_shares_sum)
         latest_data_timestamp = None
+        
         for op in data:
             if op["status"] == "Valid":
                 share_type = op["share_type"]
@@ -197,19 +272,43 @@ if __name__ == "__main__":
                     latest_data_timestamp = formatTimeString(op["timestamp"])
                 elif latest_data_timestamp < formatTimeString(op["timestamp"]):
                     latest_data_timestamp = formatTimeString(op["timestamp"])
-                if share_type in ["RemovedDelegation", "DelegationLeased"]:
+                if share_type in ["DelegationLeased"]:
                     continue
-                if share_type.lower() in ["delegation"]:
+                if isinstance(op["timestamp"], str):
+                    timestamp = formatTimeString(op["timestamp"])
+                else:
+                    timestamp = op["timestamp"]                
+                if share_type.lower() in ["sharetransfer"]:
+                    if op["shares"] > 0 and op["sponsor"] in member_data and op["account"] in member_data:
+                        if op["shares"] < member_data[op["account"]]["shares"]:
+                            continue
+                        member_data[op["account"]]["shares"] -= op["shares"]
+                        member_data[op["sponsor"]]["shares"] += op["shares"]
+
+                        member_data[op["sponsor"]]["latest_enrollment"] = timestamp
+                        member_data[op["sponsor"]].append_share_age(timestamp, op["shares"])
+                elif share_type.lower() in ["delegation"]:
                     if op["shares"] > 0 and op["sponsor"] in member_data:
                         # print("del. bonus_shares: %s - %d" % (op["sponsor"], op["shares"]))
-                        member_data[op["sponsor"]]["bonus_shares"] += op["shares"]
+                        delegation[op["sponsor"]] = op["shares"]
                     elif op["vests"] > 0 and op["sponsor"] in member_data:
                         sp = stm.vests_to_sp(float(op["vests"]))
-                        member_data[op["sponsor"]]["bonus_shares"] += int(sp / sp_share_ratio)
+                        delegation[op["sponsor"]] = int(sp / sp_share_ratio)
+                    delegation_timestamp[op["sponsor"]] = timestamp
+                elif share_type.lower() in ["removeddelegation"]:
+                    delegation[op["sponsor"]] = 0
+                    delegation_timestamp[op["sponsor"]] = None
                 elif share_type.lower() in ["mgmt", "mgmttransfer"]:
+             
                     if op["shares"] > 0 and op["sponsor"] in member_data:
                         member_data[op["sponsor"]]["bonus_shares"] += op["shares"]
-                        # print("mngt bonus_shares: %s - %d" % (op["sponsor"], op["shares"]))
+                        member_data[op["sponsor"]].append_share_age(timestamp, op["shares"])
+                        mngt_shares += op["shares"]
+                    else:
+                        member = Member(op["sponsor"], op["shares"], timestamp)
+                        member.append_share_age(timestamp, op["shares"])
+                        member_data[op["sponsor"]] = member                        
+                        print("mngt bonus_shares: %s - %d" % (op["sponsor"], op["shares"]))
                 else:
                     sponsor = op["sponsor"]
                     sponsee = json.loads(op["sponsee"])
@@ -223,6 +322,8 @@ if __name__ == "__main__":
                     if shares == 0:
                         continue
                     shares_sum += shares
+                    for s in sponsee:
+                        shares_sum += sponsee[s]
                     if (shares_sum - mngt_shares_sum) >= 100:
                         mngt_shares_sum += 100
                         print("add mngt shares")
@@ -239,25 +340,35 @@ if __name__ == "__main__":
                             trxStorage.add(mgmt_data)                          
                     if sponsor not in member_data:
                         member = Member(sponsor, shares, timestamp)
-                        member.append_share_age(timestamp)
+                        member.append_share_age(timestamp, shares)
                         member_data[sponsor] = member
                     else:
                         member_data[sponsor]["latest_enrollment"] = timestamp
                         member_data[sponsor]["shares"] += shares
-                        member_data[sponsor].append_share_age(timestamp)
+                        member_data[sponsor].append_share_age(timestamp, shares)
+
                     if len(sponsee) == 0:
                         continue
                     for s in sponsee:
                         shares = sponsee[s]
                         if s not in member_data:
                             member = Member(s, shares, timestamp)
-                            member.append_share_age(timestamp)
+                            member.append_share_age(timestamp, shares)
                             member_data[s] = member
                         else:
                             member_data[s]["latest_enrollment"] = timestamp
                             member_data[s]["shares"] += shares
-                            member_data[sponsor].append_share_age(timestamp)
-    
+                            member_data[sponsor].append_share_age(timestamp, shares)
+
+        # add bonus_shares from active delegation
+        for m in member_data:
+            if m in delegation:
+                member_data[m]["bonus_shares"] += delegation[m]
+            if m in delegation_timestamp and delegation_timestamp[m] is not None:
+                member_data[m].append_share_age(delegation_timestamp[m], delegation[m])
+        
+        print("update share age")
+        
         empty_shares = []
         latest_enrollment = None
         for m in member_data:
@@ -265,14 +376,15 @@ if __name__ == "__main__":
                 empty_shares.append(m)
                 member_data[m]["total_share_days"] = 0
                 member_data[m]["avg_share_age"] = 0
+                continue
+            member_data[m].calc_share_age()
             if latest_enrollment is None:
                 latest_enrollment = member_data[m]["latest_enrollment"]
             elif latest_enrollment < member_data[m]["latest_enrollment"]:
                 latest_enrollment = member_data[m]["latest_enrollment"]
         
         print("latest data timestamp: %s - latest member enrollment %s" % (str(latest_data_timestamp), str(latest_enrollment)))
-          
-    
+        
         # for del_acc in empty_shares:
         #    del member_data[del_acc]
     
@@ -280,45 +392,44 @@ if __name__ == "__main__":
         date_now = latest_enrollment
         date_7_before = addTzInfo(date_now - timedelta(seconds=7 * 24 * 60 * 60))
         date_28_before = addTzInfo(date_now - timedelta(seconds=28 * 24 * 60 * 60))
-    
-        print("update share age")
-        for m in member_data:
-            if member_data[m]["shares"] <= 0:
-                continue
-            if "first_cycle_at" not  in member_data[m]:
-                member_data[m]["first_cycle_at"] = current_cycle
-            elif member_data[m]["first_cycle_at"] < datetime(2000, 1 , 1, 0, 0, 0):
-                member_data[m]["first_cycle_at"] = current_cycle
-            member_data[m]["balance_rshares"] += (member_data[m]["shares"] + member_data[m]["bonus_shares"]) * rshares_per_cycle
-            member_data[m]["earned_rshares"] += (member_data[m]["shares"] + member_data[m]["bonus_shares"]) * rshares_per_cycle
-            member_data[m].calc_share_age()
-        
-        print("reward voted steembasicincome post")
-        account = Account("steembasicincome")
-        blog = account.get_blog(limit=10)[::-1]
-        if last_paid_post is None:
-            last_paid_post = datetime(2018, 8, 9, 3, 36, 48)
-        for post in blog:
-            if post["created"] < addTzInfo(last_paid_post):
-                continue
-            if post.is_pending():
-                continue
-            if post.is_comment():
-                continue
-            if post["author"] != account["name"]:
-                continue
-            last_paid_post = post["created"]
-            all_votes = ActiveVotes(post["authorperm"])
-            for vote in all_votes:
-                if vote["voter"] in member_data:
-                    if member_data[vote["voter"]]["shares"] <= 0:
-                        continue                    
-                    rshares = vote["rshares"] * upvote_multiplier
-                    if rshares < rshares_per_cycle:
-                        rshares = rshares_per_cycle
-                    member_data[vote["voter"]]["earned_rshares"] += rshares
-                    member_data[vote["voter"]]["balance_rshares"] += rshares
-        confStorage.update({"last_paid_post": last_paid_post})
+        if new_cycle:
+            
+            for m in member_data:
+                if member_data[m]["shares"] <= 0:
+                    continue
+                if "first_cycle_at" not  in member_data[m]:
+                    member_data[m]["first_cycle_at"] = current_cycle
+                elif member_data[m]["first_cycle_at"] < datetime(2000, 1 , 1, 0, 0, 0):
+                    member_data[m]["first_cycle_at"] = current_cycle
+                member_data[m]["balance_rshares"] += (member_data[m]["shares"] + member_data[m]["bonus_shares"]) * rshares_per_cycle
+                member_data[m]["earned_rshares"] += (member_data[m]["shares"] + member_data[m]["bonus_shares"]) * rshares_per_cycle
+            
+            print("reward voted steembasicincome post")
+            account = Account("steembasicincome")
+            blog = account.get_blog(limit=10)[::-1]
+            if last_paid_post is None:
+                last_paid_post = datetime(2018, 8, 9, 3, 36, 48)
+            for post in blog:
+                if post["created"] < addTzInfo(last_paid_post):
+                    continue
+                if post.is_pending():
+                    continue
+                if post.is_comment():
+                    continue
+                if post["author"] != account["name"]:
+                    continue
+                last_paid_post = post["created"]
+                all_votes = ActiveVotes(post["authorperm"])
+                for vote in all_votes:
+                    if vote["voter"] in member_data:
+                        if member_data[vote["voter"]]["shares"] <= 0:
+                            continue                    
+                        rshares = vote["rshares"] * upvote_multiplier
+                        if rshares < rshares_per_cycle:
+                            rshares = rshares_per_cycle
+                        member_data[vote["voter"]]["earned_rshares"] += rshares
+                        member_data[vote["voter"]]["balance_rshares"] += rshares
+            confStorage.update({"last_paid_post": last_paid_post})
     
         print("write member database")
         memberStorage.db = dataset.connect(databaseConnector2)
@@ -327,3 +438,20 @@ if __name__ == "__main__":
             member_data_list.append(member_data[m])
         memberStorage.add_batch(member_data_list)
         member_data_list = []
+
+        if new_cycle:
+            confStorage.update({"last_cycle": last_cycle + timedelta(seconds=60 * share_cycle_min)})
+        
+        # Statistics
+        shares = 0
+        bonus_shares = 0
+        
+        delegation_shares = 0
+        for m in member_data:
+            shares += member_data[m]["shares"]
+            bonus_shares += member_data[m]["bonus_shares"]
+            if m in delegation:
+                delegation_shares += delegation[m]
+        print("shares: %d" % shares)
+        print("delegation bonus shares: %d" % delegation_shares)
+        print("Mngt bonus shares %d" % (mngt_shares))
