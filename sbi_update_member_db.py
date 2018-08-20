@@ -73,7 +73,7 @@ if __name__ == "__main__":
     elif False: # doing same maintanence
         data = trxStorage.get_all_data()
         # data = sorted(data, key=lambda x: (datetime.utcnow() - x["timestamp"]).total_seconds(), reverse=True)
-        if True: # deal with encrypted memos
+        if False: # deal with encrypted memos
             print("check for encrypted memos")
             key_list = []
             key = keyStorage.get("steembasicincome", "memo")
@@ -102,7 +102,27 @@ if __name__ == "__main__":
                     print("decrypt memo %s" % processed_memo)
                     trxStorage.update_memo(op["source"], op["account"], op["memo"], processed_memo)
                     
-        
+        if False: # fix memos with \n\n
+            print("check for memos with \\n")
+            for op in data:
+                if op["status"] != "AccountDoesNotExist":
+                    continue
+                if len(op["memo"]) < 4:
+                    continue
+                processed_memo = ascii(op["memo"]).replace('\n', '').replace('\\n', '').replace('\\', '')
+                if processed_memo[1] == '@':
+                    processed_memo = processed_memo[1:-1]
+                if processed_memo[2] == '@':
+                    processed_memo = processed_memo[2:-2]                
+                if processed_memo[0] != "@":
+                    continue
+                try:
+                    sponsee = Account(processed_memo[1:])
+                    sponsee_dict = json.dumps({sponsee["name"]: op["shares"]})
+                    print(sponsee_dict)
+                    trxStorage.update_sponsee(op["source"], op["account"], op["memo"], sponsee_dict, "Valid")
+                except:
+                    print("error: %s" % processed_memo)
         # del management shares
         if False:
             print("Delete all mgmt trx data")

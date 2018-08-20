@@ -99,10 +99,10 @@ class ParseAccountHist(list):
 
         if self.path is None:
             return        
-        with open(self.path + 'sbi_delegation_in_'+self.account["name"]+'.txt', 'w') as the_file:
-            the_file.write(str(delegated_sp_in) + '\n')
-        with open(self.path + 'sbi_delegation_out_'+self.account["name"]+'.txt', 'w') as the_file:
-            the_file.write(str(delegated_sp_out) + '\n')
+        #with open(self.path + 'sbi_delegation_in_'+self.account["name"]+'.txt', 'w') as the_file:
+        #    the_file.write(str(delegated_sp_in) + '\n')
+        #with open(self.path + 'sbi_delegation_out_'+self.account["name"]+'.txt', 'w') as the_file:
+        #    the_file.write(str(delegated_sp_out) + '\n')
 
 
 
@@ -112,7 +112,7 @@ class ParseAccountHist(list):
         account = op["from"]
         timestamp = op["timestamp"]
         encrypted = False
-        processed_memo = ascii(op["memo"]).replace('\n', '')
+        processed_memo = ascii(op["memo"]).replace('\n', '').replace('\\n', '').replace('\\', '')
         if len(processed_memo) > 2 and (processed_memo[0] == '#' or processed_memo[1] == '#' or processed_memo[2] == '#') and account == "steembasicincome":
             if processed_memo[1] == '#':
                 processed_memo = processed_memo[1:-1]
@@ -155,7 +155,7 @@ class ParseAccountHist(list):
         account = op["from"]
         timestamp = op["timestamp"]
         sponsee = {}
-        processed_memo = ascii(op["memo"]).replace('\n', '')
+        processed_memo = ascii(op["memo"]).replace('\n', '').replace('\\n', '').replace('\\', '')
         if len(processed_memo) > 2 and (processed_memo[0] == '#' or processed_memo[1] == '#' or processed_memo[2] == '#') and account == "steembasicincome":
             if processed_memo[1] == '#':
                 processed_memo = processed_memo[1:-1]
