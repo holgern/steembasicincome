@@ -111,12 +111,15 @@ class ParseAccountHist(list):
         index = op["index"]
         account = op["from"]
         timestamp = op["timestamp"]
-        memo = op["memo"]
         encrypted = False
-        processed_memo = ascii(memo).replace('\n', '')
-        if len(processed_memo) > 1 and (processed_memo[0] == '#' or processed_memo[1] == '#') and account == "steembasicincome":
+        processed_memo = ascii(op["memo"]).replace('\n', '')
+        if len(processed_memo) > 2 and (processed_memo[0] == '#' or processed_memo[1] == '#' or processed_memo[2] == '#') and account == "steembasicincome":
+            if processed_memo[1] == '#':
+                processed_memo = processed_memo[1:-1]
+            elif processed_memo[2] == '#':
+                processed_memo = processed_memo[2:-2]        
             memo = Memo(account, op["to"], steem_instance=self.steem)
-            processed_memo = ascii(memo.decrypt(memo)).replace('\n', '')
+            processed_memo = ascii(memo.decrypt(processed_memo)).replace('\n', '')
             encrypted = True
         
         if amount.amount < 1:
@@ -152,18 +155,20 @@ class ParseAccountHist(list):
         account = op["from"]
         timestamp = op["timestamp"]
         sponsee = {}
-        memo = op["memo"]
-        processed_memo = ascii(memo).replace('\n', '')
-        processed_memo = ascii(memo).replace('\n', '')
-        if len(processed_memo) > 1 and (processed_memo[0] == '#' or processed_memo[1] == '#') and account == "steembasicincome":
+        processed_memo = ascii(op["memo"]).replace('\n', '')
+        if len(processed_memo) > 2 and (processed_memo[0] == '#' or processed_memo[1] == '#' or processed_memo[2] == '#') and account == "steembasicincome":
+            if processed_memo[1] == '#':
+                processed_memo = processed_memo[1:-1]
+            elif processed_memo[2] == '#':
+                processed_memo = processed_memo[2:-2]        
             memo = Memo(account, op["to"], steem_instance=self.steem)
-            processed_memo = ascii(memo.decrypt(memo)).replace('\n', '')
+            processed_memo = ascii(memo.decrypt(processed_memo)).replace('\n', '')
 
         shares = int(amount.amount)
-        if memo.lower().replace(',', '  ').replace('"', '') == "":
+        if processed_memo.lower().replace(',', '  ').replace('"', '') == "":
             self.new_transfer_record(index, processed_memo, account, account, json.dumps(sponsee), shares, timestamp)
             return
-        [sponsor, sponsee, not_parsed_words, account_error] = self.memo_parser.parse_memo(memo, shares, account)        
+        [sponsor, sponsee, not_parsed_words, account_error] = self.memo_parser.parse_memo(processed_memo, shares, account)        
         if amount.amount < 1:
             data = {"index": index, "sender": account, "to": self.account["name"], "memo": processed_memo, "encrypted": False, "referenced_accounts": sponsor + ";" + json.dumps(sponsee), "amount": amount.amount, "amount_symbol": amount.symbol, "timestamp": timestamp}
             self.transactionStorage.add(data)

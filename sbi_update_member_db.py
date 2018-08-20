@@ -5,6 +5,7 @@ from beem.amount import Amount
 from beem import Steem
 from beem.instance import set_shared_steem_instance
 from beem.nodelist import NodeList
+from beem.memo import Memo
 from beem.utils import addTzInfo, resolve_authorperm, formatTimeString, construct_authorperm
 from datetime import datetime, timedelta
 import re
@@ -13,7 +14,7 @@ import os
 from time import sleep
 import dataset
 from steembi.parse_hist_op import ParseAccountHist
-from steembi.storage import TrxDB, MemberDB, ConfigurationDB
+from steembi.storage import TrxDB, MemberDB, ConfigurationDB, KeysDB
 from steembi.transfer_ops_storage import TransferTrx, AccountTrx, MemberHistDB
 from steembi.member import Member
 
@@ -48,8 +49,9 @@ if __name__ == "__main__":
     transferStorage = TransferTrx(db)    
     # Create keyStorage
     trxStorage = TrxDB(db2)
+    keyStorage = KeysDB(db2)
     memberStorage = MemberDB(db2)
-    accountStorage = MemberHistDB(db)
+    # accountStorage = MemberHistDB(db)
     confStorage = ConfigurationDB(db2)
     
     conf_setup = confStorage.get()
@@ -61,33 +63,45 @@ if __name__ == "__main__":
     upvote_multiplier = conf_setup["upvote_multiplier"]
     last_paid_post = conf_setup["last_paid_post"]
     
+
+    
     
     print("last_cycle: %s - %.2f min" % (formatTimeString(last_cycle), (datetime.utcnow() - last_cycle).total_seconds() / 60))
     if last_cycle is None:
         last_cycle = datetime.utcnow() - timedelta(seconds = 60 * 145)
         confStorage.update({"last_cycle": last_cycle})
-    elif (datetime.utcnow() - last_cycle).total_seconds() > 60 * share_cycle_min:
-        current_cycle = last_cycle + timedelta(seconds=60 * share_cycle_min)
-        confStorage.update({"last_cycle": last_cycle + timedelta(seconds=60 * share_cycle_min)})
-        
-        print("update member database")
-        # memberStorage.wipe(True)
-        member_accounts = memberStorage.get_all_accounts()
+    elif False: # doing same maintanence
         data = trxStorage.get_all_data()
-        
-        data = sorted(data, key=lambda x: (datetime.utcnow() - x["timestamp"]).total_seconds(), reverse=True)
-        
-        # Update current node list from @fullnodeupdate
-        nodes = NodeList()
-        # nodes.update_nodes()
-        #stm = Steem(node=nodes.get_nodes())    
-        stm = Steem()
-        member_data = {}
-        n_records = 0
-        share_age_member = {}    
-        for m in member_accounts:
-            member_data[m] = Member(memberStorage.get(m))
-            
+        # data = sorted(data, key=lambda x: (datetime.utcnow() - x["timestamp"]).total_seconds(), reverse=True)
+        if True: # deal with encrypted memos
+            print("check for encrypted memos")
+            key_list = []
+            key = keyStorage.get("steembasicincome", "memo")
+            if key is not None:
+                key_list.append(key["wif"])
+            #print(key_list)
+            nodes = NodeList()
+            # nodes.update_nodes()
+            stm = Steem(keys=key_list)
+            set_shared_steem_instance(stm)
+            for op in data:
+                if op["status"] != "LessOrNoSponsee":
+                    continue
+                processed_memo = ascii(op["memo"]).replace('\n', '')
+                processed_memo = ascii(op["memo"]).replace('\n', '')
+                if processed_memo[1] == '#':
+                    processed_memo = processed_memo[1:-1]
+                if processed_memo[2] == '#':
+                    processed_memo = processed_memo[2:-2]
+                print("processed_memo: %s, source: %s" %(processed_memo, op["source"]))
+                if len(processed_memo) > 1 and (processed_memo[0] == '#' or processed_memo[1] == '#') and  op["source"] == "steembasicincome":
+
+                    print("found: %s" % processed_memo)
+                    memo = Memo(op["source"], op["account"], steem_instance=stm)
+                    processed_memo = ascii(memo.decrypt(processed_memo)).replace('\n', '')
+                    print("decrypt memo %s" % processed_memo)
+                    trxStorage.update_memo(op["source"], op["account"], op["memo"], processed_memo)
+                    
         
         # del management shares
         if False:
@@ -118,7 +132,32 @@ if __name__ == "__main__":
                                 mngtData = {"index": start_index, "source": "mgmt", "memo": "", "account": account, "sponsor": sponsor, "sponsee": sponsee, "shares": shares, "vests": float(0), "timestamp": formatTimeString(timestamp),
                                          "status": "Valid", "share_type": "Mgmt"}
                                 start_index += 1
-                                trxStorage.add(mngtData)                            
+                                trxStorage.add(mngtData)
+                                
+    elif (datetime.utcnow() - last_cycle).total_seconds() > 60 * share_cycle_min:
+        current_cycle = last_cycle + timedelta(seconds=60 * share_cycle_min)
+        confStorage.update({"last_cycle": last_cycle + timedelta(seconds=60 * share_cycle_min)})
+        
+        print("update member database")
+        # memberStorage.wipe(True)
+        member_accounts = memberStorage.get_all_accounts()
+        data = trxStorage.get_all_data()
+        
+        data = sorted(data, key=lambda x: (datetime.utcnow() - x["timestamp"]).total_seconds(), reverse=True)
+        
+        # Update current node list from @fullnodeupdate
+        nodes = NodeList()
+        # nodes.update_nodes()
+        #stm = Steem(node=nodes.get_nodes())    
+        stm = Steem()
+        member_data = {}
+        n_records = 0
+        share_age_member = {}    
+        for m in member_accounts:
+            member_data[m] = Member(memberStorage.get(m))
+
+
+               
         
         # clear shares
         for m in member_data:
@@ -204,6 +243,8 @@ if __name__ == "__main__":
         for m in member_data:
             if member_data[m]["shares"] <= 0:
                 empty_shares.append(m)
+                member_data[m]["total_share_days"] = 0
+                member_data[m]["avg_share_age"] = 0
             if latest_enrollment is None:
                 latest_enrollment = member_data[m]["latest_enrollment"]
             elif latest_enrollment < member_data[m]["latest_enrollment"]:
@@ -212,8 +253,8 @@ if __name__ == "__main__":
         print("latest data timestamp: %s - latest member enrollment %s" % (str(latest_data_timestamp), str(latest_enrollment)))
           
     
-        for del_acc in empty_shares:
-            del member_data[del_acc]
+        # for del_acc in empty_shares:
+        #    del member_data[del_acc]
     
         # date_now = datetime.utcnow()
         date_now = latest_enrollment
@@ -222,6 +263,8 @@ if __name__ == "__main__":
     
         print("update share age")
         for m in member_data:
+            if member_data[m]["shares"] <= 0:
+                continue
             if "first_cycle_at" not  in member_data[m]:
                 member_data[m]["first_cycle_at"] = current_cycle
             elif member_data[m]["first_cycle_at"] < datetime(2000, 1 , 1, 0, 0, 0):
@@ -234,15 +277,22 @@ if __name__ == "__main__":
         account = Account("steembasicincome")
         blog = account.get_blog(limit=10)[::-1]
         if last_paid_post is None:
-            post = blog[-2]
-            last_paid_post = post["created"]
+            last_paid_post = datetime(2018, 8, 9, 3, 36, 48)
         for post in blog:
-            if post["created"] < last_paid_post:
+            if post["created"] < addTzInfo(last_paid_post):
+                continue
+            if post.is_pending():
+                continue
+            if post.is_comment():
+                continue
+            if post["author"] != account["name"]:
                 continue
             last_paid_post = post["created"]
             all_votes = ActiveVotes(post["authorperm"])
             for vote in all_votes:
                 if vote["voter"] in member_data:
+                    if member_data[vote["voter"]]["shares"] <= 0:
+                        continue                    
                     rshares = vote["rshares"] * upvote_multiplier
                     if rshares < rshares_per_cycle:
                         rshares = rshares_per_cycle

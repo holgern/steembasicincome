@@ -58,14 +58,14 @@ if __name__ == "__main__":
     
     for account_name in accounts:
         account = Account(account_name)
-        print("account %s" % account["name"])
+        
         # Go trough all transfer ops
         cnt = 0
 
         start_index = accountTrx[account_name].get_latest_index()
         if start_index is not None:
             start_index = start_index["op_acc_index"] + 1
-            print(start_index)
+            print("account %s - %d" % (account["name"], start_index))
         data = []
         for op in account.history(start=start_index, use_block_num=False):
             virtual_op = op["virtual_op"]
@@ -93,13 +93,12 @@ if __name__ == "__main__":
         trxStorage.create_table()
     for account in other_accounts:
         account = Account(account)
-        print("account %s" % account["name"])
         cnt = 0
 
         start_index = trxStorage.get_latest_index(account["name"])
         if start_index is not None:
             start_index = start_index["op_acc_index"] + 1            
-            print(start_index)
+            print("account %s - %d" % (account["name"], start_index))
         data = []
         for op in account.history(start=start_index, use_block_num=False, only_ops=["transfer"]):
             amount = Amount(op["amount"])

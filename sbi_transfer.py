@@ -56,7 +56,7 @@ if __name__ == "__main__":
     transactionOutStorage = TransactionOutDB(db2)
     
     key_list = []
-    
+    print("check for new transer operation.")
     key = keyStorage.get("steembasicincome", "memo")
     if key is not None:
         key_list.append(key["wif"])
@@ -86,7 +86,7 @@ if __name__ == "__main__":
         parse_vesting = (account_name == "steembasicincome")
         accountTrx[account_name].db = dataset.connect(databaseConnector)
         account = Account(account_name)
-        print(account["name"])
+        # print(account["name"])
         pah = ParseAccountHist(account, path, trxStorage, transactionStorage, transactionOutStorage, steem_instance=stm)
         
         op_index = trxStorage.get_all_op_index(account["name"])
@@ -98,7 +98,7 @@ if __name__ == "__main__":
             op = trxStorage.get(op_index[-1], account["name"])
             start_index = op["index"] + 1
             op_counter = op_index[-1] + 1
-        print("start_index %d" % start_index)
+        # print("start_index %d" % start_index)
         # ops = []
         # 
         if True:

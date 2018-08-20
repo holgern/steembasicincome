@@ -125,6 +125,17 @@ class TrxDB(object):
         data = dict(index=found_trx["index"], source=source, share_type=share_type_new)
         table.update(data, ['index', 'source'])
 
+    def update_memo(self, source, account, memo_old, memo_new):
+        """ Change share_age depending on timestamp
+
+        """
+        table = self.db[self.__tablename__]
+        found_trx = None
+        for trx in table.find(source=source, account=account, memo=memo_old):
+            found_trx = trx
+        data = dict(index=found_trx["index"], source=source, memo=memo_new)
+        table.update(data, ['index', 'source'])
+
     def add(self, data):
         """ Add a new data set
 
