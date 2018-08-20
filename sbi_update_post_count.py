@@ -118,6 +118,8 @@ if __name__ == "__main__":
         for v in all_votes:
             if addTzInfo(v["timestamp"]) < date_28_before:
                 continue
+            if v["author"] not in accounts:
+                continue            
             latest_votes.append(v)
         post_count_7 = 0
         post_count_28 = 0
@@ -126,9 +128,8 @@ if __name__ == "__main__":
         upvote_weight_28 = 0
         if len(latest_votes) > 0:
             for v in latest_votes:
-                if addTzInfo(v["timestamp"]) >= date_28_before:
-                    upvote_count_28 += 1
-                    upvote_weight_28 += v["weight"]
+                upvote_count_28 += 1
+                upvote_weight_28 += v["weight"]
         member_data[m]["upvote_count_28"] = upvote_count_28
         if upvote_count_28 == 0:
             member_data[m]["upvote_weight_28"] = 0
