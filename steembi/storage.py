@@ -487,6 +487,25 @@ class TransactionMemoDB(object):
             id_list.append(trx)
         return id_list        
 
+    def get_all(self):
+        """ Returns all entries for given value
+
+        """
+        table = self.db[self.__tablename__]
+        for d in table:
+            yield d
+
+    def update_memo(self, sender, to, memo_old, memo_new, encrypted):
+        """ Change share_age depending on timestamp
+
+        """
+        table = self.db[self.__tablename__]
+        found_trx = None
+        for trx in table.find(sender=sender, to=to, memo=memo_old):
+            found_trx = trx
+        data = dict(index=found_trx["id"], memo=memo_new, encrypted=encrypted)
+        table.update(data, ['id'])
+
     def get(self, ID):
         """ Returns all entries for given value
 
@@ -509,6 +528,22 @@ class TransactionMemoDB(object):
         """
         table = self.db[self.__tablename__]
         table.delete(id=ID)
+
+    def delete_sender(self, sender):
+        """ Delete a data set
+
+           :param int ID: database id
+        """
+        table = self.db[self.__tablename__]
+        table.delete(sender=sender)
+
+    def delete_to(self, to):
+        """ Delete a data set
+
+           :param int ID: database id
+        """
+        table = self.db[self.__tablename__]
+        table.delete(to=to)
 
     def wipe(self, sure=False):
         """Purge the entire database. No data set will survive this!"""

@@ -32,31 +32,7 @@ class MemoParser(object):
                                    'sponsering:', 'sponsoring;', 'sponsoring:', 'would', 'like', 'too', 'enroll:',
                                    'sponsor:']
 
-    def memo_sp_delegation(self, new_shares, sp_per_share):
-        memo = "Thank you for your SP delegation! Your shares have increased by %d (%d SP = +1 bonus share)" % (new_shares, sp_per_share)
-        return memo
 
-    def memo_sp_adjustment(self, shares, sp_per_share):
-        memo = "@steembasicincome has adjusted your shares according to your recalled delegation."
-        memo += "If you decide to delegate again, %dSP = +1 bonus share. You still have %d shares and will continue to receive upvotes" % (sp_per_share, shares)
-        return memo
-
-    def memo_welcome(self):
-        memo = "Your enrollment to Steem Basic Income has been processed."
-        return memo
-
-    def memo_sponsoring(self, sponsor):
-        memo = "Congratulations! thanks to @%s you have been enrolled in Steem Basic Income." % (sponsor)
-        memo += "Learn more at https://steemit.com/basicincome/@steembasicincome/steem-basic-income-a-complete-overview"
-
-    def memo_update_shares(self, shares):
-        memo = "Your Steem Basic Income has been increased. You now have %d shares!" % shares
-        return memo
-
-    def memo_sponsoring_update_shares(self, sponsor, shares):
-        memo = "Congratulations! thanks to @%s your Steem Basic Income has been increased. You now have " % sponsor
-        memo += "%d shares! Learn more at https://steemit.com/basicincome/@steembasicincome/steem-basic-income-a-complete-overview" % shares
-        return memo
 
     def parse_memo(self, memo, shares, account):
         words_memo = memo.lower().replace(',', '  ').replace('"', '').split(" ")

@@ -12,6 +12,7 @@ from steembi.storage import TrxDB, MemberDB, TransactionMemoDB, TransactionOutDB
 from steembi.transfer_ops_storage import TransferTrx, AccountTrx
 import dataset
 from datetime import datetime
+from steembi.member import Member
     
 
 if __name__ == "__main__":
@@ -56,7 +57,7 @@ if __name__ == "__main__":
     transactionOutStorage = TransactionOutDB(db2)
     
     key_list = []
-    print("check for new transer operation.")
+    print("Parse new transfers.")
     key = keyStorage.get("steembasicincome", "memo")
     if key is not None:
         key_list.append(key["wif"])
@@ -77,6 +78,27 @@ if __name__ == "__main__":
 
     if not transactionOutStorage.exists_table():
         transactionOutStorage.create_table()
+    
+    print("load member daatabase")
+    member_accounts = memberStorage.get_all_accounts()
+    member_data = {}
+    n_records = 0
+    share_age_member = {}    
+    for m in member_accounts:
+        member_data[m] = Member(memberStorage.get(m))
+    
+    
+    if True:
+        print("delete from transaction_memo... ")
+        transactionStorage.delete_sender("dtube.rewards")
+        transactionStorage.delete_to("sbi2")
+        transactionStorage.delete_to("sbi3")
+        transactionStorage.delete_to("sbi4")
+        transactionStorage.delete_to("sbi5")
+        transactionStorage.delete_to("sbi6")
+        transactionStorage.delete_to("sbi7")
+        transactionStorage.delete_to("sbi8")
+        transactionStorage.delete_to("sbi9")
 
     stop_index = None
     # stop_index = addTzInfo(datetime(2018, 7, 21, 23, 46, 00))
@@ -87,7 +109,7 @@ if __name__ == "__main__":
         accountTrx[account_name].db = dataset.connect(databaseConnector)
         account = Account(account_name)
         # print(account["name"])
-        pah = ParseAccountHist(account, path, trxStorage, transactionStorage, transactionOutStorage, steem_instance=stm)
+        pah = ParseAccountHist(account, path, trxStorage, transactionStorage, transactionOutStorage, member_data, steem_instance=stm)
         
         op_index = trxStorage.get_all_op_index(account["name"])
         

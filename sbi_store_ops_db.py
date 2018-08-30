@@ -41,8 +41,10 @@ if __name__ == "__main__":
     nodes = NodeList()
     # nodes.update_nodes(weights={"hist": 1})
     stm = Steem(node=nodes.get_nodes(appbase=False, https=False))
-    print(str(stm))
+    # print(str(stm))
     set_shared_steem_instance(stm)
+    
+    print("Fetch new account history ops.")
     
     blockchain = Blockchain()
     

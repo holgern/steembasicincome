@@ -14,10 +14,36 @@ import os
 from time import sleep
 import dataset
 from steembi.parse_hist_op import ParseAccountHist
-from steembi.storage import TrxDB, MemberDB, ConfigurationDB, KeysDB
+from steembi.storage import TrxDB, MemberDB, ConfigurationDB, KeysDB, TransactionMemoDB
 from steembi.transfer_ops_storage import TransferTrx, AccountTrx, MemberHistDB
 from steembi.member import Member
 
+
+def memo_sp_delegation(new_shares, sp_per_share):
+    memo = "Thank you for your SP delegation! Your shares have increased by %d (%d SP = +1 bonus share)" % (new_shares, sp_per_share)
+    return memo
+
+def memo_sp_adjustment(shares, sp_per_share):
+    memo = "@steembasicincome has adjusted your shares according to your recalled delegation."
+    memo += "If you decide to delegate again, %dSP = +1 bonus share. You still have %d shares and will continue to receive upvotes" % (sp_per_share, shares)
+    return memo
+
+def memo_welcome():
+    memo = "Your enrollment to Steem Basic Income has been processed."
+    return memo
+
+def memo_sponsoring(sponsor):
+    memo = "Congratulations! thanks to @%s you have been enrolled in Steem Basic Income." % (sponsor)
+    memo += "Learn more at https://steemit.com/basicincome/@steembasicincome/steem-basic-income-a-complete-overview"
+
+def memo_update_shares(shares):
+    memo = "Your Steem Basic Income has been increased. You now have %d shares!" % shares
+    return memo
+
+def memo_sponsoring_update_shares(sponsor, shares):
+    memo = "Congratulations! thanks to @%s your Steem Basic Income has been increased. You now have " % sponsor
+    memo += "%d shares! Learn more at https://steemit.com/basicincome/@steembasicincome/steem-basic-income-a-complete-overview" % shares
+    return memo
     
 
 if __name__ == "__main__":
@@ -53,6 +79,7 @@ if __name__ == "__main__":
     memberStorage = MemberDB(db2)
     # accountStorage = MemberHistDB(db)
     confStorage = ConfigurationDB(db2)
+    transactionStorage = TransactionMemoDB(db2)
     
     conf_setup = confStorage.get()
     
@@ -102,7 +129,35 @@ if __name__ == "__main__":
                     processed_memo = ascii(memo.decrypt(processed_memo)).replace('\n', '')
                     print("decrypt memo %s" % processed_memo)
                     trxStorage.update_memo(op["source"], op["account"], op["memo"], processed_memo)
-                    
+        if False: # deal with encrypted memos
+            print("check for encrypted memos")
+            key_list = []
+            key = keyStorage.get("steembasicincome", "memo")
+            if key is not None:
+                key_list.append(key["wif"])
+            #print(key_list)
+            nodes = NodeList()
+            # nodes.update_nodes()
+            stm = Steem(keys=key_list)
+            set_shared_steem_instance(stm)
+            for op in transactionStorage.get_all():
+
+                processed_memo = ascii(op["memo"]).replace('\n', '')
+                processed_memo = ascii(op["memo"]).replace('\n', '')
+                if processed_memo[1] == '#':
+                    processed_memo = processed_memo[1:-1]
+                if processed_memo[2] == '#':
+                    processed_memo = processed_memo[2:-2]
+                # print("processed_memo: %s, to: %s" %(processed_memo, op["to"]))
+                if len(processed_memo) > 1 and (processed_memo[0] == '#' or processed_memo[1] == '#') and  op["to"] == "steembasicincome":
+
+                    print("found: %s" % processed_memo)
+                    memo = Memo(op["to"], op["sender"], steem_instance=stm)
+                    dec_memo = memo.decrypt(processed_memo)
+                    processed_memo = ascii(dec_memo).replace('\n', '')
+                    print("decrypt memo %s" % processed_memo)
+                    transactionStorage.update_memo(op["sender"], op["to"], op["memo"], processed_memo, True)
+
         if False: # fix memos with \n\n
             print("check for memos with \\n")
             for op in data:
@@ -339,12 +394,17 @@ if __name__ == "__main__":
                             start_index += 1
                             trxStorage.add(mgmt_data)                          
                     if sponsor not in member_data:
+                        memo_text = memo_welcome()
+                        print("send memo %s with %s" % (sponsor, memo_text))
                         member = Member(sponsor, shares, timestamp)
                         member.append_share_age(timestamp, shares)
                         member_data[sponsor] = member
                     else:
+                        
                         member_data[sponsor]["latest_enrollment"] = timestamp
                         member_data[sponsor]["shares"] += shares
+                        memo_text = memo_update_shares(member_data[sponsor]["shares"])
+                        print("send memo %s with %s" % (sponsor, memo_text))
                         member_data[sponsor].append_share_age(timestamp, shares)
 
                     if len(sponsee) == 0:
@@ -352,12 +412,16 @@ if __name__ == "__main__":
                     for s in sponsee:
                         shares = sponsee[s]
                         if s not in member_data:
+                            memo_text = memo_sponsoring(sponsor)
+                            print("send memo %s with %s" % (s, memo_text))
                             member = Member(s, shares, timestamp)
                             member.append_share_age(timestamp, shares)
                             member_data[s] = member
                         else:
                             member_data[s]["latest_enrollment"] = timestamp
                             member_data[s]["shares"] += shares
+                            memo_text = memo_sponsoring_update_shares(sponsor, member_data[s]["shares"])
+                            print("send memo %s with %s" % (s, memo_text))                            
                             member_data[sponsor].append_share_age(timestamp, shares)
 
         # add bonus_shares from active delegation

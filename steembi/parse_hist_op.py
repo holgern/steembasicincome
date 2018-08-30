@@ -28,13 +28,14 @@ log = logging.getLogger(__name__)
 
 class ParseAccountHist(list):
     
-    def __init__(self, account, path, trxStorage, transactionStorage, transactionOutStorage, steem_instance=None):
+    def __init__(self, account, path, trxStorage, transactionStorage, transactionOutStorage, member_data, steem_instance=None):
         self.steem = steem_instance or shared_steem_instance()
         self.account = Account(account, steem_instance=self.steem)    
         self.delegated_vests_in = {}
         self.delegated_vests_out = {}
         self.timestamp = addTzInfo(datetime(1970, 1, 1, 0, 0, 0, 0))
         self.path = path
+        self.member_data = member_data
         self.memo_parser = MemoParser(steem_instance=self.steem)
         self.excluded_accounts = ["minnowbooster", "smartsteem", "randowhale", "steemvoter", "jerrybanfield",
                                   "boomerang", "postpromoter", "appreciator", "buildawhale", "upme", "smartmarket",
@@ -43,6 +44,17 @@ class ParseAccountHist(list):
         self.trxStorage = trxStorage
         self.transactionStorage = transactionStorage
         self.transactionOutStorage = transactionOutStorage
+
+    def get_highest_avg_share_age_account(self):
+        max_avg_share_age = 0
+        account_name = None
+        for m in self.member_data:
+            self.member_data[m].calc_share_age()
+        for m in self.member_data:  
+            if max_avg_share_age < self.member_data[m]["avg_share_age"]:
+                max_avg_share_age = self.member_data[m]["avg_share_age"]
+                account_name = m
+        return account_name
 
     def update_delegation(self, op, delegated_in=None, delegated_out=None):
         """ Updates the internal state arrays
@@ -181,12 +193,28 @@ class ParseAccountHist(list):
             sponsee_amount += sponsee[a]
         
         
-        if sponsee_amount == 0 and not account_error:
+        if sponsee_amount == 0 and not account_error and True:
+            sponsee_account = self.get_highest_avg_share_age_account()
+            sponsee = {sponsee_account: shares}
+            print("%s sponsers %s with %d shares" % (sponsor, sponsee_account, shares))
+            self.new_transfer_record(index, processed_memo, account, sponsor, json.dumps(sponsee), shares, timestamp, share_type=share_type)
+            return
+        elif sponsee_amount == 0 and not account_error:
             message = op["timestamp"] + " to: " + self.account["name"] + " from: " + sponsor + ' amount: ' + str(amount) + ' memo: ' + processed_memo + '\n'
             self.new_transfer_record(index, processed_memo, account, sponsor, json.dumps(sponsee), shares, timestamp, status="LessOrNoSponsee", share_type=share_type)
-
             return
-        if sponsee_amount != shares and not account_error:
+        if sponsee_amount != shares and not account_error and True:
+            sponsee_account = self.get_highest_avg_share_age_account()
+            sponsee_shares = shares-sponsee_amount
+            if sponsee_shares > 0:
+                sponsee = {sponsee_account: sponsee_shares}
+                print("%s sponsers %s with %d shares" % (sponsor, sponsee_account, sponsee_shares))
+                self.new_transfer_record(index, processed_memo, account, sponsor, json.dumps(sponsee), shares, timestamp, share_type=share_type)
+                return
+            else:
+                self.new_transfer_record(index, processed_memo, account, sponsor, json.dumps(sponsee), shares, timestamp, status="LessOrNoSponsee", share_type=share_type)
+                return
+        elif sponsee_amount != shares and not account_error:
             message = op["timestamp"] + " to: " + self.account["name"] + " from: " + sponsor + ' amount: ' + str(amount) + ' memo: ' + ascii(op["memo"]) + '\n'
             self.new_transfer_record(index, processed_memo, account, sponsor, json.dumps(sponsee), shares, timestamp, status="LessOrNoSponsee", share_type=share_type)            
 
@@ -253,3 +281,4 @@ class ParseAccountHist(list):
                      "status": "Valid", "share_type": "Mgmt"}
             start_index += 1
             self.trxStorage.add(data)
+
