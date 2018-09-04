@@ -148,7 +148,7 @@ if __name__ == "__main__":
     cnt = 0
     comment_cnt = 0
     vote_cnt = 0
-    for op in b.stream(start=int(start_block), stop=int(end_block), opNames=["comment", "vote"], threading=False, thread_num=8):
+    for op in b.stream(start=int(start_block), stop=int(end_block), opNames=["vote"], threading=False, thread_num=8):
         block_num = op["block_num"]
         if last_block_num is None:
             start_time = time.time()

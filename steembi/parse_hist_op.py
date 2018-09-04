@@ -79,7 +79,7 @@ class ParseAccountHist(list):
                 self.new_delegation_record(op["index"], delegated_in['account'], delegated_in['amount'], op["timestamp"], share_type="Delegation")
                 new_deleg[delegated_in['account']] = delegated_in['amount']
             else:
-                print(delegated_in)
+                self.new_delegation_record(op["index"], delegated_in['account'], delegated_in['amount'], op["timestamp"], share_type="RemovedDelegation")
         self.delegated_vests_in = new_deleg
 
         new_deleg = dict(self.delegated_vests_out)
