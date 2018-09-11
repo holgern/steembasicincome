@@ -15,7 +15,7 @@ from steembi.transfer_ops_storage import TransferTrx, AccountTrx, MemberHistDB
 from steembi.storage import TrxDB, MemberDB, ConfigurationDB
 from steembi.member import Member
 import dataset
-
+from steembi.memo_parser import MemoParser
 
 if __name__ == "__main__":
     config_file = 'config.json'

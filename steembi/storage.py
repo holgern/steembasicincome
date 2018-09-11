@@ -147,6 +147,14 @@ class TrxDB(object):
         data = dict(index=found_trx["index"], source=source, sponsee=sponsee, status=status)
         table.update(data, ['index', 'source'])
 
+    def update_sponsee_index(self, index, source, sponsee, status):
+        """ Change share_age depending on timestamp
+
+        """
+        table = self.db[self.__tablename__]
+        data = dict(index=index, source=source, sponsee=sponsee, status=status)
+        table.update(data, ['index', 'source'])
+
     def add(self, data):
         """ Add a new data set
 

@@ -16,6 +16,7 @@ import dataset
 from steembi.parse_hist_op import ParseAccountHist
 from steembi.storage import TrxDB, MemberDB, ConfigurationDB, KeysDB, TransactionMemoDB
 from steembi.transfer_ops_storage import TransferTrx, AccountTrx, MemberHistDB
+from steembi.memo_parser import MemoParser
 from steembi.member import Member
 
 
@@ -157,7 +158,38 @@ if __name__ == "__main__":
                     processed_memo = ascii(dec_memo).replace('\n', '')
                     print("decrypt memo %s" % processed_memo)
                     transactionStorage.update_memo(op["sender"], op["to"], op["memo"], processed_memo, True)
-
+        if False:  #check accountDoesNotExists
+            print('check not existing accounts')
+            nodes = NodeList()
+            # nodes.update_nodes()
+            stm = Steem(node=nodes.get_nodes(normal=True, appbase=False))
+            memo_parser = MemoParser(steem_instance=stm)
+            for op in data:
+                if op["status"] != "AccountDoesNotExist":
+                    continue
+                processed_memo = ascii(op["memo"]).replace('\n', '').replace('\\n', '').replace('\\', '')
+                print(processed_memo)                
+                if processed_memo[1] == '@':
+                    processed_memo = processed_memo[1:-1]
+                    
+                if processed_memo[2] == '@':
+                    processed_memo = processed_memo[2:-2]
+                [sponsor, sponsee, not_parsed_words, account_error] = memo_parser.parse_memo(processed_memo, op["shares"], op["account"])
+                sponsee_amount = 0
+                for a in sponsee:
+                    sponsee_amount += sponsee[a]
+                if account_error:
+                    continue
+                if sponsee_amount != op["shares"]:
+                    continue
+                try:
+                    # sponsee = Account(processed_memo[1:], steem_instance=stm)
+                    # sponsee_dict = json.dumps({sponsee["name"]: op["shares"]})
+                    sponsee_dict = json.dumps(sponsee)
+                    print(sponsee_dict)
+                    trxStorage.update_sponsee_index(op["index"], op["source"], sponsee_dict, "Valid")
+                except:
+                    print("error: %s" % processed_memo)   
         if False: # fix memos with \n\n
             print("check for memos with \\n")
             for op in data:
@@ -176,7 +208,7 @@ if __name__ == "__main__":
                     sponsee = Account(processed_memo[1:])
                     sponsee_dict = json.dumps({sponsee["name"]: op["shares"]})
                     print(sponsee_dict)
-                    trxStorage.update_sponsee(op["source"], op["account"], op["memo"], sponsee_dict, "Valid")
+                    trxStorage.update_sponsee_index(op["index"], op["source"], sponsee_dict, "Valid")
                 except:
                     print("error: %s" % processed_memo)
         if False: #check all trx datasets
@@ -198,7 +230,7 @@ if __name__ == "__main__":
         if False: #reset last cycle
             print("reset last cycle")
             confStorage.update({"last_cycle": last_cycle - timedelta(seconds=60 * share_cycle_min)})
-        if True: # reset management shares
+        if False: # reset management shares
             print("Reset all mgmt trx data")
             trxStorage.delete_all("mgmt")
             shares_sum = 0

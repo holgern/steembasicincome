@@ -35,7 +35,12 @@ class MemoParser(object):
 
 
     def parse_memo(self, memo, shares, account):
-        words_memo = memo.lower().replace(',', '  ').replace('"', '').split(" ")
+        if memo[0] == "'":
+            memo = memo[1:]
+        if memo[-1] == "'":
+            memo = memo[:-1]
+        words_memo = memo.strip().lower().replace(',', '  ').replace('"', '').split(" ")
+
         sponsors = {}
         no_numbers = True
         amount_left = shares
@@ -63,9 +68,16 @@ class MemoParser(object):
                 elif w[:21] == 'https://steemit.com/@' and '/' not in w[21:]:
                     try:
                         account_name = w[21:].replace('!', '').replace('"', '').replace(';', '')
+                        if account_name[0] == "'":
+                            account_name = account_name[1:]
+                        if account_name[-1] == "'":
+                            account_name = account_name[:-1]
                         if account_name[-1] == '.':
-                            account_name = account_name[:-1]                        
-                        acc = Account(account_name)
+                            account_name = account_name[:-1]
+                        if account_name[0] == '@':
+                            account_name = account_name[1:]
+                        account_name = account_name.strip()
+                        acc = Account(account_name, steem_instance=self.steem)
                         account_found = True
                     except:
                         print(account_name + " is not an account")
@@ -74,12 +86,22 @@ class MemoParser(object):
                     try:
                         account_name1 = w.split(":")[0]
                         account_name = w.split(":")[1]
+                        if account_name[0] == "'":
+                            account_name = account_name[1:]
+                        if account_name[-1] == "'":
+                            account_name = account_name[:-1]
+                        if account_name1[0] == "'":
+                            account_name1 = account_name1[1:]
+                        if account_name1[-1] == "'":
+                            account_name1 = account_name1[:-1]                            
                         if account_name1[0] == '@':
                             account_name1 = account_name1[1:]
                         if account_name[0] == '@':
-                            account_name = account_name[1:]                       
-                        acc1 = Account(account_name1)
-                        acc = Account(account_name)
+                            account_name = account_name[1:]
+                        account_name = account_name.strip()
+                        account_name1 = account_name1.strip()
+                        acc1 = Account(account_name1, steem_instance=self.steem)
+                        acc = Account(account_name, steem_instance=self.steem)
                         account_found = True
                         if sponsor is None:
                             sponsor = account_name1
@@ -92,9 +114,16 @@ class MemoParser(object):
                     
                     try:
                         account_name = w[1:].replace('!', '').replace('"', '').replace(';', '')
+                        if account_name[0] == "'":
+                            account_name = account_name[1:]
+                        if account_name[-1] == "'":
+                            account_name = account_name[:-1]                        
                         if account_name[-1] == '.':
                             account_name = account_name[:-1]
-                        acc = Account(account_name)
+                        if account_name[0] == '@':
+                            account_name = account_name[1:]
+                        account_name = account_name.strip()
+                        acc = Account(account_name, steem_instance=self.steem)
                         account_found = True
 
                     except:
@@ -107,9 +136,16 @@ class MemoParser(object):
                 else:
                     try:
                         account_name = w.replace('!', '').replace('"', '')
+                        if account_name[0] == "'":
+                            account_name = account_name[1:]
+                        if account_name[-1] == "'":
+                            account_name = account_name[:-1]                        
                         if account_name[-1] == '.':
                             account_name = account_name[:-1]
-                        acc = Account(account_name)
+                        if account_name[0] == '@':
+                            account_name = account_name[1:]
+                        account_name = account_name.strip()
+                        acc = Account(account_name, steem_instance=self.steem)
                         account_found = True
                     except:
                         print(account_name + " is not an account")                
@@ -130,9 +166,16 @@ class MemoParser(object):
         if n_words == 1 and len(sponsors) == 0:
             try:
                 account_name = words_memo[0].replace(',', ' ').replace('!', ' ').replace('"', '').replace('/', ' ')
+                if account_name[0] == "'":
+                    account_name = account_name[1:]
+                if account_name[-1] == "'":
+                    account_name = account_name[:-1]                
                 if account_name[-1] == '.':
-                    account_name = account_name[:-1]                        
-                Account(account_name)
+                    account_name = account_name[:-1]
+                if account_name[0] == '@':
+                    account_name = account_name[1:]
+                account_name = account_name.strip()
+                Account(account_name, steem_instance=self.steem)
                 if account_name != account:
                     sponsors[account_name] = 1
                     amount_left -= 1
