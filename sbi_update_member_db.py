@@ -98,7 +98,7 @@ if __name__ == "__main__":
     if last_cycle is None:
         last_cycle = datetime.utcnow() - timedelta(seconds = 60 * 145)
         confStorage.update({"last_cycle": last_cycle})
-    elif True: # doing same maintanence
+    elif False: # doing same maintanence
         data = trxStorage.get_all_data()
         data = sorted(data, key=lambda x: (datetime.utcnow() - x["timestamp"]).total_seconds(), reverse=True)
         # data = sorted(data, key=lambda x: (datetime.utcnow() - x["timestamp"]).total_seconds(), reverse=True)
@@ -212,7 +212,7 @@ if __name__ == "__main__":
                 except:
                     print("error: %s" % processed_memo)
 
-        if True: # fix memos with \n\n
+        if False: # fix memos with \n\n
             print('check not existing accounts')
             nodes = NodeList()
             # nodes.update_nodes()
@@ -221,7 +221,7 @@ if __name__ == "__main__":
             for op in data:
                 if op["status"] != "Valid":
                     continue
-                if op["sponsee"] != '{"karthikdtrading1": 1}':
+                if op["sponsee"].find("karthikdtrading1") == -1:
                     continue                
 
                 processed_memo = ascii(op["memo"]).replace('\n', '').replace('\\n', '').replace('\\', '')

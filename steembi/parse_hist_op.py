@@ -28,7 +28,7 @@ log = logging.getLogger(__name__)
 
 class ParseAccountHist(list):
     
-    def __init__(self, account, path, trxStorage, transactionStorage, transactionOutStorage, member_data, steem_instance=None):
+    def __init__(self, account, path, trxStorage, transactionStorage, transactionOutStorage, member_data, memberStorage = None, steem_instance=None):
         self.steem = steem_instance or shared_steem_instance()
         self.account = Account(account, steem_instance=self.steem)    
         self.delegated_vests_in = {}
@@ -36,8 +36,7 @@ class ParseAccountHist(list):
         self.timestamp = addTzInfo(datetime(1970, 1, 1, 0, 0, 0, 0))
         self.path = path
         self.member_data = member_data
-        self.last_highest_share_age_account = ""
-        self.last_highest_share_age = 1e9
+        self.memberStorage = memberStorage
         self.memo_parser = MemoParser(steem_instance=self.steem)
         self.excluded_accounts = ["minnowbooster", "smartsteem", "randowhale", "steemvoter", "jerrybanfield",
                                   "boomerang", "postpromoter", "appreciator", "buildawhale", "upme", "smartmarket",
@@ -53,11 +52,10 @@ class ParseAccountHist(list):
         for m in self.member_data:
             self.member_data[m].calc_share_age()
         for m in self.member_data:  
-            if max_avg_share_age < self.member_data[m]["avg_share_age"] and m != self.last_highest_share_age_account and max_avg_share_age < self.last_highest_share_age:
+            if max_avg_share_age < self.member_data[m]["avg_share_age"]:
                 max_avg_share_age = self.member_data[m]["avg_share_age"]
                 account_name = m
-        self.last_highest_share_age_account = account_name
-        self.last_highest_share_age = max_avg_share_age
+
         return account_name
 
     def update_delegation(self, op, delegated_in=None, delegated_out=None):
@@ -202,6 +200,8 @@ class ParseAccountHist(list):
             sponsee = {sponsee_account: shares}
             print("%s sponsers %s with %d shares" % (sponsor, sponsee_account, shares))
             self.new_transfer_record(index, processed_memo, account, sponsor, json.dumps(sponsee), shares, timestamp, share_type=share_type)
+            self.memberStorage.update_avg_share_age(sponsee_account, 0)
+            self.member_data[sponsee_account]["avg_share_age"] = 0            
             return
         elif sponsee_amount == 0 and not account_error:
             sponsee = {}
@@ -215,6 +215,8 @@ class ParseAccountHist(list):
                 sponsee = {sponsee_account: sponsee_shares}
                 print("%s sponsers %s with %d shares" % (sponsor, sponsee_account, sponsee_shares))
                 self.new_transfer_record(index, processed_memo, account, sponsor, json.dumps(sponsee), shares, timestamp, share_type=share_type)
+                self.memberStorage.update_avg_share_age(sponsee_account, 0)
+                self.member_data[sponsee_account]["avg_share_age"] = 0
                 return
             else:
                 sponsee = {}

@@ -109,7 +109,7 @@ if __name__ == "__main__":
         accountTrx[account_name].db = dataset.connect(databaseConnector)
         account = Account(account_name)
         # print(account["name"])
-        pah = ParseAccountHist(account, path, trxStorage, transactionStorage, transactionOutStorage, member_data, steem_instance=stm)
+        pah = ParseAccountHist(account, path, trxStorage, transactionStorage, transactionOutStorage, member_data, memberStorage=memberStorage, steem_instance=stm)
         
         op_index = trxStorage.get_all_op_index(account["name"])
         
