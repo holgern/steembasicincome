@@ -127,3 +127,14 @@ class Testcases(unittest.TestCase):
         self.assertEqual(sponsor, "awesomianist")
         self.assertEqual(sponsee, {})
         self.assertFalse(account_error)
+
+    def test_sponsee(self):
+        memo ="'@reseller, @asonintrigue, @endastory, @spicevsfood, @spicereviews, @steeminute, @marrissajoy, @elainefaye, @wolfnworbeikood, @larrymorrison, @steemcafe'"
+        shares = 12
+        account = "josephsavage"
+        memo_parser = MemoParser()
+        [sponsor, sponsee, not_parsed_words, account_error] = memo_parser.parse_memo(memo, shares, account)
+        self.assertEqual(sponsor, "josephsavage")
+        self.assertEqual(sponsee, {"reseller": 1, "asonintrigue": 1, "endastory": 1, "spicevsfood": 1, "spicereviews": 1, "steeminute": 1,
+                                   "marrissajoy": 1, "elainefaye": 1, "wolfnworbeikood": 1, "larrymorrison": 1, "steemcafe": 1})
+        self.assertFalse(account_error)        

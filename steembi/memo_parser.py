@@ -129,7 +129,26 @@ class MemoParser(object):
                     except:
                         print(account_name + " is not an account")
                         account_error = True
-                        
+                elif len(w.split('@')) > 1:
+                    
+                    try:
+                        account_name = w.replace('!', '').replace('"', '').replace(';', '').split("@")[1]
+                        if account_name[0] == "'":
+                            account_name = account_name[1:]
+                        if account_name[-1] == "'":
+                            account_name = account_name[:-1]                        
+                        if account_name[-1] == '.':
+                            account_name = account_name[:-1]
+                        if account_name[0] == '@':
+                            account_name = account_name[1:]
+                        account_name = account_name.strip()
+                        acc = Account(account_name, steem_instance=self.steem)
+                        account_found = True
+
+                    except:
+                        print(account_name + " is not an account")
+                        account_error = True
+                
                 elif len(w) > 16:
                     continue
                 

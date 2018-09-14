@@ -98,7 +98,7 @@ if __name__ == "__main__":
     if last_cycle is None:
         last_cycle = datetime.utcnow() - timedelta(seconds = 60 * 145)
         confStorage.update({"last_cycle": last_cycle})
-    elif False: # doing same maintanence
+    elif True: # doing same maintanence
         data = trxStorage.get_all_data()
         data = sorted(data, key=lambda x: (datetime.utcnow() - x["timestamp"]).total_seconds(), reverse=True)
         # data = sorted(data, key=lambda x: (datetime.utcnow() - x["timestamp"]).total_seconds(), reverse=True)
@@ -211,6 +211,43 @@ if __name__ == "__main__":
                     trxStorage.update_sponsee_index(op["index"], op["source"], sponsee_dict, "Valid")
                 except:
                     print("error: %s" % processed_memo)
+
+        if True: # fix memos with \n\n
+            print('check not existing accounts')
+            nodes = NodeList()
+            # nodes.update_nodes()
+            stm = Steem(node=nodes.get_nodes(normal=True, appbase=False))
+            memo_parser = MemoParser(steem_instance=stm)
+            for op in data:
+                if op["status"] != "Valid":
+                    continue
+                if op["sponsee"] != '{"karthikdtrading1": 1}':
+                    continue                
+
+                processed_memo = ascii(op["memo"]).replace('\n', '').replace('\\n', '').replace('\\', '')
+                print(processed_memo)                
+                if processed_memo[1] == '@':
+                    processed_memo = processed_memo[1:-1]
+                    
+                if processed_memo[2] == '@':
+                    processed_memo = processed_memo[2:-2]
+                [sponsor, sponsee, not_parsed_words, account_error] = memo_parser.parse_memo(processed_memo, op["shares"], op["account"])
+                sponsee_amount = 0
+                for a in sponsee:
+                    sponsee_amount += sponsee[a]
+                if account_error:
+                    continue
+                if sponsee_amount != op["shares"]:
+                    continue
+                try:
+                    # sponsee = Account(processed_memo[1:], steem_instance=stm)
+                    # sponsee_dict = json.dumps({sponsee["name"]: op["shares"]})
+                    sponsee_dict = json.dumps(sponsee)
+                    print(sponsee_dict)
+                    trxStorage.update_sponsee_index(op["index"], op["source"], sponsee_dict, "Valid")
+                except:
+                    print("error: %s" % processed_memo)           
+
         if False: #check all trx datasets
             print("check trx dataset")
             for op in data:

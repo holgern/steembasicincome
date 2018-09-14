@@ -36,6 +36,8 @@ class ParseAccountHist(list):
         self.timestamp = addTzInfo(datetime(1970, 1, 1, 0, 0, 0, 0))
         self.path = path
         self.member_data = member_data
+        self.last_highest_share_age_account = ""
+        self.last_highest_share_age = 1e9
         self.memo_parser = MemoParser(steem_instance=self.steem)
         self.excluded_accounts = ["minnowbooster", "smartsteem", "randowhale", "steemvoter", "jerrybanfield",
                                   "boomerang", "postpromoter", "appreciator", "buildawhale", "upme", "smartmarket",
@@ -51,9 +53,11 @@ class ParseAccountHist(list):
         for m in self.member_data:
             self.member_data[m].calc_share_age()
         for m in self.member_data:  
-            if max_avg_share_age < self.member_data[m]["avg_share_age"]:
+            if max_avg_share_age < self.member_data[m]["avg_share_age"] and m != self.last_highest_share_age_account and max_avg_share_age < self.last_highest_share_age:
                 max_avg_share_age = self.member_data[m]["avg_share_age"]
                 account_name = m
+        self.last_highest_share_age_account = account_name
+        self.last_highest_share_age = max_avg_share_age
         return account_name
 
     def update_delegation(self, op, delegated_in=None, delegated_out=None):
@@ -200,6 +204,7 @@ class ParseAccountHist(list):
             self.new_transfer_record(index, processed_memo, account, sponsor, json.dumps(sponsee), shares, timestamp, share_type=share_type)
             return
         elif sponsee_amount == 0 and not account_error:
+            sponsee = {}
             message = op["timestamp"] + " to: " + self.account["name"] + " from: " + sponsor + ' amount: ' + str(amount) + ' memo: ' + processed_memo + '\n'
             self.new_transfer_record(index, processed_memo, account, sponsor, json.dumps(sponsee), shares, timestamp, status="LessOrNoSponsee", share_type=share_type)
             return
@@ -212,6 +217,7 @@ class ParseAccountHist(list):
                 self.new_transfer_record(index, processed_memo, account, sponsor, json.dumps(sponsee), shares, timestamp, share_type=share_type)
                 return
             else:
+                sponsee = {}
                 self.new_transfer_record(index, processed_memo, account, sponsor, json.dumps(sponsee), shares, timestamp, status="LessOrNoSponsee", share_type=share_type)
                 return
         elif sponsee_amount != shares and not account_error:
