@@ -63,9 +63,9 @@ if __name__ == "__main__":
         key_list.append(key["wif"])
     #print(key_list)
     nodes = NodeList()
-    # nodes.update_nodes()
-    stm = Steem(keys=key_list, node=nodes.get_nodes(normal=True, appbase=False))
-    set_shared_steem_instance(stm)    
+    nodes.update_nodes()
+    stm = Steem(keys=key_list, node=nodes.get_nodes())
+    # set_shared_steem_instance(stm)    
     
     if not trxStorage.exists_table():
         trxStorage.create_table()
@@ -107,7 +107,7 @@ if __name__ == "__main__":
     for account_name in accounts:
         parse_vesting = (account_name == "steembasicincome")
         accountTrx[account_name].db = dataset.connect(databaseConnector)
-        account = Account(account_name)
+        account = Account(account_name, steem_instance=stm)
         # print(account["name"])
         pah = ParseAccountHist(account, path, trxStorage, transactionStorage, transactionOutStorage, member_data, memberStorage=memberStorage, steem_instance=stm)
         

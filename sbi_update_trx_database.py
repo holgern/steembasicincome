@@ -41,9 +41,9 @@ if __name__ == "__main__":
     memberStorage = MemberDB(db2)
 
     # Update current node list from @fullnodeupdate
-    # nodes = NodeList()
-    # nodes.update_nodes()
-    # stm = Steem(node=nodes.get_nodes())
+    nodes = NodeList()
+    nodes.update_nodes()
+    stm = Steem(node=nodes.get_nodes())
     data = trxStorage.get_all_data()
     status = {}
     share_type = {}

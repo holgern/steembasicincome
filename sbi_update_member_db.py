@@ -102,16 +102,46 @@ if __name__ == "__main__":
         data = trxStorage.get_all_data()
         data = sorted(data, key=lambda x: (datetime.utcnow() - x["timestamp"]).total_seconds(), reverse=True)
         # data = sorted(data, key=lambda x: (datetime.utcnow() - x["timestamp"]).total_seconds(), reverse=True)
+        key_list = []
+        key = keyStorage.get("steembasicincome", "memo")
+        if key is not None:
+            key_list.append(key["wif"])
+        #print(key_list)
+        nodes = NodeList()
+        nodes.update_nodes()
+        stm = Steem(keys=key_list, node=nodes.get_nodes())        
+        
+        if False: # LessOrNoSponsee
+            memo_parser = MemoParser(steem_instance=stm)            
+            for op in data:
+                if op["status"] != "LessOrNoSponsee":
+                    continue
+                processed_memo = ascii(op["memo"]).replace('\n', '').replace('\\n', '').replace('\\', '')
+                print(processed_memo)                
+                if processed_memo[1] == '@':
+                    processed_memo = processed_memo[1:-1]
+                    
+                if processed_memo[2] == '@':
+                    processed_memo = processed_memo[2:-2]
+                [sponsor, sponsee, not_parsed_words, account_error] = memo_parser.parse_memo(processed_memo, op["shares"], op["account"])
+                sponsee_amount = 0
+                for a in sponsee:
+                    sponsee_amount += sponsee[a]
+                if account_error:
+                    continue
+                if sponsee_amount != op["shares"]:
+                    continue
+                try:
+                    # sponsee = Account(processed_memo[1:], steem_instance=stm)
+                    # sponsee_dict = json.dumps({sponsee["name"]: op["shares"]})
+                    sponsee_dict = json.dumps(sponsee)
+                    print(sponsee_dict)
+                    trxStorage.update_sponsee_index(op["index"], op["source"], sponsee_dict, "Valid")
+                except:
+                    print("error: %s" % processed_memo)                
         if False: # deal with encrypted memos
             print("check for encrypted memos")
-            key_list = []
-            key = keyStorage.get("steembasicincome", "memo")
-            if key is not None:
-                key_list.append(key["wif"])
-            #print(key_list)
-            nodes = NodeList()
-            # nodes.update_nodes()
-            stm = Steem(keys=key_list)
+
             set_shared_steem_instance(stm)
             for op in data:
                 if op["status"] != "LessOrNoSponsee":
@@ -132,15 +162,7 @@ if __name__ == "__main__":
                     trxStorage.update_memo(op["source"], op["account"], op["memo"], processed_memo)
         if False: # deal with encrypted memos
             print("check for encrypted memos")
-            key_list = []
-            key = keyStorage.get("steembasicincome", "memo")
-            if key is not None:
-                key_list.append(key["wif"])
-            #print(key_list)
-            nodes = NodeList()
-            # nodes.update_nodes()
-            stm = Steem(keys=key_list)
-            set_shared_steem_instance(stm)
+
             for op in transactionStorage.get_all():
 
                 processed_memo = ascii(op["memo"]).replace('\n', '')
@@ -160,9 +182,7 @@ if __name__ == "__main__":
                     transactionStorage.update_memo(op["sender"], op["to"], op["memo"], processed_memo, True)
         if False:  #check accountDoesNotExists
             print('check not existing accounts')
-            nodes = NodeList()
-            # nodes.update_nodes()
-            stm = Steem(node=nodes.get_nodes(normal=True, appbase=False))
+
             memo_parser = MemoParser(steem_instance=stm)
             for op in data:
                 if op["status"] != "AccountDoesNotExist":
@@ -214,9 +234,6 @@ if __name__ == "__main__":
 
         if False: # fix memos with \n\n
             print('check not existing accounts')
-            nodes = NodeList()
-            # nodes.update_nodes()
-            stm = Steem(node=nodes.get_nodes(normal=True, appbase=False))
             memo_parser = MemoParser(steem_instance=stm)
             for op in data:
                 if op["status"] != "Valid":
@@ -315,7 +332,6 @@ if __name__ == "__main__":
             sum_sp_leased = 0
             sum_sp_shares = 0
             
-            stm = Steem()
             print("load delegation")
             for d in trxStorage.get_share_type(share_type="Delegation"):
                 if d["share_type"] == "Delegation":
@@ -361,10 +377,15 @@ if __name__ == "__main__":
         data = sorted(data, key=lambda x: (datetime.utcnow() - x["timestamp"]).total_seconds(), reverse=True)
         
         # Update current node list from @fullnodeupdate
+        key_list = []
+        key = keyStorage.get("steembasicincome", "memo")
+        if key is not None:
+            key_list.append(key["wif"])
+        #print(key_list)
         nodes = NodeList()
-        # nodes.update_nodes()
-        #stm = Steem(node=nodes.get_nodes())    
-        stm = Steem()
+        nodes.update_nodes()
+        stm = Steem(keys=key_list, node=nodes.get_nodes())
+
         member_data = {}
         n_records = 0
         share_age_member = {}    
@@ -518,6 +539,41 @@ if __name__ == "__main__":
         
         print("latest data timestamp: %s - latest member enrollment %s" % (str(latest_data_timestamp), str(latest_enrollment)))
         
+        if False: # LessOrNoSponsee
+            print("check for LessOrNoSponsee")
+            memo_parser = MemoParser(steem_instance=stm)            
+            for op in data:
+                if op["status"] != "LessOrNoSponsee":
+                    continue
+                processed_memo = ascii(op["memo"]).replace('\n', '').replace('\\n', '').replace('\\', '')
+                print(processed_memo)                
+                if processed_memo[1] == '@':
+                    processed_memo = processed_memo[1:-1]
+                    
+                if processed_memo[2] == '@':
+                    processed_memo = processed_memo[2:-2]
+                [sponsor, sponsee, not_parsed_words, account_error] = memo_parser.parse_memo(processed_memo, op["shares"], op["account"])
+                sponsee_amount = 0
+                for a in sponsee:
+                    sponsee_amount += sponsee[a]
+                if account_error:
+                    continue        
+                for m in member_data:
+                    member_data[m].calc_share_age_until(op["timestamp"])
+                    
+                max_avg_share_age = 0
+                sponsee_name = None
+                for m in member_data:  
+                    if max_avg_share_age < member_data[m]["avg_share_age"]:
+                        max_avg_share_age = member_data[m]["avg_share_age"]
+                        sponsee_name = m
+                if sponsee_amount == 0 and sponsee_name is not None:
+                    sponsee = {sponsee_name: shares}
+                    sponsee_dict = json.dumps(sponsee)
+                    print(sponsee_dict)
+                    trxStorage.update_sponsee_index(op["index"], op["source"], sponsee_dict, "Valid")       
+                    
+        
         # for del_acc in empty_shares:
         #    del member_data[del_acc]
     
@@ -538,7 +594,7 @@ if __name__ == "__main__":
                 member_data[m]["earned_rshares"] += (member_data[m]["shares"] + member_data[m]["bonus_shares"]) * rshares_per_cycle
             
             print("reward voted steembasicincome post")
-            account = Account("steembasicincome")
+            account = Account("steembasicincome", steem_instance=stm)
             blog = account.get_blog(limit=10)[::-1]
             if last_paid_post is None:
                 last_paid_post = datetime(2018, 8, 9, 3, 36, 48)

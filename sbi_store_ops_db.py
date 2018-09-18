@@ -39,14 +39,14 @@ if __name__ == "__main__":
     
     # Update current node list from @fullnodeupdate
     nodes = NodeList()
+    nodes.update_nodes()
     # nodes.update_nodes(weights={"hist": 1})
-    stm = Steem(node=nodes.get_nodes(appbase=False, https=False))
+    stm = Steem(node=nodes.get_nodes())
     # print(str(stm))
-    set_shared_steem_instance(stm)
     
     print("Fetch new account history ops.")
     
-    blockchain = Blockchain()
+    blockchain = Blockchain(steem_instance=stm)
     
     
     accountTrx = {}
@@ -59,7 +59,7 @@ if __name__ == "__main__":
     # stop_index = formatTimeString("2018-07-21T23:46:09")
     
     for account_name in accounts:
-        account = Account(account_name)
+        account = Account(account_name, steem_instance=stm)
         
         # Go trough all transfer ops
         cnt = 0
@@ -94,7 +94,7 @@ if __name__ == "__main__":
     if not trxStorage.exists_table():
         trxStorage.create_table()
     for account in other_accounts:
-        account = Account(account)
+        account = Account(account, steem_instance=stm)
         cnt = 0
 
         start_index = trxStorage.get_latest_index(account["name"])

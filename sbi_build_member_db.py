@@ -58,9 +58,9 @@ if __name__ == "__main__":
     accs = memberStorage.get_all_accounts()
     for a in accs:
         memberStorage.delete(a)
-    # nodes = NodeList()
-    # nodes.update_nodes()
-    # stm = Steem(node=nodes.get_nodes())
+    nodes = NodeList()
+    nodes.update_nodes()
+    stm = Steem(node=nodes.get_nodes())
     data = trxStorage.get_all_data()
     status = {}
     share_type = {}
