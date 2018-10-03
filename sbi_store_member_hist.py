@@ -74,7 +74,10 @@ if __name__ == "__main__":
     # Update current node list from @fullnodeupdate
     nodes = NodeList()
     # nodes.update_nodes(weights={"hist": 1})
-    nodes.update_nodes()
+    try:
+        nodes.update_nodes()
+    except:
+        print("could not update nodes")    
     stm = Steem(node=nodes.get_nodes(), num_retries=3, timeout=10)
     print(str(stm))
     set_shared_steem_instance(stm)

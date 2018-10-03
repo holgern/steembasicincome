@@ -44,7 +44,10 @@ if __name__ == "__main__":
     confStorage = ConfigurationDB(db2)
     
     nodes = NodeList()
-    nodes.update_nodes()
+    try:
+        nodes.update_nodes()
+    except:
+        print("could not update nodes")    
     stm = Steem(node=nodes.get_nodes())    
     
     newTrxStorage = False

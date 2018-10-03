@@ -108,7 +108,10 @@ if __name__ == "__main__":
             key_list.append(key["wif"])
         #print(key_list)
         nodes = NodeList()
-        nodes.update_nodes()
+        try:
+            nodes.update_nodes()
+        except:
+            print("could not update nodes")        
         stm = Steem(keys=key_list, node=nodes.get_nodes())        
         
         if False: # LessOrNoSponsee
@@ -180,6 +183,40 @@ if __name__ == "__main__":
                     processed_memo = ascii(dec_memo).replace('\n', '')
                     print("decrypt memo %s" % processed_memo)
                     transactionStorage.update_memo(op["sender"], op["to"], op["memo"], processed_memo, True)
+
+        if False:  #check when sponsor is different from account
+            print('check sponsor accounts')
+            memo_parser = MemoParser(steem_instance=stm)
+            for op in data:
+                if op["status"] != "Valid":
+                    continue
+                if op["memo"] is None:
+                    continue
+                if ":@" not in op["memo"]:
+                    continue
+                processed_memo = ascii(op["memo"]).replace('\n', '').replace('\\n', '').replace('\\', '')
+                print(processed_memo)                
+                if processed_memo[1] == '@':
+                    processed_memo = processed_memo[1:-1]
+                    
+                if processed_memo[2] == '@':
+                    processed_memo = processed_memo[2:-2]
+                [sponsor, sponsee, not_parsed_words, account_error] = memo_parser.parse_memo(processed_memo, op["shares"], op["account"])
+                sponsee_amount = 0
+                for a in sponsee:
+                    sponsee_amount += sponsee[a]
+                if account_error:
+                    continue
+                if sponsee_amount != op["shares"]:
+                    continue
+                if sponsor == op["sponsor"]:
+                    continue
+                try:
+
+                    trxStorage.update_sponsor_index(op["index"], op["source"], sponsor, "Valid")
+                except:
+                    print("error: %s" % processed_memo)  
+
         if False:  #check accountDoesNotExists
             print('check not existing accounts')
 
@@ -518,7 +555,7 @@ if __name__ == "__main__":
         for m in member_data:
             if m in delegation:
                 member_data[m]["bonus_shares"] += delegation[m]
-            if m in delegation_timestamp and delegation_timestamp[m] is not None:
+            if m in delegation_timestamp and delegation_timestamp[m] is not None and m in delegation:
                 member_data[m].append_share_age(delegation_timestamp[m], delegation[m])
         
         print("update share age")

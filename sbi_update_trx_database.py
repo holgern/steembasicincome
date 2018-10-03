@@ -42,7 +42,10 @@ if __name__ == "__main__":
 
     # Update current node list from @fullnodeupdate
     nodes = NodeList()
-    nodes.update_nodes()
+    try:
+        nodes.update_nodes()
+    except:
+        print("could not update nodes")       
     stm = Steem(node=nodes.get_nodes())
     data = trxStorage.get_all_data()
     status = {}

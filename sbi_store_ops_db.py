@@ -69,23 +69,24 @@ if __name__ == "__main__":
             start_index = start_index["op_acc_index"] + 1
             print("account %s - %d" % (account["name"], start_index))
         data = []
-        for op in account.history(start=start_index, use_block_num=False):
-            virtual_op = op["virtual_op"]
-            trx_in_block = op["trx_in_block"]
-            if virtual_op > 0:
-                trx_in_block = -1
-            d = {"block": op["block"], "op_acc_index": op["index"], "op_acc_name": account["name"], "trx_in_block": trx_in_block,
-                 "op_in_trx": op["op_in_trx"], "virtual_op": virtual_op,  "timestamp": formatTimeString(op["timestamp"]), "type": op["type"], "op_dict": json.dumps(op)}
-            data.append(d)
-            if cnt % 1000 == 0:
+        if account.virtual_op_count() > start_index:
+            for op in account.history(start=start_index, use_block_num=False):
+                virtual_op = op["virtual_op"]
+                trx_in_block = op["trx_in_block"]
+                if virtual_op > 0:
+                    trx_in_block = -1
+                d = {"block": op["block"], "op_acc_index": op["index"], "op_acc_name": account["name"], "trx_in_block": trx_in_block,
+                     "op_in_trx": op["op_in_trx"], "virtual_op": virtual_op,  "timestamp": formatTimeString(op["timestamp"]), "type": op["type"], "op_dict": json.dumps(op)}
+                data.append(d)
+                if cnt % 1000 == 0:
+                    print(op["timestamp"])
+                    accountTrx[account_name].add_batch(data)
+                    data = []
+                cnt += 1
+            if len(data) > 0:
                 print(op["timestamp"])
                 accountTrx[account_name].add_batch(data)
-                data = []
-            cnt += 1
-        if len(data) > 0:
-            print(op["timestamp"])
-            accountTrx[account_name].add_batch(data)
-            data = []            
+                data = []            
 
     
     # Create keyStorage

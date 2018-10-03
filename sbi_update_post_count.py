@@ -59,7 +59,10 @@ if __name__ == "__main__":
     
     # Update current node list from @fullnodeupdate
     nodes = NodeList()
-    nodes.update_nodes()
+    try:
+        nodes.update_nodes()
+    except:
+        print("could not update nodes")    
     stm = Steem(node=nodes.get_nodes())
     # stm = Steem()
     
@@ -152,7 +155,10 @@ if __name__ == "__main__":
     print("update new accounts")
     for m in new_member:
         print(m)
-        acc = Account(m, steem_instance=stm)
+        try:
+            acc = Account(m, steem_instance=stm)
+        except:
+            continue
         post_count_7 = 0
         post_count_28 = 0
         norm_post_count_7 = 0

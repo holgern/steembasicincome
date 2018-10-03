@@ -89,7 +89,10 @@ if __name__ == "__main__":
 
     nodes = NodeList()
     # nodes.update_nodes(weights={"block": 1})
-    nodes.update_nodes()
+    try:
+        nodes.update_nodes()
+    except:
+        print("could not update nodes")    
     node_list = nodes.get_nodes(normal=normal, appbase=appbase, wss=wss, https=https)
     stm = Steem(node=node_list, num_retries=5, call_num_retries=3, timeout=15)            
     b = Blockchain(steem_instance = stm)

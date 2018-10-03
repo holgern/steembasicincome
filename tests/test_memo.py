@@ -18,6 +18,16 @@ class Testcases(unittest.TestCase):
         self.assertEqual(sponsee, {"adewararilwan": 1})
         self.assertFalse(account_error)
 
+    def test_different_sponsor2(self):
+        memo = "'@trufflepig:@steemchiller'"
+        shares = 1
+        account = "josephsavage"
+        memo_parser = MemoParser()
+        [sponsor, sponsee, not_parsed_words, account_error] = memo_parser.parse_memo(memo, shares, account)
+        self.assertEqual(sponsor, "trufflepig")
+        self.assertEqual(sponsee, {"steemchiller": 1})
+        self.assertFalse(account_error)
+
     def test_steemit_url(self):
         memo = 'https://steemit.com/@abhinavmendhe'
         shares = 1
@@ -96,7 +106,7 @@ class Testcases(unittest.TestCase):
         [sponsor, sponsee, not_parsed_words, account_error] = memo_parser.parse_memo(memo, shares, account)        
         self.assertEqual(sponsor, "dynamicrypto")
         self.assertEqual(sponsee, {})
-        self.assertFalse(account_error)
+        self.assertTrue(account_error)
 
     def test_double_sponsee(self):
         memo = '@irishcoffee, @corsica, @mayrie28, @cryptofrench, @irishcoffee, @deboas'

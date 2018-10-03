@@ -63,7 +63,10 @@ if __name__ == "__main__":
         key_list.append(key["wif"])
     #print(key_list)
     nodes = NodeList()
-    nodes.update_nodes()
+    try:
+        nodes.update_nodes()
+    except:
+        print("could not update nodes")    
     stm = Steem(keys=key_list, node=nodes.get_nodes())
     # set_shared_steem_instance(stm)    
     
