@@ -16,6 +16,7 @@ class Member(dict):
         else:
             member = {"account": account, "shares": shares, "bonus_shares": 0, "total_share_days": 0, "avg_share_age": float(0),
                       "original_enrollment": timestamp, "latest_enrollment": timestamp, "earned_rshares": 0, "rewarded_rshares": 0,
+                      "subscribed_rshares": 0, "curation_rshares": 0, "delegation_rshares": 0, "other_rshares": 0,
                       "balance_rshares": 0, "comment_upvote": False}
         self.share_age_list = []
         self.shares_list = []

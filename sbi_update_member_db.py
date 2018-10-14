@@ -90,6 +90,7 @@ if __name__ == "__main__":
     rshares_per_cycle = conf_setup["rshares_per_cycle"]
     upvote_multiplier = conf_setup["upvote_multiplier"]
     last_paid_post = conf_setup["last_paid_post"]
+    last_paid_comment = conf_setup["last_paid_comment"]
     
 
     
@@ -522,7 +523,7 @@ if __name__ == "__main__":
                             trxStorage.add(mgmt_data)                          
                     if sponsor not in member_data:
                         memo_text = memo_welcome()
-                        print("send memo %s with %s" % (sponsor, memo_text))
+                        # print("send memo %s with %s" % (sponsor, memo_text))
                         member = Member(sponsor, shares, timestamp)
                         member.append_share_age(timestamp, shares)
                         member_data[sponsor] = member
@@ -531,7 +532,7 @@ if __name__ == "__main__":
                         member_data[sponsor]["latest_enrollment"] = timestamp
                         member_data[sponsor]["shares"] += shares
                         memo_text = memo_update_shares(member_data[sponsor]["shares"])
-                        print("send memo %s with %s" % (sponsor, memo_text))
+                        # print("send memo %s with %s" % (sponsor, memo_text))
                         member_data[sponsor].append_share_age(timestamp, shares)
 
                     if len(sponsee) == 0:
@@ -540,7 +541,7 @@ if __name__ == "__main__":
                         shares = sponsee[s]
                         if s not in member_data:
                             memo_text = memo_sponsoring(sponsor)
-                            print("send memo %s with %s" % (s, memo_text))
+                            # print("send memo %s with %s" % (s, memo_text))
                             member = Member(s, shares, timestamp)
                             member.append_share_age(timestamp, shares)
                             member_data[s] = member
@@ -548,7 +549,7 @@ if __name__ == "__main__":
                             member_data[s]["latest_enrollment"] = timestamp
                             member_data[s]["shares"] += shares
                             memo_text = memo_sponsoring_update_shares(sponsor, member_data[s]["shares"])
-                            print("send memo %s with %s" % (s, memo_text))                            
+                            # print("send memo %s with %s" % (s, memo_text))                            
                             member_data[sponsor].append_share_age(timestamp, shares)
 
         # add bonus_shares from active delegation
@@ -629,6 +630,8 @@ if __name__ == "__main__":
                     member_data[m]["first_cycle_at"] = current_cycle
                 member_data[m]["balance_rshares"] += (member_data[m]["shares"] + member_data[m]["bonus_shares"]) * rshares_per_cycle
                 member_data[m]["earned_rshares"] += (member_data[m]["shares"] + member_data[m]["bonus_shares"]) * rshares_per_cycle
+                member_data[m]["subscribed_rshares"] += (member_data[m]["shares"]) * rshares_per_cycle
+                member_data[m]["delegation_rshares"] += (member_data[m]["bonus_shares"]) * rshares_per_cycle
             
             print("reward voted steembasicincome post")
             account = Account("steembasicincome", steem_instance=stm)
@@ -654,8 +657,43 @@ if __name__ == "__main__":
                         if rshares < rshares_per_cycle:
                             rshares = rshares_per_cycle
                         member_data[vote["voter"]]["earned_rshares"] += rshares
+                        member_data[vote["voter"]]["curation_rshares"] += rshares
                         member_data[vote["voter"]]["balance_rshares"] += rshares
             confStorage.update({"last_paid_post": last_paid_post})
+
+
+        print("reward voted steembasicincome comment")
+        if last_paid_comment is None:
+            last_paid_comment = datetime(2018, 8, 9, 3, 36, 48)
+        new_paid_comment = last_paid_comment
+        for account in accounts:
+            account = Account(account, steem_instance=stm)
+
+            for post in account.comment_history(limit=200):
+                if post["created"] < addTzInfo(last_paid_comment):
+                    break
+                if post.is_pending():
+                    continue
+                if not post.is_comment():
+                    continue
+                if post["author"] != account["name"]:
+                    continue
+                if post["created"] > addTzInfo(new_paid_comment):
+                    new_paid_comment = post["created"]
+                all_votes = ActiveVotes(post["authorperm"])
+                for vote in all_votes:
+                    if vote["voter"] in member_data:
+                        if member_data[vote["voter"]]["shares"] <= 0:
+                            continue                    
+                        rshares = vote["rshares"]
+                        if rshares < 50000000:
+                            continue
+                        member_data[vote["voter"]]["earned_rshares"] += rshares
+                        member_data[vote["voter"]]["curation_rshares"] += rshares
+                        member_data[vote["voter"]]["balance_rshares"] += rshares
+        confStorage.update({"last_paid_comment": new_paid_comment})
+
+
     
         print("write member database")
         memberStorage.db = dataset.connect(databaseConnector2)

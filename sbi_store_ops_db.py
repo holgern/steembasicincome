@@ -68,6 +68,8 @@ if __name__ == "__main__":
         if start_index is not None:
             start_index = start_index["op_acc_index"] + 1
             print("account %s - %d" % (account["name"], start_index))
+        else:
+            start_index = 0
         data = []
         if account.virtual_op_count() > start_index:
             for op in account.history(start=start_index, use_block_num=False):

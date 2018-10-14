@@ -128,6 +128,8 @@ if __name__ == "__main__":
         # 
         if True:
             ops = accountTrx[account_name].get_all(op_types=["transfer", "delegate_vesting_shares"])
+            if len(ops) == 0:
+                continue
             if ops[-1]["op_acc_index"] < start_index:
                 continue
             for op in ops:
