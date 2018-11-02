@@ -56,6 +56,12 @@ if __name__ == "__main__":
     share_cycle_min = conf_setup["share_cycle_min"]
     sp_share_ratio = conf_setup["sp_share_ratio"]
     rshares_per_cycle = conf_setup["rshares_per_cycle"]
+    
+
+    minimum_vote_threshold = conf_setup["minimum_vote_threshold"]
+    comment_vote_divider = conf_setup["comment_vote_divider"]
+    comment_vote_timeout_h = conf_setup["comment_vote_timeout_h"]    
+    
     print("last_cycle: %s - %.2f min" % (formatTimeString(last_cycle), (datetime.utcnow() - last_cycle).total_seconds() / 60))
     if True:
         
@@ -80,11 +86,14 @@ if __name__ == "__main__":
 
         print("reset rshares")
         for m in member_data:
-
+            total_share_days = member_data[m]["total_share_days"]
             member_data[m]["first_cycle_at"] = datetime(1970,1,1,0,0,0)
             member_data[m]["balance_rshares"] = 0
-            member_data[m]["earned_rshares"] = 0
+            member_data[m]["earned_rshares"]  = total_share_days * rshares_per_cycle
             member_data[m]["rewarded_rshares"] = 0
+            member_data[m]["subscribed_rshares"] = total_share_days * rshares_per_cycle
+            member_data[m]["delegation_rshares"] = 0          
+            member_data[m]["curation_rshares"] = 0 
     
     
         print("write member database")

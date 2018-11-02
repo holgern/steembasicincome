@@ -56,6 +56,11 @@ class TrxDB(object):
         """
         return self.db[self.__tablename__].all()
 
+    def get_all_data_sorted(self):
+        """ Returns the public keys stored in the database
+        """
+        return self.db[self.__tablename__].find(order_by='index')    
+
     def get_all_op_index(self, source):
         """ Returns all ids
         """

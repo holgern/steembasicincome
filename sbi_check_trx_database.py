@@ -10,6 +10,7 @@ import json
 from time import sleep
 from steembi.parse_hist_op import ParseAccountHist
 from steembi.storage import TrxDB, MemberDB
+from steembi.transfer_ops_storage import TransferTrx, AccountTrx, MemberHistDB
 
 
 if __name__ == "__main__":
@@ -34,7 +35,7 @@ if __name__ == "__main__":
         databaseConnector2 = config_data["databaseConnector2"]
         other_accounts = config_data["other_accounts"]
         mgnt_shares = config_data["mgnt_shares"]
-
+    db = dataset.connect(databaseConnector)
     db2 = dataset.connect(databaseConnector2)
     # Create keyStorage
     trxStorage = TrxDB(db2)
@@ -69,3 +70,16 @@ if __name__ == "__main__":
     print("share_types:")
     for s in share_type:
         print("%d share_type entries with %s" % (share_type[s], s))
+        
+    accountTrx = {}
+    for account in accounts:
+        accountTrx[account] = AccountTrx(db, account)
+    sbi_ops = accountTrx["steembasicincome"].get_all()
+    last_index = - 1
+    for op in trxStorage.get_all_data_sorted():
+        if op["source"] != "steembasicincome":
+            continue
+        if op["index"] - last_index:
+            start_index = last_index
+            
+        
