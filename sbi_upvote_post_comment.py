@@ -130,6 +130,10 @@ if __name__ == "__main__":
         member = member_data[author]
         if member["comment_upvote"] == 0 and post_list[authorperm]["main_post"] == 0:
             continue
+        if member["blacklisted"]:
+            continue
+        elif member["blacklisted"] is None and (member["steemcleaners"] or member["buildawhale"]):
+            continue
         if post_list[authorperm]["main_post"] == 0 and (datetime.utcnow() - created).total_seconds() > comment_vote_timeout_h * 60 * 60:
             continue
         rshares = member["balance_rshares"] / comment_vote_divider

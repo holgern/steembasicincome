@@ -8,6 +8,7 @@ from beem.nodelist import NodeList
 from beem.memo import Memo
 from beem.utils import addTzInfo, resolve_authorperm, formatTimeString, construct_authorperm
 from datetime import datetime, timedelta
+import requests
 import re
 import json
 import os
@@ -114,7 +115,33 @@ if __name__ == "__main__":
         except:
             print("could not update nodes")        
         stm = Steem(keys=key_list, node=nodes.get_nodes())        
-        
+        if False: # check if member are blacklisted
+            member_accounts = memberStorage.get_all_accounts()
+            member_data = {}
+            n_records = 0
+            share_age_member = {}    
+            for m in member_accounts:
+                member_data[m] = Member(memberStorage.get(m))
+            
+            for m in member_data:
+                response = requests.get("http://blacklist.usesteem.com/user/%s" % m)
+                if "blacklisted" in response.json():
+                    if "steemcleaners" in response.json()["blacklisted"]:
+                        member_data[m]["steemcleaners"] = True
+                    else:
+                        member_data[m]["steemcleaners"] = False
+                    if "buildawhale" in response.json()["blacklisted"]:
+                        member_data[m]["buildawhale"] = True
+                    else:
+                        member_data[m]["buildawhale"] = False
+                
+            
+            print("write member database")
+            member_data_list = []
+            for m in member_data:
+                member_data_list.append(member_data[m])
+            memberStorage.add_batch(member_data_list)
+            member_data_list = []            
         if False: # LessOrNoSponsee
             memo_parser = MemoParser(steem_instance=stm)            
             for op in data:
