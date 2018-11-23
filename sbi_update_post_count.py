@@ -11,7 +11,7 @@ import os
 from time import sleep
 import dataset
 from steembi.parse_hist_op import ParseAccountHist
-from steembi.storage import TrxDB, MemberDB, ConfigurationDB
+from steembi.storage import TrxDB, MemberDB, ConfigurationDB, AccountsDB
 from steembi.transfer_ops_storage import TransferTrx, AccountTrx, MemberHistDB
 from steembi.member import Member
 
@@ -50,8 +50,13 @@ if __name__ == "__main__":
     # Create keyStorage
     trxStorage = TrxDB(db2)
     memberStorage = MemberDB(db2)
+    
+    accStorage = AccountsDB(db2)
+    accounts = accStorage.get()    
+    
     accountStorage = MemberHistDB(db)
     confStorage = ConfigurationDB(db2)
+
     print("update member database")
     # memberStorage.wipe(True)
     member_accounts = memberStorage.get_all_accounts()

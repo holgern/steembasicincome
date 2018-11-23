@@ -417,6 +417,79 @@ class ConfigurationDB(object):
             table.drop
 
 
+class AccountsDB(object):
+    """ This is the accounts storage class
+    """
+    __tablename__ = 'accounts'
+
+    def __init__(self, db):
+        self.db = db
+
+    def exists_table(self):
+        """ Check if the database table exists
+        """
+        if len(self.db.tables) == 0:
+            return False
+        if self.__tablename__ in self.db.tables:
+            return True
+        else:
+            return False
+
+    def create_table(self):
+        """ Create the new table in the SQLite database
+        """
+        query = ("CREATE TABLE `sbi`.`configuration` (`id` enum('1') NOT NULL, `share_cycle_min` float NOT NULL, `sp_share_ratio` float NOT NULL, `rshares_per_cycle` INT,  `comment_vote_divider` float,  `comment_vote_timeout_h` float, `last_cycle` DATETIME,  PRIMARY KEY (`id`)) ENGINE = InnoDB;")
+        self.db.query(query)
+        self.db.commit()
+
+    def get(self):
+        """ Returns the accounts stored in the database
+        """
+        table = self.db[self.__tablename__]
+        accounts = []
+        for a in table.all():
+            if a["voting"] == 1:
+                accounts.append(a["name"])
+        return accounts
+    
+    def set(self, data):
+        """ Add a new data set
+    
+        """
+        data["id"]= 1
+        table = self.db[self.__tablename__]
+        table.upsert(data, ["name"])
+        self.db.commit()
+
+    def update(self, data):
+        """ Change share_age depending on timestamp
+    
+        """
+        table = self.db[self.__tablename__]
+        table.update(data, ['name'])
+    
+    def delete(self, account):
+        """ Delete a data set
+    
+           :param int ID: database id
+        """
+        table = self.db[self.__tablename__]
+        table.delete(account=account)
+    
+    def wipe(self, sure=False):
+        """Purge the entire database. No data set will survive this!"""
+        if not sure:
+            log.error(
+                "You need to confirm that you are sure "
+                "and understand the implications of "
+                "wiping your wallet!"
+            )
+            return
+        else:
+            table = self.db[self.__tablename__]
+            table.drop
+
+
 class KeysDB(object):
     """ This is the trx storage class
     """

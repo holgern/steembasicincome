@@ -15,7 +15,7 @@ from datetime import date, datetime, timedelta
 from dateutil.parser import parse
 from beem.constants import STEEM_100_PERCENT 
 from steembi.transfer_ops_storage import TransferTrx, AccountTrx, PostsTrx
-from steembi.storage import TrxDB, MemberDB, ConfigurationDB
+from steembi.storage import TrxDB, MemberDB, ConfigurationDB, AccountsDB, KeysDB
 from steembi.parse_hist_op import ParseAccountHist
 from steembi.memo_parser import MemoParser
 from steembi.member import Member
@@ -51,6 +51,10 @@ if __name__ == "__main__":
     trxStorage = TrxDB(db2)
     memberStorage = MemberDB(db2)
     confStorage = ConfigurationDB(db2)
+    accStorage = AccountsDB(db2)
+    keyStorage = KeysDB(db2)
+    
+    accounts = accStorage.get()
     
     conf_setup = confStorage.get()
     
@@ -103,9 +107,14 @@ if __name__ == "__main__":
     try:
         nodes.update_nodes()
     except:
-        print("could not update nodes")    
+        print("could not update nodes")
+        
+    keys = []
+    for acc in accounts:
+        keys.append(keyStorage.get(acc, "posting"))
+        
     node_list = nodes.get_nodes(normal=normal, appbase=appbase, wss=wss, https=https)
-    stm = Steem(node=node_list, num_retries=5, call_num_retries=3, timeout=15, nobroadcast=nobroadcast)      
+    stm = Steem(node=node_list, keys=keys, num_retries=5, call_num_retries=3, timeout=15, nobroadcast=nobroadcast)      
     
     voter_accounts = {}
     for acc in accounts:
@@ -191,7 +200,8 @@ if __name__ == "__main__":
                         if cnt > 0:
                             c.steem.rpc.next()
                         print("retry to vote %s" % c["authorperm"])
-                    cnt += 1                
+                    cnt += 1
+                postTrx.update_voted(author, created, vote_sucessfull)
         else:
             highest_pct = 0
             voter = None
@@ -268,6 +278,7 @@ if __name__ == "__main__":
                                 c.steem.rpc.next()
                             print("retry to vote %s" % c["authorperm"])
                         cnt += 1
+                    postTrx.update_voted(author, created, vote_sucessfull)
                     
             print("rshares_sum %d" % rshares_sum)
             

@@ -10,6 +10,7 @@ import re
 import os
 import json
 from steembi.transfer_ops_storage import TransferTrx, AccountTrx
+from steembi.storage import TrxDB, MemberDB, ConfigurationDB, KeysDB, TransactionMemoDB, AccountsDB
 import dataset
 
 
@@ -31,11 +32,15 @@ if __name__ == "__main__":
         database = config_data["database"]
         database_transfer = config_data["database_transfer"]
         databaseConnector = config_data["databaseConnector"]
+        databaseConnector2 = config_data["databaseConnector2"]
         other_accounts = config_data["other_accounts"]
     
     # sqlDataBaseFile = os.path.join(path, database)
     # databaseConnector = "sqlite:///" + sqlDataBaseFile
-    db = dataset.connect(databaseConnector)    
+    db = dataset.connect(databaseConnector)
+    db2 = dataset.connect(databaseConnector2)
+    accountStorage = AccountsDB(db2)
+    accounts = accountStorage.get()    
     
     # Update current node list from @fullnodeupdate
     nodes = NodeList()

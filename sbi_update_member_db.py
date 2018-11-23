@@ -15,7 +15,7 @@ import os
 from time import sleep
 import dataset
 from steembi.parse_hist_op import ParseAccountHist
-from steembi.storage import TrxDB, MemberDB, ConfigurationDB, KeysDB, TransactionMemoDB
+from steembi.storage import TrxDB, MemberDB, ConfigurationDB, KeysDB, TransactionMemoDB, AccountsDB
 from steembi.transfer_ops_storage import TransferTrx, AccountTrx, MemberHistDB
 from steembi.memo_parser import MemoParser
 from steembi.member import Member
@@ -82,6 +82,9 @@ if __name__ == "__main__":
     # accountStorage = MemberHistDB(db)
     confStorage = ConfigurationDB(db2)
     transactionStorage = TransactionMemoDB(db2)
+    accountStorage = AccountsDB(db2)
+    
+    accounts = accountStorage.get()
     
     conf_setup = confStorage.get()
     
@@ -661,31 +664,39 @@ if __name__ == "__main__":
                 member_data[m]["delegation_rshares"] += (member_data[m]["bonus_shares"]) * rshares_per_cycle
             
             print("reward voted steembasicincome post")
-            account = Account("steembasicincome", steem_instance=stm)
+            # account = Account("steembasicincome", steem_instance=stm)
             blog = account.get_blog(limit=10)[::-1]
             if last_paid_post is None:
                 last_paid_post = datetime(2018, 8, 9, 3, 36, 48)
-            for post in blog:
-                if post["created"] < addTzInfo(last_paid_post):
-                    continue
-                if post.is_pending():
-                    continue
-                if post.is_comment():
-                    continue
-                if post["author"] != account["name"]:
-                    continue
-                last_paid_post = post["created"]
-                all_votes = ActiveVotes(post["authorperm"])
-                for vote in all_votes:
-                    if vote["voter"] in member_data:
-                        if member_data[vote["voter"]]["shares"] <= 0:
-                            continue                    
-                        rshares = vote["rshares"] * upvote_multiplier
-                        if rshares < rshares_per_cycle:
-                            rshares = rshares_per_cycle
-                        member_data[vote["voter"]]["earned_rshares"] += rshares
-                        member_data[vote["voter"]]["curation_rshares"] += rshares
-                        member_data[vote["voter"]]["balance_rshares"] += rshares
+            new_paid_post = last_paid_post
+            for account in accounts:
+                account = Account(account, steem_instance=stm)            
+                for post in blog:
+                    if post["created"] < addTzInfo(last_paid_post):
+                        continue
+                    if post.is_pending():
+                        continue
+                    if post.is_comment():
+                        continue
+                    if post["author"] != account["name"]:
+                        continue
+                    if post["created"] > addTzInfo(new_paid_post):
+                        new_paid_post = post["created"]            
+                    last_paid_post = post["created"]
+                    all_votes = ActiveVotes(post["authorperm"])
+                    for vote in all_votes:
+                        if vote["voter"] in member_data:
+                            if member_data[vote["voter"]]["shares"] <= 0:
+                                continue
+                            if account["name"] == "steembasicincome":
+                                rshares = vote["rshares"] * upvote_multiplier
+                                if rshares < rshares_per_cycle:
+                                    rshares = rshares_per_cycle
+                            else:
+                                rshares = vote["rshares"]
+                            member_data[vote["voter"]]["earned_rshares"] += rshares
+                            member_data[vote["voter"]]["curation_rshares"] += rshares
+                            member_data[vote["voter"]]["balance_rshares"] += rshares
             confStorage.update({"last_paid_post": last_paid_post})
 
 
