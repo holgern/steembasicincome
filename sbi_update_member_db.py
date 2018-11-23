@@ -490,7 +490,7 @@ if __name__ == "__main__":
                     timestamp = op["timestamp"]                
                 if share_type.lower() in ["sharetransfer"]:
                     if op["shares"] > 0 and op["sponsor"] in member_data and op["account"] in member_data:
-                        if op["shares"] < member_data[op["account"]]["shares"]:
+                        if op["shares"] > member_data[op["account"]]["shares"]:
                             continue
                         member_data[op["account"]]["shares"] -= op["shares"]
                         member_data[op["sponsor"]]["shares"] += op["shares"]
