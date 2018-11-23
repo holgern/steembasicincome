@@ -123,10 +123,14 @@ if __name__ == "__main__":
             for m in member_accounts:
                 member_data[m] = Member(memberStorage.get(m))
             cnt = 0
+            member_data_list = []
             for m in member_data:
                 cnt += 1
                 if cnt % 100 == 0:
                     print("%d/%d" % (cnt, len(member_data)))
+                    if len(member_data_list) > 0:
+                        memberStorage.add_batch(member_data_list)
+                        member_data_list = []                    
                     
                     
                 response = ""
@@ -147,9 +151,7 @@ if __name__ == "__main__":
                         member_data[m]["buildawhale"] = False
                 
             
-            print("write member database")
-            member_data_list = []
-            for m in member_data:
                 member_data_list.append(member_data[m])
-            memberStorage.add_batch(member_data_list)
-            member_data_list = []
+            if len(member_data_list) > 0:
+                memberStorage.add_batch(member_data_list)
+                member_data_list = []
