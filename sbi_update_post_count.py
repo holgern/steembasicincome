@@ -54,10 +54,10 @@ if __name__ == "__main__":
     accStorage = AccountsDB(db2)
     accounts = accStorage.get()    
     
-    accountStorage = MemberHistDB(db)
+    # accountStorage = MemberHistDB(db)
     confStorage = ConfigurationDB(db2)
 
-    print("update member database")
+    # print("update member database")
     # memberStorage.wipe(True)
     member_accounts = memberStorage.get_all_accounts()
     # data = trxStorage.get_all_data()
@@ -83,8 +83,7 @@ if __name__ == "__main__":
         elif member_data[m]["updated_at"] < updated_at:
             updated_at = member_data[m]["updated_at"]
             last_updated_member = m
-    
-    
+    print("update post/comments of %s" % last_updated_member)
     empty_shares = []
     latest_enrollment = None
     for m in member_data:
@@ -110,23 +109,33 @@ if __name__ == "__main__":
         if addTzInfo(member_data[m]["original_enrollment"]) > date_28_before:
             new_member.append(m)
             continue
-        print(m)
-        all_comments = accountStorage.get_comments(m)
+        # all_comments = accountStorage.get_comments(m)
+        acc = Account(m, steem_instance=stm)
         latest_post = []
         latest_comment = []            
-        for c in all_comments:
-            if addTzInfo(c["timestamp"]) < date_28_before:
+        for c in acc.comment_history(limit=1):
+            c.refresh()
+            if addTzInfo(c["created"]) < date_28_before:
                 continue
             if c["parent_author"] == "":
                 latest_post.append(c)
             else:
                 latest_comment.append(c)
-        all_votes = accountStorage.get_votes(m)
-        latest_votes = []
-        for v in all_votes:
-            if addTzInfo(v["timestamp"]) < date_28_before:
+        for c in acc.get_blog(limit=100):
+            c.refresh()
+            if addTzInfo(c["created"]) < date_28_before:
                 continue
-            if v["author"] not in accounts:
+            if c["parent_author"] == "":
+                latest_post.append(c)
+            else:
+                latest_comment.append(c)        
+        # all_votes = accountStorage.get_votes(m)
+        latest_votes = []
+        for v in acc.get_account_votes():
+            if formatTimeString(v["time"]) < date_28_before:
+                continue
+            author, permlink = resolve_authorperm(v["authorperm"])
+            if author not in accounts:
                 continue            
             latest_votes.append(v)
         post_count_7 = 0
@@ -145,17 +154,17 @@ if __name__ == "__main__":
             member_data[m]["upvote_weight_28"] = upvote_weight_28 / upvote_count_28 / 100.
 
         if len(latest_post) > 0:
-            member_data[m]["last_post"] = latest_post[-1]["timestamp"]
+            member_data[m]["last_post"] = latest_post[-1]["created"]
             for p in latest_post:
-                if addTzInfo(p["timestamp"]) >= date_28_before:
+                if addTzInfo(p["created"]) >= date_28_before:
                     post_count_28 += 1
-                if addTzInfo(p["timestamp"]) >= date_7_before:
+                if addTzInfo(p["created"]) >= date_7_before:
                     post_count_7 += 1
         member_data[m]["post_hist_28"] = post_count_28
         member_data[m]["post_hist_7"] = post_count_7
         member_data[m]["norm_post_hist_7"] = post_count_28 / 4.0
         if len(latest_comment) > 0:
-            member_data[m]["last_comment"] = latest_comment[-1]["timestamp"]
+            member_data[m]["last_comment"] = latest_comment[-1]["created"]
         member_data[m]["updated_at"] = latest_enrollment
     print("update new accounts")
     for m in new_member:

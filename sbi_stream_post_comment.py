@@ -59,7 +59,13 @@ if __name__ == "__main__":
     rshares_per_cycle = conf_setup["rshares_per_cycle"]    
     
     member_accounts = memberStorage.get_all_accounts()
-    print("%d members in list" % len(member_accounts))    
+    print("%d members in list" % len(member_accounts)) 
+    
+
+    member_data = {}
+    for m in member_accounts:
+        member_data[m] = Member(memberStorage.get(m))    
+    
     postTrx = PostsTrx(db)
 
     print("stream new posts")
@@ -135,6 +141,10 @@ if __name__ == "__main__":
         except:
             continue
         main_post = c.is_main_post()
+        if main_post:
+            member_data[ops["author"]]["last_post"] = c["created"]
+        else:
+            member_data[ops["author"]]["last_comment"] = c["created"]
         already_voted = False
     
         for v in c["active_votes"]:
@@ -156,6 +166,12 @@ if __name__ == "__main__":
 
         cnt += 1
 
+    print("write member database")
+    member_data_list = []
+    for m in member_data:
+        member_data_list.append(member_data[m])
+    memberStorage.add_batch(member_data_list)
+    member_data_list = []
     if len(posts_dict) > 0:
         start_time = time.time()
         postTrx.add_batch(posts_dict)

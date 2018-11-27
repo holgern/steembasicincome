@@ -665,12 +665,13 @@ if __name__ == "__main__":
             
             print("reward voted steembasicincome post")
             # account = Account("steembasicincome", steem_instance=stm)
-            blog = account.get_blog(limit=10)[::-1]
+            
             if last_paid_post is None:
                 last_paid_post = datetime(2018, 8, 9, 3, 36, 48)
             new_paid_post = last_paid_post
             for account in accounts:
-                account = Account(account, steem_instance=stm)            
+                account = Account(account, steem_instance=stm)
+                blog = account.get_blog(limit=10)[::-1]
                 for post in blog:
                     if post["created"] < addTzInfo(last_paid_post):
                         continue
@@ -693,7 +694,7 @@ if __name__ == "__main__":
                                 if rshares < rshares_per_cycle:
                                     rshares = rshares_per_cycle
                             else:
-                                rshares = vote["rshares"]
+                                rshares = vote["rshares"] * upvote_multiplier
                             member_data[vote["voter"]]["earned_rshares"] += rshares
                             member_data[vote["voter"]]["curation_rshares"] += rshares
                             member_data[vote["voter"]]["balance_rshares"] += rshares

@@ -64,7 +64,8 @@ if __name__ == "__main__":
     
     print("last_cycle: %s - %.2f min" % (formatTimeString(last_cycle), (datetime.utcnow() - last_cycle).total_seconds() / 60))
     if True:
-        
+        last_cycle = datetime.utcnow() - timedelta(seconds = 60 * 145)
+        confStorage.update({"last_cycle": last_cycle})        
         print("update member database")
         # memberStorage.wipe(True)
         member_accounts = memberStorage.get_all_accounts()
