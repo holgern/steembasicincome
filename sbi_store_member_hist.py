@@ -50,7 +50,10 @@ if __name__ == "__main__":
     last_cycle = conf_setup["last_cycle"]
     share_cycle_min = conf_setup["share_cycle_min"]
     sp_share_ratio = conf_setup["sp_share_ratio"]
-    rshares_per_cycle = conf_setup["rshares_per_cycle"]    
+    rshares_per_cycle = conf_setup["rshares_per_cycle"]
+    upvote_multiplier = conf_setup["upvote_multiplier"]
+    last_paid_post = conf_setup["last_paid_post"]
+    last_paid_comment = conf_setup["last_paid_comment"]  
     
     member_accounts = memberStorage.get_all_accounts()
     print("%d members in list" % len(member_accounts))
@@ -189,7 +192,9 @@ if __name__ == "__main__":
                 member_data[op["author"]]["rewarded_rshares"] += int(vote["rshares"])
                 member_data[op["author"]]["balance_rshares"] -= int(vote["rshares"])
                 updated_member_data.append(member_data[op["author"]])
-            #if op["author"] in accounts and op["voter"] in member_accounts:
+            #elif op["author"] in accounts and op["voter"] in member_accounts:
+            #    c = Comment(op, steem_instance=stm)
+            #    c.refresh()   
             #    vote = Vote(op["voter"], authorperm=construct_authorperm(op["author"], op["permlink"]), steem_instance=stm)
             #    member_data[op["voter"]]["balance_rshares"] += int(vote["rshares"])
             #    member_data[op["voter"]]["earned_rshares"] += int(vote["rshares"])

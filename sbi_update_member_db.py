@@ -511,7 +511,18 @@ if __name__ == "__main__":
                 elif share_type.lower() in ["removeddelegation"]:
                     delegation[op["sponsor"]] = 0
                     delegation_timestamp[op["sponsor"]] = None
-                elif share_type.lower() in ["mgmt", "mgmttransfer"]:
+                    
+                elif share_type.lower() in ["mgmttransfer"]:
+                    if op["shares"] > 0 and op["sponsor"] in member_data and op["account"] in member_data:
+                        if op["shares"] > member_data[op["account"]]["bonus_shares"]:
+                            continue
+                        member_data[op["account"]]["bonus_shares"] -= op["shares"]
+                        member_data[op["sponsor"]]["bonus_shares"] += op["shares"]
+
+                        member_data[op["sponsor"]]["latest_enrollment"] = timestamp
+                        member_data[op["sponsor"]].append_share_age(timestamp, op["shares"])                    
+                    
+                elif share_type.lower() in ["mgmt"]:
              
                     if op["shares"] > 0 and op["sponsor"] in member_data:
                         member_data[op["sponsor"]]["bonus_shares"] += op["shares"]
@@ -671,9 +682,9 @@ if __name__ == "__main__":
             new_paid_post = last_paid_post
             for account in accounts:
                 account = Account(account, steem_instance=stm)
-                blog = account.get_blog(limit=10)[::-1]
+                blog = account.get_blog(limit=30)[::-1]
                 for post in blog:
-                    if post["created"] < addTzInfo(last_paid_post):
+                    if post["created"] <= addTzInfo(last_paid_post):
                         continue
                     if post.is_pending():
                         continue
@@ -709,7 +720,7 @@ if __name__ == "__main__":
             account = Account(account, steem_instance=stm)
 
             for post in account.comment_history(limit=200):
-                if post["created"] < addTzInfo(last_paid_comment):
+                if post["created"] <= addTzInfo(last_paid_comment):
                     break
                 if post.is_pending():
                     continue
