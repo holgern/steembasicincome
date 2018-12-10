@@ -46,7 +46,8 @@ if __name__ == "__main__":
     last_cycle = conf_setup["last_cycle"]
     share_cycle_min = conf_setup["share_cycle_min"]
     sp_share_ratio = conf_setup["sp_share_ratio"]
-    rshares_per_cycle = conf_setup["rshares_per_cycle"]    
+    rshares_per_cycle = conf_setup["rshares_per_cycle"]
+    last_delegation_check = conf_setup["last_delegation_check"]
     
     nodes = NodeList()
     try:
@@ -79,15 +80,25 @@ if __name__ == "__main__":
     sum_sp = 0
     sum_sp_leased = 0
     sum_sp_shares = 0
+    delegation_timestamp = {}
     
     print("load delegation")
     for d in trxStorage.get_share_type(share_type="Delegation"):
         if d["share_type"] == "Delegation":
             delegation[d["account"]] = stm.vests_to_sp(float(d["vests"]))
+            delegation_timestamp[d["account"]] = d["timestamp"]
+            
         delegation_shares[d["account"]] = d["shares"]
+    for d in trxStorage.get_share_type(share_type="DelegationLeased"):
+        if d["share_type"] == "DelegationLeased":
+            delegation[d["account"]] = 0
+            delegation_timestamp[d["account"]] = d["timestamp"]
+            
+        delegation_shares[d["account"]] = d["shares"]    
     for d in trxStorage.get_share_type(share_type="RemovedDelegation"):
         if d["share_type"] == "RemovedDelegation":
             delegation[d["account"]] = 0
+            delegation_timestamp[d["account"]] = d["timestamp"]
         delegation_shares[d["account"]] = 0
     
     delegation_leased = {}
@@ -97,6 +108,12 @@ if __name__ == "__main__":
     for acc in delegation_account:
         if delegation_account[acc] == 0:
             continue
+        if last_delegation_check is not None and delegation_timestamp[acc] <= last_delegation_check:
+            continue
+        if last_delegation_check is not None and last_delegation_check < delegation_timestamp[acc]:
+            last_delegation_check = delegation_timestamp[acc]
+        elif last_delegation_check is None:
+            last_delegation_check = delegation_timestamp[acc]
         # if acc in delegation_shares and delegation_shares[acc] > 0:
         #    continue
         print(acc)
@@ -109,6 +126,7 @@ if __name__ == "__main__":
         delegation_leased[acc] = delegation_account[acc]
         trxStorage.update_delegation_state(account, acc, "Delegation", 
                                           "DelegationLeased")
+        print("set delegration from %s to leased" % acc)
         
     
     dd = delegation
@@ -121,3 +139,6 @@ if __name__ == "__main__":
     for d in dd:
         sum_sp_shares += dd[d]                
     print("%s: sum %.6f SP - shares %.6f SP - leased %.6f SP" % (account, sum_sp,  sum_sp_shares,  sum_sp_leased))
+
+
+    confStorage.update({"last_delegation_check": last_delegation_check})

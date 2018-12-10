@@ -95,7 +95,7 @@ if __name__ == "__main__":
     upvote_multiplier = conf_setup["upvote_multiplier"]
     last_paid_post = conf_setup["last_paid_post"]
     last_paid_comment = conf_setup["last_paid_comment"]
-    
+    last_delegation_check = conf_setup["last_delegation_check"]
 
     
     
@@ -682,7 +682,7 @@ if __name__ == "__main__":
             new_paid_post = last_paid_post
             for account in accounts:
                 account = Account(account, steem_instance=stm)
-                blog = account.get_blog(limit=30)[::-1]
+                blog = account.get_blog(limit=100)[::-1]
                 for post in blog:
                     if post["created"] <= addTzInfo(last_paid_post):
                         continue
