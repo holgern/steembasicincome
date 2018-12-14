@@ -82,7 +82,7 @@ if __name__ == "__main__":
     if not transactionOutStorage.exists_table():
         transactionOutStorage.create_table()
     
-    print("load member daatabase")
+    print("load member database")
     member_accounts = memberStorage.get_all_accounts()
     member_data = {}
     n_records = 0

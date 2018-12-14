@@ -69,7 +69,7 @@ if __name__ == "__main__":
     member_accounts = memberStorage.get_all_accounts()
     
     nobroadcast = False
-    nobroadcast = True
+    # nobroadcast = True
     
     member_data = {}
     for m in member_accounts:
@@ -80,7 +80,6 @@ if __name__ == "__main__":
 
     print("Upvote new posts")
     start_timestamp = datetime(2018, 12, 14, 9, 18, 20)
-    start_timestamp = datetime(2018, 12, 10, 9, 18, 20)
 
 
     if True:
@@ -196,6 +195,7 @@ if __name__ == "__main__":
                 print(c["authorperm"])
                 print("Vote %s from %s with %.2f %%" % (author, voter, vote_percentage))            
             else:
+                print("Upvote %s from %s with %.2f %%" % (author, voter, vote_percentage)) 
                 vote_sucessfull = False
                 cnt = 0
                 while not vote_sucessfull and cnt < 5:
@@ -219,6 +219,7 @@ if __name__ == "__main__":
             current_mana = {}
             pool_rshars = []
             for acc in voter_accounts:
+                voter_accounts[acc].refresh()
                 mana = voter_accounts[acc].get_manabar()
                 vote_percentage = rshares / (mana["max_mana"] / 50 * mana["current_mana_pct"] / 100) * 100
                 if highest_pct < mana["current_mana_pct"] and rshares < mana["max_mana"] / 50 * mana["current_mana_pct"] / 100 and vote_percentage > 0.01:
@@ -252,6 +253,7 @@ if __name__ == "__main__":
                         print(c["authorperm"])
                         print("Vote %s from %s with %.2f %%" % (author, voter, vote_percentage))
                     else:
+                        print("Upvote %s from %s with %.2f %%" % (author, voter, vote_percentage))
                         vote_sucessfull = False
                         cnt = 0
                         while not vote_sucessfull and cnt < 5:
@@ -278,6 +280,7 @@ if __name__ == "__main__":
                     print(c["authorperm"])
                     print("Vote %s from %s with %.2f %%" % (author, voter, vote_percentage))
                 else:
+                    print("Upvote %s from %s with %.2f %%" % (author, voter, vote_percentage))
                     vote_sucessfull = False
                     cnt = 0
                     while not vote_sucessfull and cnt < 5:

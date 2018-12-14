@@ -82,7 +82,7 @@ if __name__ == "__main__":
     except:
         print("could not update nodes")    
     stm = Steem(node=nodes.get_nodes(), num_retries=3, timeout=10)
-    print(str(stm))
+    # print(str(stm))
     set_shared_steem_instance(stm)
     
     accountTrx = {}
@@ -117,10 +117,7 @@ if __name__ == "__main__":
     #end_block = b.get_estimated_block_num(stop_time)
     end_block = current_block["id"]
     
-    print(start_block)        
-    
-    
-    print("clear not needed blocks")
+    print("start_block: %d - clear not needed blocks" % (start_block))
     
     
     deleting = True

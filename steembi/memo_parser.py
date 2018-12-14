@@ -80,7 +80,7 @@ class MemoParser(object):
                         acc = Account(account_name, steem_instance=self.steem)
                         account_found = True
                     except:
-                        print(account_name + " is not an account")
+                        # print(account_name + " is not an account")
                         account_error = True
                 elif len(w.split(":")) == 2 and '/' not in w:
                     try:
@@ -108,7 +108,7 @@ class MemoParser(object):
                         else:
                             account_error = True
                     except:
-                        print(account_name + " is not an account")
+                        # print(account_name + " is not an account")
                         account_error = True                    
                 elif w[0] == '@':
                     
@@ -127,7 +127,7 @@ class MemoParser(object):
                         account_found = True
 
                     except:
-                        print(account_name + " is not an account")
+                        # print(account_name + " is not an account")
                         account_error = True
                 elif len(w.split('@')) > 1:
                     
@@ -146,7 +146,7 @@ class MemoParser(object):
                         account_found = True
 
                     except:
-                        print(account_name + " is not an account")
+                        # print(account_name + " is not an account")
                         account_error = True
                 
                 elif len(w) > 16:
@@ -167,7 +167,7 @@ class MemoParser(object):
                         acc = Account(account_name, steem_instance=self.steem)
                         account_found = True
                     except:
-                        print(account_name + " is not an account")                
+                        # print(account_name + " is not an account")                
                         not_parsed_words.append(w)
                         word_count += 1
                         account_error = True

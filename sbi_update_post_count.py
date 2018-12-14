@@ -83,7 +83,11 @@ if __name__ == "__main__":
         elif member_data[m]["updated_at"] < updated_at:
             updated_at = member_data[m]["updated_at"]
             last_updated_member = m
-    print("update post/comments of %s" % last_updated_member)
+    try:
+        Account(last_updated_member, steem_instance=stm)
+        print("update post/comments of %s" % last_updated_member)
+    except:
+        print("Error:  %s is not a valid account, please repair the member database!" % last_updated_member)
     empty_shares = []
     latest_enrollment = None
     for m in member_data:
@@ -101,7 +105,7 @@ if __name__ == "__main__":
     date_now = latest_enrollment
     date_7_before = addTzInfo(date_now - timedelta(seconds=7 * 24 * 60 * 60))
     date_28_before = addTzInfo(date_now - timedelta(seconds=28 * 24 * 60 * 60))
-
+    date_72h_before = addTzInfo(date_now - timedelta(seconds=72 * 60 * 60))
         
     print("update last post and comment date")
     new_member = []
@@ -211,9 +215,15 @@ if __name__ == "__main__":
         member_data[m]["post_hist_7"] = post_count_7
         member_data[m]["norm_post_hist_7"] = post_count_28 / 4.0
         member_data[m]["updated_at"] = latest_enrollment
+        if member_data[m]["last_post"] is None:
+            member_data[m]["comment_upvote"] = 1
+        elif addTzInfo(member_data[m]["last_post"]) < date_72h_before:
+            member_data[m]["comment_upvote"] = 1
+        elif member_data[m]["comment_upvote"] == 1:
+            member_data[m]["comment_upvote"] = 0
 
     memberStorage.db = dataset.connect(databaseConnector2)
-    print("write member database")
+    print("write member database for %s" % (last_updated_member))
     for m in [last_updated_member]:
         data = Member(memberStorage.get(m))
         data["last_comment"] = member_data[m]["last_comment"]
@@ -224,5 +234,6 @@ if __name__ == "__main__":
         data["upvote_count_28"] = member_data[m]["upvote_count_28"]
         data["upvote_weight_28"] = member_data[m]["upvote_weight_28"]
         data["updated_at"] = member_data[m]["updated_at"]
+        data["comment_upvote"] = member_data[m]["comment_upvote"]
 
         memberStorage.update(data)
