@@ -81,13 +81,14 @@ if __name__ == "__main__":
             updated_at = member_data[m]["updated_at"]
             last_updated_member = m
         elif member_data[m]["updated_at"] < updated_at:
-            updated_at = member_data[m]["updated_at"]
-            last_updated_member = m
-    try:
-        Account(last_updated_member, steem_instance=stm)
-        print("update post/comments of %s" % last_updated_member)
-    except:
-        print("Error:  %s is not a valid account, please repair the member database!" % last_updated_member)
+            try:
+                Account(m, steem_instance=stm)
+                updated_at = member_data[m]["updated_at"]
+                last_updated_member = m                
+            except:
+                print("Error:  %s is not a valid account, please repair the member database!" % m)            
+
+    print("update post/comments of %s" % last_updated_member)
     empty_shares = []
     latest_enrollment = None
     for m in member_data:

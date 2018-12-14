@@ -236,6 +236,7 @@ if __name__ == "__main__":
                     highest_mana = 0
                     voter = None
                     for acc in voter_accounts:
+                        voter_accounts[acc].refresh()
                         mana = voter_accounts[acc].get_manabar()
                         vote_percentage = rshares / (mana["max_mana"] / 50 * mana["current_mana_pct"] / 100) * 100
                         if highest_mana < mana["max_mana"] / 50 * mana["current_mana_pct"] / 100 and acc not in pool_rshars and vote_percentage > 0.01:
