@@ -68,6 +68,7 @@ if __name__ == "__main__":
     
     member_accounts = memberStorage.get_all_accounts()
     
+    nobroadcast = False
     nobroadcast = True
     
     member_data = {}
@@ -77,7 +78,9 @@ if __name__ == "__main__":
     print("%d members in list" % len(member_accounts))    
     postTrx = PostsTrx(db)
 
-    print("stream new posts")
+    print("Upvote new posts")
+    start_timestamp = datetime(2018, 12, 14, 9, 18, 20)
+    start_timestamp = datetime(2018, 12, 10, 9, 18, 20)
 
 
     if True:
@@ -112,9 +115,12 @@ if __name__ == "__main__":
     keys = []
     for acc in accounts:
         keys.append(keyStorage.get(acc, "posting"))
-        
+    keys_list = []
+    for k in keys:
+        if k["key_type"] == 'posting':
+            keys_list.append(k["wif"].replace("\n", '').replace('\r', ''))
     node_list = nodes.get_nodes(normal=normal, appbase=appbase, wss=wss, https=https)
-    stm = Steem(node=node_list, keys=keys, num_retries=5, call_num_retries=3, timeout=15, nobroadcast=nobroadcast)      
+    stm = Steem(node=node_list, keys=keys_list, num_retries=5, call_num_retries=3, timeout=15, nobroadcast=nobroadcast)      
     
     voter_accounts = {}
     for acc in accounts:
@@ -132,6 +138,8 @@ if __name__ == "__main__":
     for authorperm in post_list:
         created = post_list[authorperm]["created"]
         if (datetime.utcnow() - created).total_seconds() > 3 * 24 * 60 * 60:
+            continue
+        if (start_timestamp > created):
             continue
         author = post_list[authorperm]["author"]
         if author not in member_accounts:
@@ -175,14 +183,17 @@ if __name__ == "__main__":
             current_mana = {}
             for acc in voter_accounts:
                 mana = voter_accounts[acc].get_manabar()
-                if highest_pct < mana["current_mana_pct"]:
+                vote_percentage = rshares / (mana["max_mana"] / 50 * mana["current_mana_pct"] / 100) * 100
+                if highest_pct < mana["current_mana_pct"] and vote_percentage > 0.01:
                     highest_pct = mana["current_mana_pct"]
                     current_mana = mana
                     voter = acc
+             
             vote_percentage = rshares / (current_mana["max_mana"] / 50 * current_mana["current_mana_pct"] / 100) * 100
             if vote_percentage > 1 / comment_vote_divider * 100:
                 vote_percentage = 1 / comment_vote_divider * 100            
             if nobroadcast:
+                print(c["authorperm"])
                 print("Vote %s from %s with %.2f %%" % (author, voter, vote_percentage))            
             else:
                 vote_sucessfull = False
@@ -209,10 +220,12 @@ if __name__ == "__main__":
             pool_rshars = []
             for acc in voter_accounts:
                 mana = voter_accounts[acc].get_manabar()
-                if highest_pct < mana["current_mana_pct"] and rshares < mana["max_mana"] / 50 * mana["current_mana_pct"] / 100:
+                vote_percentage = rshares / (mana["max_mana"] / 50 * mana["current_mana_pct"] / 100) * 100
+                if highest_pct < mana["current_mana_pct"] and rshares < mana["max_mana"] / 50 * mana["current_mana_pct"] / 100 and vote_percentage > 0.01:
                     highest_pct = mana["current_mana_pct"]
                     current_mana = mana
                     voter = acc
+           
             if voter is None:
                 print("Could not find voter for %s" % author)
                 current_mana = {}
@@ -223,7 +236,8 @@ if __name__ == "__main__":
                     voter = None
                     for acc in voter_accounts:
                         mana = voter_accounts[acc].get_manabar()
-                        if highest_mana < mana["max_mana"] / 50 * mana["current_mana_pct"] / 100 and acc not in pool_rshars:
+                        vote_percentage = rshares / (mana["max_mana"] / 50 * mana["current_mana_pct"] / 100) * 100
+                        if highest_mana < mana["max_mana"] / 50 * mana["current_mana_pct"] / 100 and acc not in pool_rshars and vote_percentage > 0.01:
                             highest_mana = mana["max_mana"] / 50 * mana["current_mana_pct"] / 100
                             current_mana = mana
                             voter = acc
@@ -235,6 +249,7 @@ if __name__ == "__main__":
                     if vote_percentage > 100:
                         vote_percentage = 100
                     if nobroadcast:
+                        print(c["authorperm"])
                         print("Vote %s from %s with %.2f %%" % (author, voter, vote_percentage))
                     else:
                         vote_sucessfull = False
@@ -260,6 +275,7 @@ if __name__ == "__main__":
                 vote_percentage = rshares / (current_mana["max_mana"] / 50 * current_mana["current_mana_pct"] / 100) * 100
                 rshares_sum += current_mana["max_mana"] / 50 * current_mana["current_mana_pct"] / 100
                 if nobroadcast:
+                    print(c["authorperm"])
                     print("Vote %s from %s with %.2f %%" % (author, voter, vote_percentage))
                 else:
                     vote_sucessfull = False
