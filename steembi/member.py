@@ -38,10 +38,12 @@ class Member(dict):
         self.share_timestamp.append(timestamp)
 
     def calc_share_age(self):
-        if len(self.share_age_list) == 0:
-            return
         total_share_days = 0
-        sum_days = 0
+        sum_days = 0        
+        if len(self.share_age_list) == 0:
+            self["total_share_days"] = total_share_days
+            self["avg_share_age"] = total_share_days
+            return
         for i in range(len(self.share_age_list)):
             total_share_days += self.share_age_list[i] * self.shares_list[i]
         self["total_share_days"] = total_share_days

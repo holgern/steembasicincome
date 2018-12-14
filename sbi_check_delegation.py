@@ -6,6 +6,7 @@ from beem.nodelist import NodeList
 import re
 import os
 from time import sleep
+from datetime import datetime
 import json
 import dataset
 from steembi.parse_hist_op import ParseAccountHist
@@ -83,23 +84,33 @@ if __name__ == "__main__":
     delegation_timestamp = {}
     
     print("load delegation")
+    delegation_list = []
     for d in trxStorage.get_share_type(share_type="Delegation"):
+        if d["share_type"] == "Delegation":
+            delegation_list.append(d)
+    for d in trxStorage.get_share_type(share_type="DelegationLeased"):
+        if d["share_type"] == "DelegationLeased":    
+            delegation_list.append(d)
+    for d in trxStorage.get_share_type(share_type="RemovedDelegation"):
+        if d["share_type"] == "RemovedDelegation":
+            delegation_list.append(d)
+            
+            
+    sorted_delegation_list = sorted(delegation_list, key=lambda x: (datetime.utcnow() - x["timestamp"]).total_seconds(), reverse=True)
+
+    for d in sorted_delegation_list:
         if d["share_type"] == "Delegation":
             delegation[d["account"]] = stm.vests_to_sp(float(d["vests"]))
             delegation_timestamp[d["account"]] = d["timestamp"]
-            
-        delegation_shares[d["account"]] = d["shares"]
-    for d in trxStorage.get_share_type(share_type="DelegationLeased"):
-        if d["share_type"] == "DelegationLeased":
+            delegation_shares[d["account"]] = d["shares"]
+        elif d["share_type"] == "DelegationLeased":
             delegation[d["account"]] = 0
             delegation_timestamp[d["account"]] = d["timestamp"]
-            
-        delegation_shares[d["account"]] = d["shares"]    
-    for d in trxStorage.get_share_type(share_type="RemovedDelegation"):
-        if d["share_type"] == "RemovedDelegation":
+            delegation_shares[d["account"]] = d["shares"]    
+        elif d["share_type"] == "RemovedDelegation":
             delegation[d["account"]] = 0
             delegation_timestamp[d["account"]] = d["timestamp"]
-        delegation_shares[d["account"]] = 0
+            delegation_shares[d["account"]] = 0
     
     delegation_leased = {}
     delegation_shares = {}

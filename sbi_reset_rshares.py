@@ -3,7 +3,7 @@ from beem.amount import Amount
 from beem import Steem
 from beem.instance import set_shared_steem_instance
 from beem.nodelist import NodeList
-from beem.utils import addTzInfo, resolve_authorperm, formatTimeString
+from beem.utils import addTzInfo, resolve_authorperm, formatTimeString, construct_authorperm
 from beem.vote import AccountVotes
 from beem.comment import Comment
 from beem.block import Block
@@ -57,9 +57,7 @@ if __name__ == "__main__":
     accountStorage = MemberHistDB(db)
     confStorage = ConfigurationDB(db2)
     
-    accountTrx = {}
-    for account in accounts:
-        accountTrx[account] = AccountTrx(db, account)    
+ 
     
     conf_setup = confStorage.get()
     
@@ -83,9 +81,6 @@ if __name__ == "__main__":
         print("update member database")
         # memberStorage.wipe(True)
         member_accounts = memberStorage.get_all_accounts()
-        data = trxStorage.get_all_data()
-        
-        
         
         # Update current node list from @fullnodeupdate
         nodes = NodeList()
@@ -126,32 +121,84 @@ if __name__ == "__main__":
         if True:
             b = Blockchain(steem_instance=stm)
             wallet = Wallet(steem_instance=stm)
-            
+            accountTrx = {}
             for acc_name in accounts:
                 print(acc_name)
+                db = dataset.connect(databaseConnector)
+                accountTrx[acc_name] = AccountTrx(db, acc_name)
+                
+                comments_transfer = []
+                comments = []
+                ops = accountTrx[acc_name].get_all(op_types=["transfer"])
+                cnt = 0
+                for o in ops:
+                    cnt += 1
+                    if cnt % 10000 == 0:
+                        print("%d/%d" % (cnt, len(ops)))
+                    op = json.loads(o["op_dict"])
+                    if op["memo"] == "":
+                        continue
+                    try:
+                        c = Comment(op["memo"], steem_instance=stm)
+                    except:
+                        continue
+                    if c["author"] not in accounts:
+                        continue
+                    authorperm = construct_authorperm(c["author"], c["permlink"])
+                    if authorperm not in comments_transfer:
+                        comments_transfer.append(authorperm)                
+                print("%d comments with transfer found" % len(comments_transfer))
+                del ops
+                
                 ops = accountTrx[acc_name].get_all(op_types=["comment"])
                 cnt = 0
                 for o in ops:
                     cnt += 1
-                    if cnt % 10 == 0:
+                    if cnt % 10000 == 0:
                         print("%d/%d" % (cnt, len(ops)))
                     op = json.loads(o["op_dict"])
                     c = Comment(op, steem_instance=stm)
+                    if c["author"] not in accounts:
+                        continue
+                    authorperm = construct_authorperm(c["author"], c["permlink"])
+                    if authorperm not in comments:
+                        comments.append(authorperm)
+                print("%d comments found" % len(comments))
+                del ops
+                cnt = 0
+                cnt2 = 0
+                for authorperm in comments:
+                    cnt += 1
+                    if cnt % 100 == 0:
+                        print("%d/%d" % (cnt, len(comments)))
+                    if authorperm in comments_transfer:
+                        print("Will check vote signer %d/%d - %s" % (cnt2, len(comments_transfer), authorperm))
+                        if cnt2 % 10 == 0 and cnt2 > 0:
+                            print("write member database")
+                            memberStorage.db = dataset.connect(databaseConnector2)
+                            member_data_list = []
+                            for m in member_data:
+                                member_data_list.append(member_data[m])
+                            memberStorage.add_batch(member_data_list)
+                            member_data_list = []                            
+                        cnt2 += 1
                     try:
-                        c.refresh()
+                        c = Comment(authorperm, steem_instance=stm)
                     except:
                         continue
+                    cnt3 = 0
                     for vote in c["active_votes"]:
-                        if vote["rshares"] == 0:
+                        cnt3 += 1
+                        if int(vote["rshares"]) == 0:
                             continue
                         if (addTzInfo(datetime.utcnow()) - (vote["time"])).total_seconds() / 60 / 60 / 24 <= 7:
                             continue
-                        if (addTzInfo(o["timestamp"]) - c["created"]).total_seconds() > 10:
-                            continue
                         if vote["voter"] not in member_data:
                             continue
-                        if False:
+                        if authorperm in comments_transfer and stm.rshares_to_sbd(int(vote["rshares"])) >= 0.05:
                             try:
+                                if cnt3 % 10 == 0:
+                                    print("%d/%d votes" % (cnt3, len(c["active_votes"])))
                                 block_num = b.get_estimated_block_num(vote["time"])
                                 current_block_num = b.get_current_block_num()
                                 transaction = None
@@ -204,16 +251,16 @@ if __name__ == "__main__":
                         
                         if c.is_main_post():
                             if acc_name == "steembasicincome":
-                                rshares = vote["rshares"] * upvote_multiplier
+                                rshares = int(vote["rshares"]) * upvote_multiplier
                                 if rshares < rshares_per_cycle:
                                     rshares = rshares_per_cycle
                             else:
-                                rshares = vote["rshares"] * upvote_multiplier
+                                rshares = int(vote["rshares"]) * upvote_multiplier
                             member_data[vote["voter"]]["earned_rshares"] += rshares
                             member_data[vote["voter"]]["curation_rshares"] += rshares
                             member_data[vote["voter"]]["balance_rshares"] += rshares
                         else:
-                            rshares = vote["rshares"]
+                            rshares = int(vote["rshares"])
                             if rshares < 50000000:
                                 continue
                             member_data[vote["voter"]]["earned_rshares"] += rshares

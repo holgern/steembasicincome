@@ -591,7 +591,7 @@ if __name__ == "__main__":
                             member_data[s]["shares"] += shares
                             memo_text = memo_sponsoring_update_shares(sponsor, member_data[s]["shares"])
                             # print("send memo %s with %s" % (s, memo_text))                            
-                            member_data[sponsor].append_share_age(timestamp, shares)
+                            member_data[s].append_share_age(timestamp, shares)
 
         # add bonus_shares from active delegation
         for m in member_data:
