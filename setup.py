@@ -16,13 +16,12 @@ except LookupError:
     ascii = codecs.lookup('ascii')
     codecs.register(lambda name, enc=ascii: {True: enc}.get(name == 'mbcs'))
 
-VERSION = '0.0.1'
+VERSION = '0.1.0'
 
 tests_require = ['mock >= 2.0.0', 'pytest', 'pytest-mock', 'parameterized']
 
 requires = [
     "beem",
-    "sqlitedict",
     "dataset",
     "mysqlclient"
 ]
@@ -56,15 +55,15 @@ if __name__ == '__main__':
         version=VERSION,
         description='Steem basic income library',
         long_description=get_long_description(),
-        download_url='https://github.com/holgern/beem/tarball/' + VERSION,
+        download_url='https://github.com/holgern/steembasicincome/tarball/' + VERSION,
         author='Holger Nahrstaedt',
         author_email='holger@nahrstaedt.de',
         maintainer='Holger Nahrstaedt',
         maintainer_email='holger@nahrstaedt.de',
-        url='http://www.github.com/holgern/steembi',
-        keywords=['steem', 'library', 'ubi'],
+        url='http://www.github.com/holgern/steembasicincome',
+        keywords=['steem', 'library', 'ubi', 'steembasicincome'],
         packages=[
-            "steembi",
+            "steembi"
         ],
         classifiers=[
             'License :: OSI Approved :: MIT License',
@@ -77,7 +76,6 @@ if __name__ == '__main__':
             'Programming Language :: Python :: 3.6',
             'Development Status :: 4 - Beta',
             'Intended Audience :: Developers',
-            'Intended Audience :: Financial and Insurance Industry',
             'Topic :: Office/Business :: Financial',
         ],
         install_requires=requires,
