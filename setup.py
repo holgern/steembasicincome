@@ -39,7 +39,7 @@ version = '%(version)s'
 def get_long_description():
     """Generate a long description from the README file."""
     descr = []
-    for fname in ('README.rst',):
+    for fname in ('README.md',):
         with io.open(fname, encoding='utf-8') as f:
             descr.append(f.read())
     return '\n\n'.join(descr)

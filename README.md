@@ -1,11 +1,11 @@
-steembasicincome
-----------------
+# steembasicincome
+
 python scripts for automation of steembasicincome
 
-How to start
-============
-Installation of needed packages
-===============================
+## How to start
+
+### Installation of needed packages
+
 The following packages are needed, when running the scripts on Ubuntu:
 ```
 apt-get install libmariadbclient-dev
@@ -21,16 +21,16 @@ Compile and install steembi, the helper library for all steembasicincome scripts
 python setup.py install
 ```
 
-Prepare the database
-====================
+### Prepare the database
+
 ```
 mysql -u username -p sbi < sql/sbi.sql
 mysql -u username -p sbi_steem_ops < sql/sbi_steem_ops.sql
 ```
 
 
-Creating a service script
-=========================
+### Creating a service script
+
 Main runner script can be automatically run through systemd:
 
 ```
@@ -58,9 +58,9 @@ systemctl start blacklist.timer
 systemctl list-timers
 ```
 
-Config file for accesing the database
-=====================================
-config.json:
+## Config file for accesing the database
+
+A file `config.json` needs to be created:
 
 ```
 {
@@ -71,8 +71,8 @@ config.json:
 }
 ```
 
-Running steembasicincome
-========================
+## Running steembasicincome
+
 The following scripts need to run:
 ```
 python3 sbi_upvote_post_comment.py
