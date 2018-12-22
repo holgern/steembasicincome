@@ -6,6 +6,7 @@ from beem.nodelist import NodeList
 import re
 import os
 import json
+import time
 from time import sleep
 from steembi.parse_hist_op import ParseAccountHist
 from steembi.storage import TrxDB, MemberDB, TransactionMemoDB, TransactionOutDB, KeysDB
@@ -30,7 +31,7 @@ if __name__ == "__main__":
         mgnt_shares = config_data["mgnt_shares"]
 
 
-    
+    start_prep_time = time.time()
     db = dataset.connect(databaseConnector)
     db2 = dataset.connect(databaseConnector2)
     accountTrx = {}
@@ -39,7 +40,8 @@ if __name__ == "__main__":
         
         if not accountTrx[account].exists_table():
             accountTrx[account].create_table()
-            
+    accountTrx["sbi"] = AccountTrx(db, "sbi")
+    
     # Create keyStorage
     trxStorage = TrxDB(db2)
     memberStorage = MemberDB(db2)
@@ -73,7 +75,7 @@ if __name__ == "__main__":
     if not transactionOutStorage.exists_table():
         transactionOutStorage.create_table()
     
-    print("load member database")
+    # print("load member database")
     member_accounts = memberStorage.get_all_accounts()
     member_data = {}
     n_records = 0
@@ -100,8 +102,12 @@ if __name__ == "__main__":
     # stop_index = formatTimeString("2018-07-21T23:46:09")    
 
     for account_name in accounts:
+        if account_name == "steembasicincome":
+            account_trx_name = "sbi"
+        else:
+            account_trx_name = account_name
         parse_vesting = (account_name == "steembasicincome")
-        accountTrx[account_name].db = dataset.connect(databaseConnector)
+        accountTrx[account_trx_name].db = dataset.connect(databaseConnector)
         account = Account(account_name, steem_instance=stm)
         # print(account["name"])
         pah = ParseAccountHist(account, "", trxStorage, transactionStorage, transactionOutStorage, member_data, memberStorage=memberStorage, steem_instance=stm)
@@ -111,25 +117,41 @@ if __name__ == "__main__":
         if len(op_index) == 0:
             start_index = 0
             op_counter = 0
+            start_index_offset = 0
         else:
             op = trxStorage.get(op_index[-1], account["name"])
             start_index = op["index"] + 1
             op_counter = op_index[-1] + 1
+            if account_name == "steembasicincome":
+                start_index_offset = 316
+            else:
+                start_index_offset = 0
+
         # print("start_index %d" % start_index)
         # ops = []
         # 
         if True:
-            ops = accountTrx[account_name].get_all(op_types=["transfer", "delegate_vesting_shares"])
+            
+            ops = accountTrx[account_trx_name].get_all(op_types=["transfer", "delegate_vesting_shares"])
             if len(ops) == 0:
                 continue
-            if ops[-1]["op_acc_index"] < start_index:
+            
+            if ops[-1]["op_acc_index"] < start_index - start_index_offset:
                 continue
             for op in ops:
-                if op["op_acc_index"] < start_index:
+                if op["op_acc_index"] < start_index - start_index_offset:
                     continue
                 if stop_index is not None and formatTimeString(op["timestamp"]) > stop_index:
                     continue
-                pah.parse_op(json.loads(op["op_dict"]), parse_vesting=parse_vesting)
+                json_op = json.loads(op["op_dict"])
+                json_op["index"] = op["op_acc_index"] + start_index_offset
+                if account_name != "steembasicincome" and json_op["type"] == "transfer":
+                    if float(Amount(json_op["amount"], steem_instance=stm)) < 1:
+                        continue
+                    if json_op["memo"][:8] == 'https://':
+                        continue
+                    
+                pah.parse_op(json_op, parse_vesting=parse_vesting)
                 # op_counter += 1
                 # if (op_counter % 100) == 0 and op_counter > 0 and (account_name == "steembasicincome") and False:
                 #    pah.add_mngt_shares(json.loads(op["op_dict"]), mgnt_shares, op_counter)
@@ -144,3 +166,4 @@ if __name__ == "__main__":
                 
 
 
+    print("transfer script run %.2f s" % (time.time() - start_prep_time))

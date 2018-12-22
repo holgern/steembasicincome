@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 import re
 import json
 import os
+import time
 from time import sleep
 import dataset
 from steembi.parse_hist_op import ParseAccountHist
@@ -30,7 +31,7 @@ if __name__ == "__main__":
         other_accounts = config_data["other_accounts"]
         mgnt_shares = config_data["mgnt_shares"]
         
-        
+    start_prep_time = time.time()
     update_comment_date = True
     update_delegation_data = True
 
@@ -89,7 +90,7 @@ if __name__ == "__main__":
         elif latest_enrollment < member_data[m]["latest_enrollment"]:
             latest_enrollment = member_data[m]["latest_enrollment"]
     
-    print("latest member enrollment %s" % (str(latest_enrollment)))
+    # print("latest member enrollment %s" % (str(latest_enrollment)))
       
 
     # date_now = datetime.utcnow()
@@ -98,7 +99,7 @@ if __name__ == "__main__":
     date_28_before = addTzInfo(date_now - timedelta(seconds=28 * 24 * 60 * 60))
     date_72h_before = addTzInfo(date_now - timedelta(seconds=72 * 60 * 60))
         
-    print("update last post and comment date")
+    # print("update last post and comment date")
     new_member = []
     for m in [last_updated_member]:
         if addTzInfo(member_data[m]["original_enrollment"]) > date_28_before:
@@ -208,7 +209,7 @@ if __name__ == "__main__":
         member_data[m]["updated_at"] = latest_enrollment
         if member_data[m]["last_post"] is None:
             member_data[m]["comment_upvote"] = 1
-        elif addTzInfo(member_data[m]["last_post"]) < date_72h_before:
+        elif addTzInfo(member_data[m]["last_post"]) < date_7_before:
             member_data[m]["comment_upvote"] = 1
         elif member_data[m]["comment_upvote"] == 1:
             member_data[m]["comment_upvote"] = 0
@@ -228,3 +229,4 @@ if __name__ == "__main__":
         data["comment_upvote"] = member_data[m]["comment_upvote"]
 
         memberStorage.update(data)
+    print("update post count script run %.2f s" % (time.time() - start_prep_time))

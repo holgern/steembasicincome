@@ -12,6 +12,7 @@ import requests
 import re
 import json
 import os
+import time
 from time import sleep
 import dataset
 from steembi.parse_hist_op import ParseAccountHist
@@ -62,7 +63,7 @@ if __name__ == "__main__":
         other_accounts = config_data["other_accounts"]
         mgnt_shares = config_data["mgnt_shares"]
         
-        
+    start_prep_time = time.time()
     db2 = dataset.connect(databaseConnector2)
     db = dataset.connect(databaseConnector)
     transferStorage = TransferTrx(db)    
@@ -760,3 +761,5 @@ if __name__ == "__main__":
         print("shares: %d" % shares)
         print("delegation bonus shares: %d" % delegation_shares)
         print("Mngt bonus shares %d" % (mngt_shares))
+        
+    print("update member script run %.2f s" % (time.time() - start_prep_time))
