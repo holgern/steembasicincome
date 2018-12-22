@@ -36,11 +36,14 @@ if __name__ == "__main__":
     db2 = dataset.connect(databaseConnector2)
     accountTrx = {}
     for account in accounts:
-        accountTrx[account] = AccountTrx(db, account)
+        if account == "steembasicincome":
+            accountTrx["sbi"] = AccountTrx(db, "sbi")
+        else:
+            accountTrx[account] = AccountTrx(db, account)
         
         if not accountTrx[account].exists_table():
             accountTrx[account].create_table()
-    accountTrx["sbi"] = AccountTrx(db, "sbi")
+    
     
     # Create keyStorage
     trxStorage = TrxDB(db2)
@@ -130,40 +133,27 @@ if __name__ == "__main__":
         # print("start_index %d" % start_index)
         # ops = []
         # 
-        if True:
             
-            ops = accountTrx[account_trx_name].get_all(op_types=["transfer", "delegate_vesting_shares"])
-            if len(ops) == 0:
+        ops = accountTrx[account_trx_name].get_all(op_types=["transfer", "delegate_vesting_shares"])
+        if len(ops) == 0:
+            continue
+        
+        if ops[-1]["op_acc_index"] < start_index - start_index_offset:
+            continue
+        for op in ops:
+            if op["op_acc_index"] < start_index - start_index_offset:
                 continue
-            
-            if ops[-1]["op_acc_index"] < start_index - start_index_offset:
+            if stop_index is not None and formatTimeString(op["timestamp"]) > stop_index:
                 continue
-            for op in ops:
-                if op["op_acc_index"] < start_index - start_index_offset:
+            json_op = json.loads(op["op_dict"])
+            json_op["index"] = op["op_acc_index"] + start_index_offset
+            if account_name != "steembasicincome" and json_op["type"] == "transfer":
+                if float(Amount(json_op["amount"], steem_instance=stm)) < 1:
                     continue
-                if stop_index is not None and formatTimeString(op["timestamp"]) > stop_index:
+                if json_op["memo"][:8] == 'https://':
                     continue
-                json_op = json.loads(op["op_dict"])
-                json_op["index"] = op["op_acc_index"] + start_index_offset
-                if account_name != "steembasicincome" and json_op["type"] == "transfer":
-                    if float(Amount(json_op["amount"], steem_instance=stm)) < 1:
-                        continue
-                    if json_op["memo"][:8] == 'https://':
-                        continue
-                    
-                pah.parse_op(json_op, parse_vesting=parse_vesting)
-                # op_counter += 1
-                # if (op_counter % 100) == 0 and op_counter > 0 and (account_name == "steembasicincome") and False:
-                #    pah.add_mngt_shares(json.loads(op["op_dict"]), mgnt_shares, op_counter)
-                #    op_counter += len(mgnt_shares)
                 
-        else:
-            for op in account.history(start=start_index, use_block_num=False):
-                pah.parse_op(op, parse_vesting=parse_vesting)
-                op_counter += 1
-                if (op_counter % 100) == 0 and (account_name == "steembasicincome"):
-                    pah.add_mngt_shares(op, mgnt_shares)                
-                
+            pah.parse_op(json_op, parse_vesting=parse_vesting)
 
 
     print("transfer script run %.2f s" % (time.time() - start_prep_time))
