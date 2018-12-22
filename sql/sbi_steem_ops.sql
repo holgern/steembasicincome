@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 10. Dez 2018 um 09:52
+-- Erstellungszeit: 22. Dez 2018 um 22:07
 -- Server-Version: 10.1.29-MariaDB-6
 -- PHP-Version: 7.1.20-1+ubuntu18.04.1+deb.sury.org+1
 
@@ -216,6 +216,24 @@ CREATE TABLE `sbi10_ops` (
 -- --------------------------------------------------------
 
 --
+-- Tabellenstruktur für Tabelle `sbi_ops`
+--
+
+CREATE TABLE `sbi_ops` (
+  `virtual_op` int(11) NOT NULL,
+  `op_acc_index` int(11) NOT NULL,
+  `op_acc_name` varchar(50) NOT NULL,
+  `block` int(11) NOT NULL,
+  `trx_in_block` int(11) NOT NULL,
+  `op_in_trx` int(11) NOT NULL,
+  `timestamp` datetime NOT NULL,
+  `type` varchar(50) NOT NULL,
+  `op_dict` text NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- --------------------------------------------------------
+
+--
 -- Tabellenstruktur für Tabelle `steembasicincome_ops`
 --
 
@@ -279,55 +297,81 @@ ALTER TABLE `posts_comments`
 -- Indizes für die Tabelle `sbi2_ops`
 --
 ALTER TABLE `sbi2_ops`
-  ADD PRIMARY KEY (`op_acc_index`);
+  ADD PRIMARY KEY (`virtual_op`,`block`,`trx_in_block`,`op_in_trx`),
+  ADD KEY `block` (`block`),
+  ADD KEY `op_acc_index` (`op_acc_index`);
 
 --
 -- Indizes für die Tabelle `sbi3_ops`
 --
 ALTER TABLE `sbi3_ops`
-  ADD PRIMARY KEY (`op_acc_index`);
+  ADD PRIMARY KEY (`virtual_op`,`block`,`trx_in_block`,`op_in_trx`),
+  ADD KEY `block` (`block`),
+  ADD KEY `op_acc_index` (`op_acc_index`);
 
 --
 -- Indizes für die Tabelle `sbi4_ops`
 --
 ALTER TABLE `sbi4_ops`
-  ADD PRIMARY KEY (`op_acc_index`);
+  ADD PRIMARY KEY (`virtual_op`,`block`,`trx_in_block`,`op_in_trx`),
+  ADD KEY `block` (`block`),
+  ADD KEY `op_acc_index` (`op_acc_index`);
 
 --
 -- Indizes für die Tabelle `sbi5_ops`
 --
 ALTER TABLE `sbi5_ops`
-  ADD PRIMARY KEY (`op_acc_index`);
+  ADD PRIMARY KEY (`virtual_op`,`block`,`trx_in_block`,`op_in_trx`),
+  ADD KEY `block` (`block`),
+  ADD KEY `op_acc_index` (`op_acc_index`);
 
 --
 -- Indizes für die Tabelle `sbi6_ops`
 --
 ALTER TABLE `sbi6_ops`
-  ADD PRIMARY KEY (`op_acc_index`);
+  ADD PRIMARY KEY (`virtual_op`,`block`,`trx_in_block`,`op_in_trx`),
+  ADD KEY `block` (`block`),
+  ADD KEY `op_acc_index` (`op_acc_index`);
 
 --
 -- Indizes für die Tabelle `sbi7_ops`
 --
 ALTER TABLE `sbi7_ops`
-  ADD PRIMARY KEY (`op_acc_index`);
+  ADD PRIMARY KEY (`virtual_op`,`block`,`trx_in_block`,`op_in_trx`),
+  ADD KEY `block` (`block`),
+  ADD KEY `op_acc_index` (`op_acc_index`);
 
 --
 -- Indizes für die Tabelle `sbi8_ops`
 --
 ALTER TABLE `sbi8_ops`
-  ADD PRIMARY KEY (`op_acc_index`);
+  ADD PRIMARY KEY (`virtual_op`,`block`,`trx_in_block`,`op_in_trx`),
+  ADD KEY `block` (`block`),
+  ADD KEY `op_acc_index` (`op_acc_index`);
 
 --
 -- Indizes für die Tabelle `sbi9_ops`
 --
 ALTER TABLE `sbi9_ops`
-  ADD PRIMARY KEY (`op_acc_index`);
+  ADD PRIMARY KEY (`virtual_op`,`block`,`trx_in_block`,`op_in_trx`),
+  ADD KEY `block` (`block`),
+  ADD KEY `op_acc_index` (`op_acc_index`);
 
 --
 -- Indizes für die Tabelle `sbi10_ops`
 --
 ALTER TABLE `sbi10_ops`
-  ADD PRIMARY KEY (`op_acc_index`);
+  ADD PRIMARY KEY (`virtual_op`,`block`,`trx_in_block`,`op_in_trx`),
+  ADD KEY `block` (`block`),
+  ADD KEY `op_acc_index` (`op_acc_index`);
+
+--
+-- Indizes für die Tabelle `sbi_ops`
+--
+ALTER TABLE `sbi_ops`
+  ADD PRIMARY KEY (`virtual_op`,`block`,`trx_in_block`,`op_in_trx`),
+  ADD KEY `op_acc_index` (`op_acc_index`),
+  ADD KEY `block` (`block`);
 
 --
 -- Indizes für die Tabelle `steembasicincome_ops`
