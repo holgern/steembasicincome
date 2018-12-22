@@ -41,9 +41,6 @@ if __name__ == "__main__":
         else:
             accountTrx[account] = AccountTrx(db, account)
         
-        if not accountTrx[account].exists_table():
-            accountTrx[account].create_table()
-    
     
     # Create keyStorage
     trxStorage = TrxDB(db2)
@@ -65,18 +62,6 @@ if __name__ == "__main__":
         print("could not update nodes")    
     stm = Steem(keys=key_list, node=nodes.get_nodes())
     # set_shared_steem_instance(stm)    
-    
-    if not trxStorage.exists_table():
-        trxStorage.create_table()
-    
-    if not memberStorage.exists_table():
-        memberStorage.create_table()
-
-    if not transactionStorage.exists_table():
-        transactionStorage.create_table()
-
-    if not transactionOutStorage.exists_table():
-        transactionOutStorage.create_table()
     
     # print("load member database")
     member_accounts = memberStorage.get_all_accounts()
