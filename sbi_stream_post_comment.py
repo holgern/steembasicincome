@@ -10,11 +10,12 @@ import json
 import os
 import math
 import dataset
+import random
 from datetime import date, datetime, timedelta
 from dateutil.parser import parse
 from beem.constants import STEEM_100_PERCENT 
 from steembi.transfer_ops_storage import TransferTrx, AccountTrx, PostsTrx
-from steembi.storage import TrxDB, MemberDB, ConfigurationDB
+from steembi.storage import TrxDB, MemberDB, ConfigurationDB, AccountsDB, KeysDB
 from steembi.parse_hist_op import ParseAccountHist
 from steembi.memo_parser import MemoParser
 from steembi.member import Member
@@ -30,18 +31,21 @@ if __name__ == "__main__":
         with open(config_file) as json_data_file:
             config_data = json.load(json_data_file)
         # print(config_data)
-        accounts = config_data["accounts"]
         databaseConnector = config_data["databaseConnector"]
         databaseConnector2 = config_data["databaseConnector2"]
         other_accounts = config_data["other_accounts"]    
 
-        
+    start_prep_time = time.time()
     db = dataset.connect(databaseConnector)
     db2 = dataset.connect(databaseConnector2)
     # Create keyStorage
     trxStorage = TrxDB(db2)
     memberStorage = MemberDB(db2)
     confStorage = ConfigurationDB(db2)
+    accStorage = AccountsDB(db2)
+    keyStorage = KeysDB(db2)    
+    
+    accounts = accStorage.get()
     
     conf_setup = confStorage.get()
     
@@ -49,10 +53,13 @@ if __name__ == "__main__":
     share_cycle_min = conf_setup["share_cycle_min"]
     sp_share_ratio = conf_setup["sp_share_ratio"]
     rshares_per_cycle = conf_setup["rshares_per_cycle"]    
+    minimum_vote_threshold = conf_setup["minimum_vote_threshold"]
     
     member_accounts = memberStorage.get_all_accounts()
     print("%d members in list" % len(member_accounts)) 
     
+    nobroadcast = False
+    # nobroadcast = True    
 
     member_data = {}
     for m in member_accounts:
@@ -90,9 +97,20 @@ if __name__ == "__main__":
     try:
         nodes.update_nodes()
     except:
-        print("could not update nodes")    
+        print("could not update nodes")
+    
+    keys = []
+    account_list = []
+    for acc in accounts:
+        account_list.append(acc)
+        keys.append(keyStorage.get(acc, "posting"))
+    keys_list = []
+    for k in keys:
+        if k["key_type"] == 'posting':
+            keys_list.append(k["wif"].replace("\n", '').replace('\r', ''))    
     node_list = nodes.get_nodes(normal=normal, appbase=appbase, wss=wss, https=https)
-    stm = Steem(node=node_list, num_retries=5, call_num_retries=3, timeout=15)            
+    stm = Steem(node=node_list, keys=keys_list, num_retries=5, call_num_retries=3, timeout=15, nobroadcast=nobroadcast) 
+    
     b = Blockchain(steem_instance = stm)
     print("deleting old posts")
     postTrx.delete_old_posts(7)
@@ -137,6 +155,23 @@ if __name__ == "__main__":
             member_data[ops["author"]]["last_post"] = c["created"]
         else:
             member_data[ops["author"]]["last_comment"] = c["created"]
+            status_command = c.body.find("!sbi status")
+            if status_command > -1 and abs((ops["timestamp"] - c["created"]).total_seconds()) <= 10:
+                reply_body = "Hi @%s!\n\n" % ops["author"]
+                reply_body += "* you have %d units and %d bonus units\n" % (member_data[ops["author"]]["shares"], member_data[ops["author"]]["bonus_shares"])
+                reply_body += "* your rshares balance is %d or %.3f $\n" % (member_data[ops["author"]]["balance_rshares"], stm.rshares_to_sbd(member_data[ops["author"]]["balance_rshares"])) 
+                if member_data[ops["author"]]["balance_rshares"] * 0.2 > minimum_vote_threshold:
+                    reply_body += "* your next SBI upvote is predicted to be %.3f $\n" % (stm.rshares_to_sbd(member_data[ops["author"]]["balance_rshares"] * 0.2))
+                else:
+                    reply_body += "* you need to wait until your upvote value (current value: %.3f $) is above %.3f $\n" % (stm.rshares_to_sbd(member_data[ops["author"]]["balance_rshares"] * 0.2), stm.rshares_to_sbd(minimum_vote_threshold))
+                if member_data[ops["author"]]["comment_upvote"] == 1:
+                    reply_body += "* as you did not write a post within the last 7 days, your comments will be upvoted."
+                account_name = account_list[random.randint(0, len(account_list) - 1)]
+                if len(c.permlink) < 255:
+                    c.reply(reply_body, author=account_name)
+                    time.sleep(4)
+            
+                
         already_voted = False
     
         for v in c["active_votes"]:
@@ -170,3 +205,4 @@ if __name__ == "__main__":
         print("Adding %d post took %.2f seconds" % (len(posts_dict), time.time() - start_time))
         posts_dict = {}        
 
+    print("stream posts script run %.2f s" % (time.time() - start_prep_time))

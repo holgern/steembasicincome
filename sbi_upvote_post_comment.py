@@ -34,7 +34,7 @@ if __name__ == "__main__":
         databaseConnector = config_data["databaseConnector"]
         databaseConnector2 = config_data["databaseConnector2"]
 
-        
+    start_prep_time = time.time()
     db = dataset.connect(databaseConnector)
     db2 = dataset.connect(databaseConnector2)
     # Create keyStorage
@@ -61,14 +61,15 @@ if __name__ == "__main__":
     nobroadcast = False
     # nobroadcast = True
     
-    member_data = {}
-    for m in member_accounts:
-        member_data[m] = Member(memberStorage.get(m))    
+    upvote_counter = {}
     
-    print("%d members in list" % len(member_accounts))    
+    for m in member_accounts:
+        upvote_counter[m] = 0
+    
+    # print("%d members in list" % len(member_accounts))    
     postTrx = PostsTrx(db)
 
-    print("Upvote new posts")
+    print("Upvote posts/comments")
     start_timestamp = datetime(2018, 12, 14, 9, 18, 20)
 
 
@@ -116,7 +117,7 @@ if __name__ == "__main__":
         voter_accounts[acc] = Account(acc, steem_instance=stm)    
     
     b = Blockchain(steem_instance = stm)
-    print("deleting old posts")
+    # print("deleting old posts")
     postTrx.delete_old_posts(7)
     # print("reading all authorperm")
     already_voted_posts = []
@@ -124,6 +125,8 @@ if __name__ == "__main__":
     rshares_sum = 0
     
     post_list = postTrx.get_unvoted_post()
+    
+    # print("prep time took %.2f s" % (time.time() - start_prep_time))
     for authorperm in post_list:
         created = post_list[authorperm]["created"]
         if (datetime.utcnow() - created).total_seconds() > 3 * 24 * 60 * 60:
@@ -133,15 +136,18 @@ if __name__ == "__main__":
         author = post_list[authorperm]["author"]
         if author not in member_accounts:
             continue
-        member = member_data[author]
+        if upvote_counter[author] > 0:
+            continue
+        if post_list[authorperm]["main_post"] == 0 and (datetime.utcnow() - created).total_seconds() > comment_vote_timeout_h * 60 * 60:
+            continue        
+        member = Member(memberStorage.get(author))
         if member["comment_upvote"] == 0 and post_list[authorperm]["main_post"] == 0:
             continue
         if member["blacklisted"]:
             continue
         elif member["blacklisted"] is None and (member["steemcleaners"] or member["buildawhale"]):
             continue
-        if post_list[authorperm]["main_post"] == 0 and (datetime.utcnow() - created).total_seconds() > comment_vote_timeout_h * 60 * 60:
-            continue
+
         rshares = member["balance_rshares"] / comment_vote_divider
         if rshares < minimum_vote_threshold:
             continue
@@ -161,8 +167,10 @@ if __name__ == "__main__":
         if already_voted:
             postTrx.update_voted(author, created, already_voted)
             continue
-                  
-        if c.time_elapsed() < timedelta(seconds=60 * 15):
+        vote_delay_sec = 15 * 60
+        if member["upvote_delay"] is not None:
+            vote_delay_sec = member["upvote_delay"]
+        if c.time_elapsed() < timedelta(seconds=vote_delay_sec):
             continue
 
         
@@ -202,6 +210,8 @@ if __name__ == "__main__":
                             c.steem.rpc.next()
                         print("retry to vote %s" % c["authorperm"])
                     cnt += 1
+                if vote_sucessfull:
+                    upvote_counter[author] += 1
                 postTrx.update_voted(author, created, vote_sucessfull)
         else:
             highest_pct = 0
@@ -288,10 +298,12 @@ if __name__ == "__main__":
                                 c.steem.rpc.next()
                             print("retry to vote %s" % c["authorperm"])
                         cnt += 1
+                    if vote_sucessfull:
+                        upvote_counter[author] += 1                    
                     postTrx.update_voted(author, created, vote_sucessfull)
                     
             print("rshares_sum %d" % rshares_sum)
-            
+    print("upvote script run %.2f s" % (time.time() - start_prep_time))
             
             
             

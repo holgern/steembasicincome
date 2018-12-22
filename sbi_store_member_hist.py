@@ -32,7 +32,7 @@ if __name__ == "__main__":
     
     # sqlDataBaseFile = os.path.join(path, database)
     # databaseConnector = "sqlite:///" + sqlDataBaseFile
-    
+    start_prep_time = time.time()
     db2 = dataset.connect(databaseConnector2)
     # Create keyStorage
     trxStorage = TrxDB(db2)
@@ -49,6 +49,7 @@ if __name__ == "__main__":
     last_paid_post = conf_setup["last_paid_post"]
     last_paid_comment = conf_setup["last_paid_comment"]  
     
+    print("Count rshares of upvoted members.")
     member_accounts = memberStorage.get_all_accounts()
     print("%d members in list" % len(member_accounts))
     
@@ -93,7 +94,6 @@ if __name__ == "__main__":
     start_time = stop_time - timedelta(seconds=30 * 24 * 60 * 60)
     
     
-    
     blocks_per_day = 20 * 60 * 24
     #start_block = 2612571 - 1
     if newAccountTrxStorage:
@@ -111,7 +111,7 @@ if __name__ == "__main__":
     #end_block = b.get_estimated_block_num(stop_time)
     end_block = current_block["id"]
     
-    print("start_block: %d - clear not needed blocks" % (start_block))
+    # print("start_block: %d - clear not needed blocks" % (start_block))
     
     
     deleting = True
@@ -136,7 +136,7 @@ if __name__ == "__main__":
         else:
             deleting = False
     
-    print("start to stream")
+    # print("start to stream")
     db_data = []
 
     last_block_num = None
@@ -239,3 +239,5 @@ if __name__ == "__main__":
         print("\n---------------------\n")
         percentage_done = (block_num - start_block) / (end_block - start_block) * 100
         print("Block %d -- Datetime %s -- %.2f %% finished" % (block_num, op["timestamp"], percentage_done))
+        
+    print("member hist script run %.2f s" % (time.time() - start_prep_time))

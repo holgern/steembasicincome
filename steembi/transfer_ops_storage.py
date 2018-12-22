@@ -65,7 +65,7 @@ class AccountTrx(object):
     def get_all(self, op_types = []):
         ops = []
         table = self.db[self.__tablename__]
-        for op in table.find():
+        for op in table.find(order_by='op_acc_index'):
             if op["type"] in op_types or len(op_types) == 0:
                 ops.append(op)
         return ops
@@ -84,6 +84,10 @@ class AccountTrx(object):
     def get_latest_index(self):
         table = self.db[self.__tablename__]
         return table.find_one(order_by='-op_acc_index')
+
+    def get_latest_block(self):
+        table = self.db[self.__tablename__]
+        return table.find_one(order_by='-block')
 
     def delete(self, ID):
         """ Delete a data set
