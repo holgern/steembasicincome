@@ -730,6 +730,7 @@ if __name__ == "__main__":
                         rshares = vote["rshares"]
                         if rshares < 50000000:
                             continue
+                        rshares = rshares * upvote_multiplier
                         member_data[vote["voter"]]["earned_rshares"] += rshares
                         member_data[vote["voter"]]["curation_rshares"] += rshares
                         member_data[vote["voter"]]["balance_rshares"] += rshares
