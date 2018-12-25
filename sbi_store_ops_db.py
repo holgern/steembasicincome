@@ -90,17 +90,17 @@ if __name__ == "__main__":
 
         data = []
         last_block = 0
-        last_trx = 0
+        last_trx = trx_in_block
         for op in account.history(start=start_block - 3, use_block_num=True):
             if op["block"] < start_block:
-                last_block = op["block"]
+                # last_block = op["block"]
                 continue
             elif op["block"] == start_block:
                 if op["virtual_op"] == 0:
                     if op["trx_in_block"] < trx_in_block:
                         last_trx = op["trx_in_block"]
                         continue
-                    if op["op_in_trx"] <= op_in_trx and (trx_in_block != last_trx):
+                    if op["op_in_trx"] <= op_in_trx and (trx_in_block != last_trx or last_block == 0):
                         continue
                 else:
                     if op["virtual_op"] <= virtual_op and (trx_in_block == last_trx):
