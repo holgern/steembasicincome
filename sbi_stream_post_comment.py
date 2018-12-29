@@ -54,6 +54,7 @@ if __name__ == "__main__":
     sp_share_ratio = conf_setup["sp_share_ratio"]
     rshares_per_cycle = conf_setup["rshares_per_cycle"]    
     minimum_vote_threshold = conf_setup["minimum_vote_threshold"]
+    comment_vote_divider = conf_setup["comment_vote_divider"]
     
     member_accounts = memberStorage.get_all_accounts()
     print("%d members in list" % len(member_accounts)) 

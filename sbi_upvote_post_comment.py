@@ -149,9 +149,9 @@ if __name__ == "__main__":
             continue
 
         rshares = member["balance_rshares"] / comment_vote_divider
-        if member["comment_upvote"] == 0 and rshares < minimum_vote_threshold:
+        if post_list[authorperm]["main_post"] == 1 and rshares < minimum_vote_threshold:
             continue
-        elif member["comment_upvote"] == 1 and rshares < minimum_vote_threshold * 2:
+        elif post_list[authorperm]["main_post"] == 0 and rshares < minimum_vote_threshold * 2:
             continue        
         try:
             c = Comment(authorperm, steem_instance=stm)
