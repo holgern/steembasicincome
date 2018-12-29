@@ -9,7 +9,7 @@ import json
 import time
 from time import sleep
 from steembi.parse_hist_op import ParseAccountHist
-from steembi.storage import TrxDB, MemberDB, TransactionMemoDB, TransactionOutDB, KeysDB
+from steembi.storage import TrxDB, MemberDB, TransactionMemoDB, TransactionOutDB, KeysDB, AccountsDB
 from steembi.transfer_ops_storage import TransferTrx, AccountTrx
 import dataset
 from datetime import datetime
@@ -24,16 +24,19 @@ if __name__ == "__main__":
         with open(config_file) as json_data_file:
             config_data = json.load(json_data_file)
         # print(config_data)
-        accounts = config_data["accounts"]
         databaseConnector = config_data["databaseConnector"]
         databaseConnector2 = config_data["databaseConnector2"]
-        other_accounts = config_data["other_accounts"]
         mgnt_shares = config_data["mgnt_shares"]
 
 
     start_prep_time = time.time()
     db = dataset.connect(databaseConnector)
     db2 = dataset.connect(databaseConnector2)
+    
+    accountStorage = AccountsDB(db2)
+    accounts = accountStorage.get()    
+    other_accounts = accountStorage.get_transfer()    
+    
     accountTrx = {}
     for account in accounts:
         if account == "steembasicincome":

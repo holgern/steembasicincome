@@ -117,8 +117,6 @@ if __name__ == "__main__":
         voter_accounts[acc] = Account(acc, steem_instance=stm)    
     
     b = Blockchain(steem_instance = stm)
-    # print("deleting old posts")
-    postTrx.delete_old_posts(7)
     # print("reading all authorperm")
     already_voted_posts = []
     flagged_posts = []
@@ -139,6 +137,7 @@ if __name__ == "__main__":
         if upvote_counter[author] > 0:
             continue
         if post_list[authorperm]["main_post"] == 0 and (datetime.utcnow() - created).total_seconds() > comment_vote_timeout_h * 60 * 60:
+            postTrx.update_comment_to_old(author, created, True)
             continue        
         member = Member(memberStorage.get(author))
         if member["comment_upvote"] == 0 and post_list[authorperm]["main_post"] == 0:

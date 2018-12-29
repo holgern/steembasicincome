@@ -33,7 +33,6 @@ if __name__ == "__main__":
         # print(config_data)
         databaseConnector = config_data["databaseConnector"]
         databaseConnector2 = config_data["databaseConnector2"]
-        other_accounts = config_data["other_accounts"]    
 
     start_prep_time = time.time()
     db = dataset.connect(databaseConnector)
@@ -46,6 +45,7 @@ if __name__ == "__main__":
     keyStorage = KeysDB(db2)    
     
     accounts = accStorage.get()
+    other_accounts = accStorage.get_transfer()
     
     conf_setup = confStorage.get()
     
@@ -114,7 +114,7 @@ if __name__ == "__main__":
     
     b = Blockchain(steem_instance = stm)
     print("deleting old posts")
-    postTrx.delete_old_posts(7)
+    postTrx.delete_old_posts(1)
     # print("reading all authorperm")
     already_voted_posts = []
     flagged_posts = []
@@ -190,9 +190,13 @@ if __name__ == "__main__":
                   
         dt_created = c["created"]
         dt_created = dt_created.replace(tzinfo=None)
+        skip = False
+        for tag in c["tags"]:
+            if tag.lower() in ["nsfw", "sbi-skip"]:
+                skip = True
         
         posts_dict[authorperm] = {"authorperm": authorperm, "author": ops["author"], "created": dt_created, "main_post": main_post,
-                     "voted": already_voted}
+                     "voted": already_voted, "skip": skip}
         
         if len(posts_dict) > 100:
             start_time = time.time()

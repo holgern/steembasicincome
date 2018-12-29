@@ -25,7 +25,6 @@ if __name__ == "__main__":
         # print(config_data)
         databaseConnector = config_data["databaseConnector"]
         databaseConnector2 = config_data["databaseConnector2"]
-        other_accounts = config_data["other_accounts"]
     start_prep_time = time.time()
     # sqlDataBaseFile = os.path.join(path, database)
     # databaseConnector = "sqlite:///" + sqlDataBaseFile
@@ -33,6 +32,7 @@ if __name__ == "__main__":
     db2 = dataset.connect(databaseConnector2)
     accountStorage = AccountsDB(db2)
     accounts = accountStorage.get()    
+    other_accounts = accountStorage.get_transfer()
     
     # Update current node list from @fullnodeupdate
     nodes = NodeList()
@@ -139,8 +139,6 @@ if __name__ == "__main__":
     # Create keyStorage
     trxStorage = TransferTrx(db)
     
-    if not trxStorage.exists_table():
-        trxStorage.create_table()
     for account in other_accounts:
         account = Account(account, steem_instance=stm)
         cnt = 0

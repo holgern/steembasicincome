@@ -46,14 +46,6 @@ class AccountTrx(object):
         else:
             return False
  
-
-    def create_table(self):
-        """ Create the new table in the SQLite database
-        """
-        query = ("CREATE TABLE `sbi_steem_ops`.`%s` ( `virtual_op` INT NOT NULL , `op_acc_index` INT NOT NULL , `op_acc_name` VARCHAR(50) NOT NULL , `block` INT NOT NULL , `trx_in_block` INT NOT NULL , `op_in_trx` INT NOT NULL , `timestamp` DATETIME NOT NULL , `type` VARCHAR(50) NOT NULL, `op_dict` TEXT NOT NULL , PRIMARY KEY (`op_acc_index`)) ENGINE = InnoDB;" % self.__tablename__)
-        self.db.query(query)
-        self.db.commit()
-
     def add(self, data):
         """ Add a new data set
 
@@ -130,15 +122,6 @@ class TransferTrx(object):
             return True
         else:
             return False
- 
-
-    def create_table(self):
-        """ Create the new table in the SQLite database
-        """
-        query = ("CREATE TABLE `sbi_steem_ops`.`transfers` ( `virtual_op` INT NOT NULL , `op_acc_index` INT NOT NULL , `op_acc_name` VARCHAR(50) NOT NULL , `block` INT NOT NULL , `trx_in_block` INT NOT NULL , `op_in_trx` INT NOT NULL , `timestamp` DATETIME NOT NULL , `from` VARCHAR(50) NOT NULL, `to` VARCHAR(50) NOT NULL, `amount` decimal(15,6) DEFAULT NULL, `amount_symbol`varchar(5) DEFAULT NULL,  `memo` varchar(2048) DEFAULT NULL, `op_type` varchar(50) NOT NULL, PRIMARY KEY (`op_acc_index`, `op_acc_name`)) ENGINE = InnoDB;")
-
-        self.db.query(query)
-        self.db.commit()
 
     def find(self, memo, to):
         table = self.db[self.__tablename__].table
@@ -213,14 +196,6 @@ class MemberHistDB(object):
             return True
         else:
             return False
- 
-
-    def create_table(self):
-        """ Create the new table in the SQLite database
-        """
-        query = ("CREATE TABLE `sbi_steem_ops`.`member_hist` ( `block_num` INT NOT NULL , `block_id`  varchar(40) NOT NULL,  `trx_id`  varchar(40) NOT NULL ,  `trx_num`  INT NOT NULL, `op_num` INT NOT NULL, `timestamp` DATETIME NOT NULL, `type` varchar(30) NOT NULL, `author` varchar(16) DEFAULT NULL, `permlink` varchar(50) DEFAULT NULL, `parent_author` varchar(16) DEFAULT NULL, `parent_permlink` varchar(50) DEFAULT NULL,  PRIMARY KEY (`block_num`, `trx_id`, `op_num`)) ENGINE = InnoDB; ")
-        self.db.query(query)
-        self.db.commit()
 
     def add(self, data):
         """ Add a new data set
@@ -410,13 +385,23 @@ class PostsTrx(object):
     def get_unvoted_post(self):
         table = self.db[self.__tablename__]
         posts = {}
-        for post in table.find(voted=False, order_by='created'):
+        for post in table.find(voted=False, skip=False, comment_to_old=False, order_by='created'):
             posts[post["authorperm"]] = post
         return posts
 
     def update_voted(self, author, created, voted):
         table = self.db[self.__tablename__]
         data = dict(author=author, created=created, voted=voted)
+        table.update(data, ["author", "created"])
+
+    def update_skip(self, author, created, skip):
+        table = self.db[self.__tablename__]
+        data = dict(author=author, created=created, skip=skip)
+        table.update(data, ["author", "created"])
+
+    def update_comment_to_old(self, author, created, comment_to_old):
+        table = self.db[self.__tablename__]
+        data = dict(author=author, created=created, comment_to_old=comment_to_old)
         table.update(data, ["author", "created"])
 
     def get_authorperm_list(self):

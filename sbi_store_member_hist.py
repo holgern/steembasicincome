@@ -13,7 +13,7 @@ import time
 import os
 import json
 from steembi.transfer_ops_storage import TransferTrx, AccountTrx, MemberHistDB
-from steembi.storage import TrxDB, MemberDB, ConfigurationDB
+from steembi.storage import TrxDB, MemberDB, ConfigurationDB, AccountsDB
 from steembi.member import Member
 import dataset
 from steembi.memo_parser import MemoParser
@@ -26,15 +26,18 @@ if __name__ == "__main__":
         with open(config_file) as json_data_file:
             config_data = json.load(json_data_file)
         # print(config_data)
-        accounts = config_data["accounts"]
         databaseConnector = config_data["databaseConnector"]
         databaseConnector2 = config_data["databaseConnector2"]
-        other_accounts = config_data["other_accounts"]
     
     # sqlDataBaseFile = os.path.join(path, database)
     # databaseConnector = "sqlite:///" + sqlDataBaseFile
     start_prep_time = time.time()
     db2 = dataset.connect(databaseConnector2)
+    
+    accountStorage = AccountsDB(db2)
+    accounts = accountStorage.get()
+    other_accounts = accountStorage.get_transfer()     
+    
     # Create keyStorage
     trxStorage = TrxDB(db2)
     memberStorage = MemberDB(db2)
@@ -82,11 +85,7 @@ if __name__ == "__main__":
     set_shared_steem_instance(stm)
     
     accountTrx = {}
-    newAccountTrxStorage = False
     accountTrx = MemberHistDB(db)
-    if not accountTrx.exists_table():
-        newAccountTrxStorage = True
-        accountTrx.create_table()
 
     b = Blockchain(steem_instance=stm)
     current_block = b.get_current_block()
@@ -96,20 +95,15 @@ if __name__ == "__main__":
     
     
     blocks_per_day = 20 * 60 * 24
-    #start_block = 2612571 - 1
-    if newAccountTrxStorage:
-        start_block = b.get_estimated_block_num(addTzInfo(start_time))
-        # block_id_list = []
-        trx_id_list = []
-    else:
-        start_block = accountTrx.get_latest_block_num()
-        # block_id_list = blockTrxStorage.get_block_id(start_block)
-        trx_id_list = accountTrx.get_block_trx_id(start_block)
+
+    start_block = accountTrx.get_latest_block_num()
+    
     if start_block is None:
         start_block = b.get_estimated_block_num(addTzInfo(start_time))
         # block_id_list = []
         trx_id_list = []
-    #end_block = b.get_estimated_block_num(stop_time)
+    else:
+        trx_id_list = accountTrx.get_block_trx_id(start_block)
     end_block = current_block["id"]
     
     # print("start_block: %d - clear not needed blocks" % (start_block))

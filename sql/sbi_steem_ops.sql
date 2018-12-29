@@ -3,21 +3,21 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 22. Dez 2018 um 22:07
--- Server-Version: 10.1.29-MariaDB-6
--- PHP-Version: 7.1.20-1+ubuntu18.04.1+deb.sury.org+1
+-- Generation Time: Dec 29, 2018 at 10:41 PM
+-- Server version: 10.1.29-MariaDB-6
+-- PHP Version: 7.1.20-1+ubuntu18.04.1+deb.sury.org+1
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+00:00";
 
 --
--- Datenbank: `sbi_steem_ops`
+-- Database: `sbi_steem_ops`
 --
 
 -- --------------------------------------------------------
 
 --
--- Tabellenstruktur für Tabelle `member_hist`
+-- Table structure for table `member_hist`
 --
 
 CREATE TABLE `member_hist` (
@@ -39,7 +39,7 @@ CREATE TABLE `member_hist` (
 -- --------------------------------------------------------
 
 --
--- Tabellenstruktur für Tabelle `posts_comments`
+-- Table structure for table `posts_comments`
 --
 
 CREATE TABLE `posts_comments` (
@@ -48,13 +48,15 @@ CREATE TABLE `posts_comments` (
   `created` datetime NOT NULL,
   `voted` tinyint(1) NOT NULL DEFAULT '0',
   `rshares` bigint(20) NOT NULL DEFAULT '0',
-  `main_post` tinyint(1) NOT NULL DEFAULT '0'
+  `main_post` tinyint(1) NOT NULL DEFAULT '0',
+  `skip` tinyint(1) NOT NULL DEFAULT '0',
+  `comment_to_old` tinyint(1) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
 --
--- Tabellenstruktur für Tabelle `sbi2_ops`
+-- Table structure for table `sbi2_ops`
 --
 
 CREATE TABLE `sbi2_ops` (
@@ -72,7 +74,7 @@ CREATE TABLE `sbi2_ops` (
 -- --------------------------------------------------------
 
 --
--- Tabellenstruktur für Tabelle `sbi3_ops`
+-- Table structure for table `sbi3_ops`
 --
 
 CREATE TABLE `sbi3_ops` (
@@ -90,7 +92,7 @@ CREATE TABLE `sbi3_ops` (
 -- --------------------------------------------------------
 
 --
--- Tabellenstruktur für Tabelle `sbi4_ops`
+-- Table structure for table `sbi4_ops`
 --
 
 CREATE TABLE `sbi4_ops` (
@@ -108,7 +110,7 @@ CREATE TABLE `sbi4_ops` (
 -- --------------------------------------------------------
 
 --
--- Tabellenstruktur für Tabelle `sbi5_ops`
+-- Table structure for table `sbi5_ops`
 --
 
 CREATE TABLE `sbi5_ops` (
@@ -126,7 +128,7 @@ CREATE TABLE `sbi5_ops` (
 -- --------------------------------------------------------
 
 --
--- Tabellenstruktur für Tabelle `sbi6_ops`
+-- Table structure for table `sbi6_ops`
 --
 
 CREATE TABLE `sbi6_ops` (
@@ -144,7 +146,7 @@ CREATE TABLE `sbi6_ops` (
 -- --------------------------------------------------------
 
 --
--- Tabellenstruktur für Tabelle `sbi7_ops`
+-- Table structure for table `sbi7_ops`
 --
 
 CREATE TABLE `sbi7_ops` (
@@ -162,7 +164,7 @@ CREATE TABLE `sbi7_ops` (
 -- --------------------------------------------------------
 
 --
--- Tabellenstruktur für Tabelle `sbi8_ops`
+-- Table structure for table `sbi8_ops`
 --
 
 CREATE TABLE `sbi8_ops` (
@@ -180,7 +182,7 @@ CREATE TABLE `sbi8_ops` (
 -- --------------------------------------------------------
 
 --
--- Tabellenstruktur für Tabelle `sbi9_ops`
+-- Table structure for table `sbi9_ops`
 --
 
 CREATE TABLE `sbi9_ops` (
@@ -198,7 +200,7 @@ CREATE TABLE `sbi9_ops` (
 -- --------------------------------------------------------
 
 --
--- Tabellenstruktur für Tabelle `sbi10_ops`
+-- Table structure for table `sbi10_ops`
 --
 
 CREATE TABLE `sbi10_ops` (
@@ -216,7 +218,7 @@ CREATE TABLE `sbi10_ops` (
 -- --------------------------------------------------------
 
 --
--- Tabellenstruktur für Tabelle `sbi_ops`
+-- Table structure for table `sbi_ops`
 --
 
 CREATE TABLE `sbi_ops` (
@@ -234,7 +236,7 @@ CREATE TABLE `sbi_ops` (
 -- --------------------------------------------------------
 
 --
--- Tabellenstruktur für Tabelle `steembasicincome_ops`
+-- Table structure for table `steembasicincome_ops`
 --
 
 CREATE TABLE `steembasicincome_ops` (
@@ -252,7 +254,7 @@ CREATE TABLE `steembasicincome_ops` (
 -- --------------------------------------------------------
 
 --
--- Tabellenstruktur für Tabelle `transfers`
+-- Table structure for table `transfers`
 --
 
 CREATE TABLE `transfers` (
@@ -272,11 +274,11 @@ CREATE TABLE `transfers` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 --
--- Indizes der exportierten Tabellen
+-- Indexes for dumped tables
 --
 
 --
--- Indizes für die Tabelle `member_hist`
+-- Indexes for table `member_hist`
 --
 ALTER TABLE `member_hist`
   ADD PRIMARY KEY (`block_num`,`trx_id`,`op_num`),
@@ -285,7 +287,7 @@ ALTER TABLE `member_hist`
   ADD KEY `type` (`type`);
 
 --
--- Indizes für die Tabelle `posts_comments`
+-- Indexes for table `posts_comments`
 --
 ALTER TABLE `posts_comments`
   ADD PRIMARY KEY (`author`,`created`),
@@ -294,7 +296,7 @@ ALTER TABLE `posts_comments`
   ADD KEY `ix_posts_comments_83abfc77eaacd310` (`author`,`created`);
 
 --
--- Indizes für die Tabelle `sbi2_ops`
+-- Indexes for table `sbi2_ops`
 --
 ALTER TABLE `sbi2_ops`
   ADD PRIMARY KEY (`virtual_op`,`block`,`trx_in_block`,`op_in_trx`),
@@ -302,7 +304,7 @@ ALTER TABLE `sbi2_ops`
   ADD KEY `op_acc_index` (`op_acc_index`);
 
 --
--- Indizes für die Tabelle `sbi3_ops`
+-- Indexes for table `sbi3_ops`
 --
 ALTER TABLE `sbi3_ops`
   ADD PRIMARY KEY (`virtual_op`,`block`,`trx_in_block`,`op_in_trx`),
@@ -310,7 +312,7 @@ ALTER TABLE `sbi3_ops`
   ADD KEY `op_acc_index` (`op_acc_index`);
 
 --
--- Indizes für die Tabelle `sbi4_ops`
+-- Indexes for table `sbi4_ops`
 --
 ALTER TABLE `sbi4_ops`
   ADD PRIMARY KEY (`virtual_op`,`block`,`trx_in_block`,`op_in_trx`),
@@ -318,7 +320,7 @@ ALTER TABLE `sbi4_ops`
   ADD KEY `op_acc_index` (`op_acc_index`);
 
 --
--- Indizes für die Tabelle `sbi5_ops`
+-- Indexes for table `sbi5_ops`
 --
 ALTER TABLE `sbi5_ops`
   ADD PRIMARY KEY (`virtual_op`,`block`,`trx_in_block`,`op_in_trx`),
@@ -326,7 +328,7 @@ ALTER TABLE `sbi5_ops`
   ADD KEY `op_acc_index` (`op_acc_index`);
 
 --
--- Indizes für die Tabelle `sbi6_ops`
+-- Indexes for table `sbi6_ops`
 --
 ALTER TABLE `sbi6_ops`
   ADD PRIMARY KEY (`virtual_op`,`block`,`trx_in_block`,`op_in_trx`),
@@ -334,7 +336,7 @@ ALTER TABLE `sbi6_ops`
   ADD KEY `op_acc_index` (`op_acc_index`);
 
 --
--- Indizes für die Tabelle `sbi7_ops`
+-- Indexes for table `sbi7_ops`
 --
 ALTER TABLE `sbi7_ops`
   ADD PRIMARY KEY (`virtual_op`,`block`,`trx_in_block`,`op_in_trx`),
@@ -342,7 +344,7 @@ ALTER TABLE `sbi7_ops`
   ADD KEY `op_acc_index` (`op_acc_index`);
 
 --
--- Indizes für die Tabelle `sbi8_ops`
+-- Indexes for table `sbi8_ops`
 --
 ALTER TABLE `sbi8_ops`
   ADD PRIMARY KEY (`virtual_op`,`block`,`trx_in_block`,`op_in_trx`),
@@ -350,7 +352,7 @@ ALTER TABLE `sbi8_ops`
   ADD KEY `op_acc_index` (`op_acc_index`);
 
 --
--- Indizes für die Tabelle `sbi9_ops`
+-- Indexes for table `sbi9_ops`
 --
 ALTER TABLE `sbi9_ops`
   ADD PRIMARY KEY (`virtual_op`,`block`,`trx_in_block`,`op_in_trx`),
@@ -358,7 +360,7 @@ ALTER TABLE `sbi9_ops`
   ADD KEY `op_acc_index` (`op_acc_index`);
 
 --
--- Indizes für die Tabelle `sbi10_ops`
+-- Indexes for table `sbi10_ops`
 --
 ALTER TABLE `sbi10_ops`
   ADD PRIMARY KEY (`virtual_op`,`block`,`trx_in_block`,`op_in_trx`),
@@ -366,7 +368,7 @@ ALTER TABLE `sbi10_ops`
   ADD KEY `op_acc_index` (`op_acc_index`);
 
 --
--- Indizes für die Tabelle `sbi_ops`
+-- Indexes for table `sbi_ops`
 --
 ALTER TABLE `sbi_ops`
   ADD PRIMARY KEY (`virtual_op`,`block`,`trx_in_block`,`op_in_trx`),
@@ -374,13 +376,13 @@ ALTER TABLE `sbi_ops`
   ADD KEY `block` (`block`);
 
 --
--- Indizes für die Tabelle `steembasicincome_ops`
+-- Indexes for table `steembasicincome_ops`
 --
 ALTER TABLE `steembasicincome_ops`
   ADD PRIMARY KEY (`op_acc_index`);
 
 --
--- Indizes für die Tabelle `transfers`
+-- Indexes for table `transfers`
 --
 ALTER TABLE `transfers`
   ADD PRIMARY KEY (`op_acc_index`,`op_acc_name`);

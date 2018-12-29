@@ -60,7 +60,6 @@ if __name__ == "__main__":
         accounts = config_data["accounts"]
         databaseConnector = config_data["databaseConnector"]
         databaseConnector2 = config_data["databaseConnector2"]
-        other_accounts = config_data["other_accounts"]
         mgnt_shares = config_data["mgnt_shares"]
         
     start_prep_time = time.time()
@@ -74,9 +73,10 @@ if __name__ == "__main__":
     # accountStorage = MemberHistDB(db)
     confStorage = ConfigurationDB(db2)
     transactionStorage = TransactionMemoDB(db2)
+
     accountStorage = AccountsDB(db2)
-    
     accounts = accountStorage.get()
+    other_accounts = accountStorage.get_transfer()     
     
     conf_setup = confStorage.get()
     

@@ -44,13 +44,6 @@ class TrxDB(object):
         else:
             return False
 
-    def create_table(self):
-        """ Create the new table in the SQLite database
-        """
-        query = ("CREATE TABLE `sbi`.`trx` ( `index` INT, `source` VARCHAR(50) NOT NULL, `memo` text, `account` VARCHAR(50) DEFAULT NULL, `sponsor` VARCHAR(50) DEFAULT NULL ,  `sponsee` text, `shares` INT, `vests` decimal(15,6) DEFAULT NULL, `timestamp` DATETIME NOT NULL ,  `status` VARCHAR(50) NOT NULL, `share_type` varchar(50) NOT NULL, `id` INTEGER NOT NULL AUTO_INCREMENT, PRIMARY KEY (`id`)) ENGINE = InnoDB;")
-        self.db.query(query)
-        self.db.commit()
-
     def get_all_data(self):
         """ Returns the public keys stored in the database
         """
@@ -236,13 +229,6 @@ class MemberDB(object):
         else:
             return False
 
-    def create_table(self):
-        """ Create the new table in the SQLite database
-        """
-        query = ("CREATE TABLE `sbi`.`member` (`account` VARCHAR(50) NOT NULL, `note` text, `shares` INT NOT NULL, `bonus_shares` INT NOT NULL, `total_share_days` INT,  `avg_share_age` float,  `last_comment` DATETIME, `last_post` DATETIME,  `original_enrollment` DATETIME, `latest_enrollment` DATETIME, `flags` text, `earned_rshares` INT, `rewarded_rshares` INT, `balance_rshares` INT,  `upvote_delay` float, `comment_upvote` bool, PRIMARY KEY (`account`)) ENGINE = InnoDB;")
-        self.db.query(query)
-        self.db.commit()
-
     def get_all_data(self):
         """ Returns the public keys stored in the database
         """
@@ -358,13 +344,6 @@ class ConfigurationDB(object):
         else:
             return False
 
-    def create_table(self):
-        """ Create the new table in the SQLite database
-        """
-        query = ("CREATE TABLE `sbi`.`configuration` (`id` enum('1') NOT NULL, `share_cycle_min` float NOT NULL, `sp_share_ratio` float NOT NULL, `rshares_per_cycle` INT,  `comment_vote_divider` float,  `comment_vote_timeout_h` float, `last_cycle` DATETIME,  PRIMARY KEY (`id`)) ENGINE = InnoDB;")
-        self.db.query(query)
-        self.db.commit()
-
     def get(self):
         """ Returns the public keys stored in the database
         """
@@ -435,13 +414,6 @@ class AccountsDB(object):
         else:
             return False
 
-    def create_table(self):
-        """ Create the new table in the SQLite database
-        """
-        query = ("CREATE TABLE `sbi`.`configuration` (`id` enum('1') NOT NULL, `share_cycle_min` float NOT NULL, `sp_share_ratio` float NOT NULL, `rshares_per_cycle` INT,  `comment_vote_divider` float,  `comment_vote_timeout_h` float, `last_cycle` DATETIME,  PRIMARY KEY (`id`)) ENGINE = InnoDB;")
-        self.db.query(query)
-        self.db.commit()
-
     def get(self):
         """ Returns the accounts stored in the database
         """
@@ -451,7 +423,27 @@ class AccountsDB(object):
             if a["voting"] == 1:
                 accounts.append(a["name"])
         return accounts
-    
+
+    def get_transfer(self):
+        """ Returns the accounts stored in the database
+        """
+        table = self.db[self.__tablename__]
+        accounts = []
+        for a in table.all():
+            if a["transfer"] == 1:
+                accounts.append(a["name"])
+        return accounts
+
+    def get_upvote_reward_rshares(self):
+        """ Returns the accounts stored in the database
+        """
+        table = self.db[self.__tablename__]
+        accounts = []
+        for a in table.all():
+            if a["upvote_reward_rshares"] == 1:
+                accounts.append(a["name"])
+        return accounts
+
     def set(self, data):
         """ Add a new data set
     
@@ -508,13 +500,6 @@ class KeysDB(object):
         else:
             return False
 
-    def create_table(self):
-        """ Create the new table in the SQLite database
-        """
-        query = ("CREATE TABLE `sbi`.`keys` (`key_type` VARCHAR(50) NOT NULL, `account` VARCHAR(50) NOT NULL, `wif` VARCHAR(50) NOT NULL,  PRIMARY KEY (`account`, `key_type`)) ENGINE = InnoDB;")
-        self.db.query(query)
-        self.db.commit()
-
     def get(self, account, key_type):
         """ Returns the public keys stored in the database
         """
@@ -560,13 +545,6 @@ class TransactionMemoDB(object):
             return True
         else:
             return False
-
-    def create_table(self):
-        """ Create the new table in the SQLite database
-        """
-        query = ("CREATE TABLE `sbi`.`transaction_memo` ( `index` INT, `sender` VARCHAR(16) NOT NULL, `to` VARCHAR(16) DEFAULT NULL, `memo` text, `encrypted` BOOLEAN DEFAULT FALSE, `referenced_accounts` text, `amount` decimal(15,6) DEFAULT NULL, `amount_symbol` varchar(5) DEFAULT NULL, `timestamp` DATETIME NOT NULL ,  `id` INTEGER NOT NULL AUTO_INCREMENT, PRIMARY KEY (`id`)) ENGINE = InnoDB;")
-        self.db.query(query)
-        self.db.commit()
 
     def get_all_data(self):
         """ Returns the public keys stored in the database
@@ -691,13 +669,6 @@ class TransactionOutDB(object):
         else:
             return False
 
-    def create_table(self):
-        """ Create the new table in the SQLite database
-        """
-        query = ("CREATE TABLE `sbi`.`transaction_memo` ( `index` INT, `sender` VARCHAR(16) NOT NULL, `to` VARCHAR(16) DEFAULT NULL, `memo` text, `encrypted` BOOLEAN DEFAULT FALSE, `referenced_accounts` text, `amount` decimal(15,6) DEFAULT NULL, `amount_symbol` varchar(5) DEFAULT NULL, `timestamp` DATETIME NOT NULL ,  `id` INTEGER NOT NULL AUTO_INCREMENT, PRIMARY KEY (`id`)) ENGINE = InnoDB;")
-        self.db.query(query)
-        self.db.commit()
-
     def get_all_data(self):
         """ Returns the public keys stored in the database
         """
@@ -785,13 +756,6 @@ class PendingRefundDB(object):
             return True
         else:
             return False
-
-    def create_table(self):
-        """ Create the new table in the SQLite database
-        """
-        query = ("CREATE TABLE `sbi`.`transaction_memo` ( `index` INT, `sender` VARCHAR(16) NOT NULL, `to` VARCHAR(16) DEFAULT NULL, `memo` text, `encrypted` BOOLEAN DEFAULT FALSE, `referenced_accounts` text, `amount` decimal(15,6) DEFAULT NULL, `amount_symbol` varchar(5) DEFAULT NULL, `timestamp` DATETIME NOT NULL ,  `id` INTEGER NOT NULL AUTO_INCREMENT, PRIMARY KEY (`id`)) ENGINE = InnoDB;")
-        self.db.query(query)
-        self.db.commit()
 
     def get_all_data(self):
         """ Returns the public keys stored in the database
