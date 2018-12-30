@@ -42,7 +42,7 @@ if __name__ == "__main__":
     memberStorage = MemberDB(db2)
     confStorage = ConfigurationDB(db2)
     accStorage = AccountsDB(db2)
-    keyStorage = KeysDB(db2)    
+    keyStorage = KeysDB(db2)
     
     accounts = accStorage.get()
     other_accounts = accStorage.get_transfer()

@@ -88,6 +88,13 @@ if __name__ == "__main__":
     last_paid_post = conf_setup["last_paid_post"]
     last_paid_comment = conf_setup["last_paid_comment"]
     last_delegation_check = conf_setup["last_delegation_check"]
+    
+    accountTrx = {}
+    for account in accounts:
+        if account == "steembasicincome":
+            accountTrx["sbi"] = AccountTrx(db, "sbi")
+        else:
+            accountTrx[account] = AccountTrx(db, account)    
 
     
     
@@ -109,7 +116,12 @@ if __name__ == "__main__":
             nodes.update_nodes()
         except:
             print("could not update nodes")        
-        stm = Steem(keys=key_list, node=nodes.get_nodes())        
+        stm = Steem(keys=key_list, node=nodes.get_nodes())
+        if True:
+            ops = accountTrx["sbi"].get_newest(op_types=["comment"], limit=500)
+            comments = []
+            for op in ops:
+                comments.append(json.loads(op["op_dict"]))
         if False: # check if member are blacklisted
             member_accounts = memberStorage.get_all_accounts()
             member_data = {}
@@ -674,7 +686,22 @@ if __name__ == "__main__":
             new_paid_post = last_paid_post
             for account in accounts:
                 account = Account(account, steem_instance=stm)
-                blog = account.get_blog(limit=100)[::-1]
+
+                if account["name"] == "steembasicincome":
+                    ops = accountTrx["sbi"].get_newest(op_types=["comment"], limit=500)
+                else:
+                    ops = accountTrx[account["name"]].get_newest(op_types=["comment"], limit=500)
+                blog = []
+                for op in ops[::-1]:
+                    comment = (json.loads(op["op_dict"]))    
+                    if comment["parent_author"] == "" and comment["author"] == account["name"] and formatTimeString(comment["timestamp"]) > addTzInfo(last_paid_post):
+                        try:
+                            c = Comment(comment, steem_instance=stm)
+                            c.refresh()
+                            blog.append(c)
+                        except:
+                            continue
+                
                 for post in blog:
                     if post["created"] <= addTzInfo(last_paid_post):
                         continue
@@ -711,7 +738,22 @@ if __name__ == "__main__":
         for account in accounts:
             account = Account(account, steem_instance=stm)
 
-            for post in account.comment_history(limit=200):
+            if account["name"] == "steembasicincome":
+                ops = accountTrx["sbi"].get_newest(op_types=["comment"], limit=500)
+            else:
+                ops = accountTrx[account["name"]].get_newest(op_types=["comment"], limit=500)
+            posts = []
+            for op in ops[::-1]:
+                comment = (json.loads(op["op_dict"]))    
+                if comment["parent_author"] != "" and comment["author"] == account["name"] and formatTimeString(comment["timestamp"]) > addTzInfo(last_paid_comment):
+                    try:
+                        c = Comment(comment, steem_instance=stm)
+                        c.refresh()
+                        posts.append(c)
+                    except:
+                        continue
+
+            for post in posts:
                 if post["created"] <= addTzInfo(last_paid_comment):
                     break
                 if post.is_pending():
