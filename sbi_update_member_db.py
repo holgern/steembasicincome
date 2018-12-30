@@ -117,11 +117,7 @@ if __name__ == "__main__":
         except:
             print("could not update nodes")        
         stm = Steem(keys=key_list, node=nodes.get_nodes())
-        if True:
-            ops = accountTrx["sbi"].get_newest(op_types=["comment"], limit=500)
-            comments = []
-            for op in ops:
-                comments.append(json.loads(op["op_dict"]))
+
         if False: # check if member are blacklisted
             member_accounts = memberStorage.get_all_accounts()
             member_data = {}
