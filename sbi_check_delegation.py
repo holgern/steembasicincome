@@ -11,7 +11,7 @@ import json
 import dataset
 from steembi.parse_hist_op import ParseAccountHist
 from steembi.transfer_ops_storage import TransferTrx
-from steembi.storage import TrxDB, MemberDB, ConfigurationDB
+from steembi.storage import TrxDB, MemberDB, ConfigurationDB, AccountsDB
 
 
 if __name__ == "__main__":
@@ -22,16 +22,18 @@ if __name__ == "__main__":
         with open(config_file) as json_data_file:
             config_data = json.load(json_data_file)
         # print(config_data)
-        accounts = config_data["accounts"]
         databaseConnector = config_data["databaseConnector"]
         databaseConnector2 = config_data["databaseConnector2"]
-        other_accounts = config_data["other_accounts"]
         mgnt_shares = config_data["mgnt_shares"]
 
 
     db = dataset.connect(databaseConnector)
     db2 = dataset.connect(databaseConnector2)
     confStorage = ConfigurationDB(db2)
+    
+    accountStorage = AccountsDB(db2)
+    accounts = accountStorage.get()    
+    other_accounts = accountStorage.get_transfer()    
     
     conf_setup = confStorage.get()
     
@@ -53,12 +55,6 @@ if __name__ == "__main__":
     transferStorage = TransferTrx(db)
     trxStorage = TrxDB(db2)
     memberStorage = MemberDB(db2)
-    
-    if not trxStorage.exists_table():
-        trxStorage.create_table()
-    
-    if not memberStorage.exists_table():
-        memberStorage.create_table()
     
     # Update current node list from @fullnodeupdate
 

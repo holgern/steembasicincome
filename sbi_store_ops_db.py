@@ -25,7 +25,6 @@ if __name__ == "__main__":
         # print(config_data)
         databaseConnector = config_data["databaseConnector"]
         databaseConnector2 = config_data["databaseConnector2"]
-        other_accounts = config_data["other_accounts"]
     start_prep_time = time.time()
     # sqlDataBaseFile = os.path.join(path, database)
     # databaseConnector = "sqlite:///" + sqlDataBaseFile
@@ -33,6 +32,7 @@ if __name__ == "__main__":
     db2 = dataset.connect(databaseConnector2)
     accountStorage = AccountsDB(db2)
     accounts = accountStorage.get()    
+    other_accounts = accountStorage.get_transfer()
     
     # Update current node list from @fullnodeupdate
     nodes = NodeList()
@@ -90,17 +90,17 @@ if __name__ == "__main__":
 
         data = []
         last_block = 0
-        last_trx = 0
+        last_trx = trx_in_block
         for op in account.history(start=start_block - 3, use_block_num=True):
             if op["block"] < start_block:
-                last_block = op["block"]
+                # last_block = op["block"]
                 continue
             elif op["block"] == start_block:
                 if op["virtual_op"] == 0:
                     if op["trx_in_block"] < trx_in_block:
                         last_trx = op["trx_in_block"]
                         continue
-                    if op["op_in_trx"] <= op_in_trx and (trx_in_block != last_trx):
+                    if op["op_in_trx"] <= op_in_trx and (trx_in_block != last_trx or last_block == 0):
                         continue
                 else:
                     if op["virtual_op"] <= virtual_op and (trx_in_block == last_trx):
@@ -139,8 +139,6 @@ if __name__ == "__main__":
     # Create keyStorage
     trxStorage = TransferTrx(db)
     
-    if not trxStorage.exists_table():
-        trxStorage.create_table()
     for account in other_accounts:
         account = Account(account, steem_instance=stm)
         cnt = 0

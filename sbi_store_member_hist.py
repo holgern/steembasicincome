@@ -1,5 +1,6 @@
 from beem.account import Account
 from beem.amount import Amount
+from beem.comment import Comment
 from beem import Steem
 from beem.instance import set_shared_steem_instance
 from beem.nodelist import NodeList
@@ -12,7 +13,7 @@ import time
 import os
 import json
 from steembi.transfer_ops_storage import TransferTrx, AccountTrx, MemberHistDB
-from steembi.storage import TrxDB, MemberDB, ConfigurationDB
+from steembi.storage import TrxDB, MemberDB, ConfigurationDB, AccountsDB
 from steembi.member import Member
 import dataset
 from steembi.memo_parser import MemoParser
@@ -25,15 +26,18 @@ if __name__ == "__main__":
         with open(config_file) as json_data_file:
             config_data = json.load(json_data_file)
         # print(config_data)
-        accounts = config_data["accounts"]
         databaseConnector = config_data["databaseConnector"]
         databaseConnector2 = config_data["databaseConnector2"]
-        other_accounts = config_data["other_accounts"]
     
     # sqlDataBaseFile = os.path.join(path, database)
     # databaseConnector = "sqlite:///" + sqlDataBaseFile
     start_prep_time = time.time()
     db2 = dataset.connect(databaseConnector2)
+    
+    accountStorage = AccountsDB(db2)
+    accounts = accountStorage.get()
+    other_accounts = accountStorage.get_transfer()     
+    
     # Create keyStorage
     trxStorage = TrxDB(db2)
     memberStorage = MemberDB(db2)
@@ -81,11 +85,7 @@ if __name__ == "__main__":
     set_shared_steem_instance(stm)
     
     accountTrx = {}
-    newAccountTrxStorage = False
     accountTrx = MemberHistDB(db)
-    if not accountTrx.exists_table():
-        newAccountTrxStorage = True
-        accountTrx.create_table()
 
     b = Blockchain(steem_instance=stm)
     current_block = b.get_current_block()
@@ -95,24 +95,23 @@ if __name__ == "__main__":
     
     
     blocks_per_day = 20 * 60 * 24
-    #start_block = 2612571 - 1
-    if newAccountTrxStorage:
-        start_block = b.get_estimated_block_num(addTzInfo(start_time))
-        # block_id_list = []
-        trx_id_list = []
-    else:
-        start_block = accountTrx.get_latest_block_num()
-        # block_id_list = blockTrxStorage.get_block_id(start_block)
-        trx_id_list = accountTrx.get_block_trx_id(start_block)
+
+    start_block = accountTrx.get_latest_block_num()
+    
     if start_block is None:
         start_block = b.get_estimated_block_num(addTzInfo(start_time))
         # block_id_list = []
         trx_id_list = []
-    #end_block = b.get_estimated_block_num(stop_time)
+    else:
+        trx_id_list = accountTrx.get_block_trx_id(start_block)
     end_block = current_block["id"]
     
     # print("start_block: %d - clear not needed blocks" % (start_block))
     
+    date_now = datetime.utcnow()
+    date_7_before = addTzInfo(date_now - timedelta(seconds=7 * 24 * 60 * 60))
+    date_28_before = addTzInfo(date_now - timedelta(seconds=28 * 24 * 60 * 60))
+    date_72h_before = addTzInfo(date_now - timedelta(seconds=72 * 60 * 60))    
     
     deleting = True
     while deleting:
@@ -145,7 +144,7 @@ if __name__ == "__main__":
     cnt = 0
     comment_cnt = 0
     vote_cnt = 0
-    for op in b.stream(start=int(start_block), stop=int(end_block), opNames=["vote"], threading=False, thread_num=8):
+    for op in b.stream(start=int(start_block), stop=int(end_block), opNames=["vote", "comment"], threading=False, thread_num=8):
         block_num = op["block_num"]
         if last_block_num is None:
             start_time = time.time()
@@ -164,13 +163,27 @@ if __name__ == "__main__":
         if op["type"] == "comment":
             if op["author"] not in member_accounts:
                 continue
+            try:
+                c = Comment(op, steem_instance=stm)
+                c.refresh()
+            except:
+                continue
+            main_post = c.is_main_post()            
             comment_cnt += 1
-            post_age_min = (addTzInfo(datetime.utcnow()) - op["timestamp"]).total_seconds() / 60
-            # print("new post from %s - age %.2f min" % (op["author"], post_age_min))
-            data["parent_permlink"] = op["parent_permlink"]
-            data["parent_author"] = op["parent_author"]
-            data["permlink"] = op["permlink"]
-            data["author"] = op["author"]
+
+            if main_post:
+                member_data[op["author"]]["last_post"] = c["created"]
+            else:
+                member_data[op["author"]]["last_comment"] = c["created"]
+                
+            if member_data[op["author"]]["last_post"] is None:
+                member_data[op["author"]]["comment_upvote"] = 1
+            elif addTzInfo(member_data[op["author"]]["last_post"]) < date_7_before:
+                member_data[op["author"]]["comment_upvote"] = 1
+            elif member_data[op["author"]]["comment_upvote"] == 1:
+                member_data[op["author"]]["comment_upvote"] = 0
+            member_data[op["author"]]["updated_at"] = c["created"]
+            updated_member_data.append(member_data[op["author"]])
         elif op["type"] == "vote":
             if op["author"] not in accounts and op["author"] not in member_accounts:
                 continue
@@ -183,13 +196,7 @@ if __name__ == "__main__":
                 member_data[op["author"]]["rewarded_rshares"] += int(vote["rshares"])
                 member_data[op["author"]]["balance_rshares"] -= int(vote["rshares"])
                 updated_member_data.append(member_data[op["author"]])
-            #elif op["author"] in accounts and op["voter"] in member_accounts:
-            #    c = Comment(op, steem_instance=stm)
-            #    c.refresh()   
-            #    vote = Vote(op["voter"], authorperm=construct_authorperm(op["author"], op["permlink"]), steem_instance=stm)
-            #    member_data[op["voter"]]["balance_rshares"] += int(vote["rshares"])
-            #    member_data[op["voter"]]["earned_rshares"] += int(vote["rshares"])
-            #    updated_member_data.append(member_data[op["voter"]])
+
             data["permlink"] = op["permlink"]
             data["author"] = op["author"]
             data["voter"] = op["voter"]
@@ -197,9 +204,9 @@ if __name__ == "__main__":
             vote_cnt += 1
         else:
             continue
-
-        db_data.append(data)
-        last_trx_id = op["trx_id"]
+        if op["type"] == "vote":
+            db_data.append(data)
+            last_trx_id = op["trx_id"]
 
         if cnt % 1000 == 0 and cnt > 0:
             time_for_blocks = time.time() - start_time

@@ -3,32 +3,34 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 10. Dez 2018 um 09:51
--- Server-Version: 10.1.29-MariaDB-6
--- PHP-Version: 7.1.20-1+ubuntu18.04.1+deb.sury.org+1
+-- Generation Time: Dec 29, 2018 at 10:40 PM
+-- Server version: 10.1.29-MariaDB-6
+-- PHP Version: 7.1.20-1+ubuntu18.04.1+deb.sury.org+1
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+00:00";
 
 --
--- Datenbank: `sbi`
+-- Database: `sbi`
 --
 
 -- --------------------------------------------------------
 
 --
--- Tabellenstruktur für Tabelle `accounts`
+-- Table structure for table `accounts`
 --
 
 CREATE TABLE `accounts` (
   `name` varchar(16) NOT NULL,
-  `voting` tinyint(1) NOT NULL
+  `voting` tinyint(1) NOT NULL,
+  `transfer` tinyint(1) NOT NULL DEFAULT '0',
+  `upvote_reward_rshares` tinyint(1) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
 --
--- Tabellenstruktur für Tabelle `configuration`
+-- Table structure for table `configuration`
 --
 
 CREATE TABLE `configuration` (
@@ -49,10 +51,44 @@ CREATE TABLE `configuration` (
 -- --------------------------------------------------------
 
 --
--- Tabellenstruktur für Tabelle `member`
+-- Table structure for table `member`
 --
 
 CREATE TABLE `member` (
+  `account` varchar(50) NOT NULL,
+  `note` text,
+  `shares` int(11) NOT NULL,
+  `bonus_shares` int(11) NOT NULL,
+  `total_share_days` int(11) DEFAULT NULL,
+  `avg_share_age` float DEFAULT NULL,
+  `last_comment` datetime DEFAULT NULL,
+  `last_post` datetime DEFAULT NULL,
+  `original_enrollment` datetime DEFAULT NULL,
+  `latest_enrollment` datetime DEFAULT NULL,
+  `flags` text,
+  `earned_rshares` bigint(22) DEFAULT NULL,
+  `subscribed_rshares` bigint(20) NOT NULL DEFAULT '0',
+  `curation_rshares` bigint(20) NOT NULL DEFAULT '0',
+  `delegation_rshares` bigint(20) NOT NULL DEFAULT '0',
+  `other_rshares` bigint(20) NOT NULL DEFAULT '0',
+  `rewarded_rshares` bigint(22) DEFAULT NULL,
+  `balance_rshares` bigint(22) DEFAULT NULL,
+  `upvote_delay` float DEFAULT NULL,
+  `comment_upvote` tinyint(1) DEFAULT NULL,
+  `updated_at` datetime NOT NULL DEFAULT '1970-01-01 00:00:00',
+  `first_cycle_at` datetime NOT NULL DEFAULT '1970-01-01 00:00:00',
+  `steemcleaners` tinyint(1) DEFAULT NULL,
+  `buildawhale` tinyint(1) DEFAULT NULL,
+  `blacklisted` tinyint(1) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `member_backup`
+--
+
+CREATE TABLE `member_backup` (
   `account` varchar(50) NOT NULL,
   `note` text,
   `shares` int(11) NOT NULL,
@@ -88,7 +124,7 @@ CREATE TABLE `member` (
 -- --------------------------------------------------------
 
 --
--- Tabellenstruktur für Tabelle `member_hist`
+-- Table structure for table `member_hist`
 --
 
 CREATE TABLE `member_hist` (
@@ -98,7 +134,7 @@ CREATE TABLE `member_hist` (
 -- --------------------------------------------------------
 
 --
--- Tabellenstruktur für Tabelle `pending_refunds`
+-- Table structure for table `pending_refunds`
 --
 
 CREATE TABLE `pending_refunds` (
@@ -117,7 +153,7 @@ CREATE TABLE `pending_refunds` (
 -- --------------------------------------------------------
 
 --
--- Tabellenstruktur für Tabelle `steem_keys`
+-- Table structure for table `steem_keys`
 --
 
 CREATE TABLE `steem_keys` (
@@ -130,7 +166,7 @@ CREATE TABLE `steem_keys` (
 -- --------------------------------------------------------
 
 --
--- Tabellenstruktur für Tabelle `transaction_memo`
+-- Table structure for table `transaction_memo`
 --
 
 CREATE TABLE `transaction_memo` (
@@ -149,7 +185,7 @@ CREATE TABLE `transaction_memo` (
 -- --------------------------------------------------------
 
 --
--- Tabellenstruktur für Tabelle `transaction_out`
+-- Table structure for table `transaction_out`
 --
 
 CREATE TABLE `transaction_out` (
@@ -168,7 +204,7 @@ CREATE TABLE `transaction_out` (
 -- --------------------------------------------------------
 
 --
--- Tabellenstruktur für Tabelle `trx`
+-- Table structure for table `trx`
 --
 
 CREATE TABLE `trx` (
@@ -188,11 +224,11 @@ CREATE TABLE `trx` (
 -- --------------------------------------------------------
 
 --
--- Tabellenstruktur für Tabelle `trx_corrected`
+-- Table structure for table `trx_backup`
 --
 
-CREATE TABLE `trx_corrected` (
-  `index` int(11) DEFAULT NULL,
+CREATE TABLE `trx_backup` (
+  `index` int(11) NOT NULL,
   `source` varchar(50) NOT NULL,
   `memo` text,
   `account` varchar(50) DEFAULT NULL,
@@ -202,101 +238,102 @@ CREATE TABLE `trx_corrected` (
   `vests` decimal(15,6) DEFAULT NULL,
   `timestamp` datetime NOT NULL,
   `status` varchar(50) NOT NULL,
-  `share_type` varchar(50) NOT NULL,
-  `id` int(11) NOT NULL
+  `share_type` varchar(50) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 --
--- Indizes der exportierten Tabellen
+-- Indexes for dumped tables
 --
 
 --
--- Indizes für die Tabelle `accounts`
+-- Indexes for table `accounts`
 --
 ALTER TABLE `accounts`
   ADD PRIMARY KEY (`name`);
 
 --
--- Indizes für die Tabelle `configuration`
+-- Indexes for table `configuration`
 --
 ALTER TABLE `configuration`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indizes für die Tabelle `member`
+-- Indexes for table `member`
 --
 ALTER TABLE `member`
   ADD PRIMARY KEY (`account`),
   ADD KEY `ix_member_ca20728d35f00c3a` (`account`);
 
 --
--- Indizes für die Tabelle `member_hist`
+-- Indexes for table `member_backup`
+--
+ALTER TABLE `member_backup`
+  ADD PRIMARY KEY (`account`),
+  ADD KEY `ix_member_ca20728d35f00c3a` (`account`);
+
+--
+-- Indexes for table `member_hist`
 --
 ALTER TABLE `member_hist`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indizes für die Tabelle `pending_refunds`
+-- Indexes for table `pending_refunds`
 --
 ALTER TABLE `pending_refunds`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indizes für die Tabelle `steem_keys`
+-- Indexes for table `steem_keys`
 --
 ALTER TABLE `steem_keys`
   ADD PRIMARY KEY (`SBI_account_PK`);
 
 --
--- Indizes für die Tabelle `transaction_memo`
+-- Indexes for table `transaction_memo`
 --
 ALTER TABLE `transaction_memo`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indizes für die Tabelle `transaction_out`
+-- Indexes for table `transaction_out`
 --
 ALTER TABLE `transaction_out`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indizes für die Tabelle `trx`
+-- Indexes for table `trx`
 --
 ALTER TABLE `trx`
   ADD PRIMARY KEY (`index`,`source`);
 
 --
--- Indizes für die Tabelle `trx_corrected`
+-- Indexes for table `trx_backup`
 --
-ALTER TABLE `trx_corrected`
-  ADD PRIMARY KEY (`id`);
+ALTER TABLE `trx_backup`
+  ADD PRIMARY KEY (`index`,`source`);
 
 --
--- AUTO_INCREMENT für exportierte Tabellen
+-- AUTO_INCREMENT for dumped tables
 --
 
 --
--- AUTO_INCREMENT für Tabelle `member_hist`
+-- AUTO_INCREMENT for table `member_hist`
 --
 ALTER TABLE `member_hist`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 --
--- AUTO_INCREMENT für Tabelle `pending_refunds`
+-- AUTO_INCREMENT for table `pending_refunds`
 --
 ALTER TABLE `pending_refunds`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 --
--- AUTO_INCREMENT für Tabelle `transaction_memo`
+-- AUTO_INCREMENT for table `transaction_memo`
 --
 ALTER TABLE `transaction_memo`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=334353234;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=343135976;
 --
--- AUTO_INCREMENT für Tabelle `transaction_out`
+-- AUTO_INCREMENT for table `transaction_out`
 --
 ALTER TABLE `transaction_out`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6075520;
---
--- AUTO_INCREMENT für Tabelle `trx_corrected`
---
-ALTER TABLE `trx_corrected`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7562;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6277061;

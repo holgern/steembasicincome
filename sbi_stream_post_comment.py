@@ -33,7 +33,6 @@ if __name__ == "__main__":
         # print(config_data)
         databaseConnector = config_data["databaseConnector"]
         databaseConnector2 = config_data["databaseConnector2"]
-        other_accounts = config_data["other_accounts"]    
 
     start_prep_time = time.time()
     db = dataset.connect(databaseConnector)
@@ -43,9 +42,10 @@ if __name__ == "__main__":
     memberStorage = MemberDB(db2)
     confStorage = ConfigurationDB(db2)
     accStorage = AccountsDB(db2)
-    keyStorage = KeysDB(db2)    
+    keyStorage = KeysDB(db2)
     
     accounts = accStorage.get()
+    other_accounts = accStorage.get_transfer()
     
     conf_setup = confStorage.get()
     
@@ -54,6 +54,7 @@ if __name__ == "__main__":
     sp_share_ratio = conf_setup["sp_share_ratio"]
     rshares_per_cycle = conf_setup["rshares_per_cycle"]    
     minimum_vote_threshold = conf_setup["minimum_vote_threshold"]
+    comment_vote_divider = conf_setup["comment_vote_divider"]
     
     member_accounts = memberStorage.get_all_accounts()
     print("%d members in list" % len(member_accounts)) 
@@ -113,7 +114,7 @@ if __name__ == "__main__":
     
     b = Blockchain(steem_instance = stm)
     print("deleting old posts")
-    postTrx.delete_old_posts(7)
+    postTrx.delete_old_posts(1)
     # print("reading all authorperm")
     already_voted_posts = []
     flagged_posts = []
@@ -160,12 +161,21 @@ if __name__ == "__main__":
                 reply_body = "Hi @%s!\n\n" % ops["author"]
                 reply_body += "* you have %d units and %d bonus units\n" % (member_data[ops["author"]]["shares"], member_data[ops["author"]]["bonus_shares"])
                 reply_body += "* your rshares balance is %d or %.3f $\n" % (member_data[ops["author"]]["balance_rshares"], stm.rshares_to_sbd(member_data[ops["author"]]["balance_rshares"])) 
-                if member_data[ops["author"]]["balance_rshares"] * 0.2 > minimum_vote_threshold:
-                    reply_body += "* your next SBI upvote is predicted to be %.3f $\n" % (stm.rshares_to_sbd(member_data[ops["author"]]["balance_rshares"] * 0.2))
+                
+                if member_data[ops["author"]]["comment_upvote"] == 0:
+                    if member_data[ops["author"]]["balance_rshares"] * 0.2 > minimum_vote_threshold:
+                        reply_body += "* your next SBI upvote is predicted to be %.3f $\n" % (stm.rshares_to_sbd(member_data[ops["author"]]["balance_rshares"] * 0.2))
+                    else:
+                        reply_body += "* you need to wait until your upvote value (current value: %.3f $) is above %.3f $\n" % (stm.rshares_to_sbd(member_data[ops["author"]]["balance_rshares"] * 0.2), stm.rshares_to_sbd(minimum_vote_threshold))
                 else:
-                    reply_body += "* you need to wait until your upvote value (current value: %.3f $) is above %.3f $\n" % (stm.rshares_to_sbd(member_data[ops["author"]]["balance_rshares"] * 0.2), stm.rshares_to_sbd(minimum_vote_threshold))
-                if member_data[ops["author"]]["comment_upvote"] == 1:
-                    reply_body += "* as you did not write a post within the last 7 days, your comments will be upvoted."
+                    reply_body += "* as you did not write a post within the last 7 days, your comments will be upvoted.\n"
+                    if member_data[ops["author"]]["balance_rshares"] * 0.2 > minimum_vote_threshold * 2:
+                        reply_body += "* your next SBI upvote is predicted to be %.3f $\n" % (stm.rshares_to_sbd(member_data[ops["author"]]["balance_rshares"] * 0.2))
+                    else:
+                        reply_body += "* you need to wait until your upvote value (current value: %.3f $) is above %.3f $\n" % (stm.rshares_to_sbd(member_data[ops["author"]]["balance_rshares"] * 0.2), stm.rshares_to_sbd(minimum_vote_threshold * 2))
+                    
+                    
+                    
                 account_name = account_list[random.randint(0, len(account_list) - 1)]
                 if len(c.permlink) < 255:
                     c.reply(reply_body, author=account_name)
@@ -180,9 +190,13 @@ if __name__ == "__main__":
                   
         dt_created = c["created"]
         dt_created = dt_created.replace(tzinfo=None)
+        skip = False
+        for tag in c["tags"]:
+            if tag.lower() in ["nsfw", "sbi-skip"]:
+                skip = True
         
         posts_dict[authorperm] = {"authorperm": authorperm, "author": ops["author"], "created": dt_created, "main_post": main_post,
-                     "voted": already_voted}
+                     "voted": already_voted, "skip": skip}
         
         if len(posts_dict) > 100:
             start_time = time.time()
