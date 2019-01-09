@@ -98,7 +98,7 @@ if __name__ == "__main__":
 
     
     
-    print("last_cycle: %s - %.2f min" % (formatTimeString(last_cycle), (datetime.utcnow() - last_cycle).total_seconds() / 60))
+    print("sbi_update_member_db: last_cycle: %s - %.2f min" % (formatTimeString(last_cycle), (datetime.utcnow() - last_cycle).total_seconds() / 60))
     if last_cycle is None:
         last_cycle = datetime.utcnow() - timedelta(seconds = 60 * 145)
         confStorage.update({"last_cycle": last_cycle})
@@ -779,10 +779,30 @@ if __name__ == "__main__":
         print("write member database")
         memberStorage.db = dataset.connect(databaseConnector2)
         member_data_list = []
+        member_data_json = []
         for m in member_data:
             member_data_list.append(member_data[m])
+            member_json = member_data[m].copy()
+            if "last_comment" in member_json and member_json["last_comment"] is not None:
+                member_json["last_comment"] = str(member_json["last_comment"])
+            if "last_post" in member_json and member_json["last_post"] is not None:
+                member_json["last_post"] = str(member_json["last_post"])
+            if "original_enrollment" in member_json and member_json["original_enrollment"] is not None:
+                member_json["original_enrollment"] = str(member_json["original_enrollment"])
+            if "latest_enrollment" in member_json and member_json["latest_enrollment"] is not None:
+                member_json["latest_enrollment"] = str(member_json["latest_enrollment"])
+            if "updated_at" in member_json and member_json["updated_at"] is not None:
+                member_json["updated_at"] = str(member_json["updated_at"])
+            if "first_cycle_at" in member_json and member_json["first_cycle_at"] is not None:
+                member_json["first_cycle_at"] = str(member_json["first_cycle_at"])
+            member_data_json.append(member_json)
         memberStorage.add_batch(member_data_list)
         member_data_list = []
+        with open('/var/www/html/data.json', 'w') as outfile:
+            json.dump(member_data_json, outfile)        
+        member_data_json = []
+        
+        
 
         if new_cycle:
             confStorage.update({"last_cycle": last_cycle + timedelta(seconds=60 * share_cycle_min)})

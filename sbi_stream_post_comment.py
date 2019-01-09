@@ -19,6 +19,7 @@ from steembi.storage import TrxDB, MemberDB, ConfigurationDB, AccountsDB, KeysDB
 from steembi.parse_hist_op import ParseAccountHist
 from steembi.memo_parser import MemoParser
 from steembi.member import Member
+from steembi.version import version as sbiversion
 import dataset
 
 
@@ -123,16 +124,20 @@ if __name__ == "__main__":
     last_block_print = start_block
     
     latest_update = postTrx.get_latest_post()
-    if latest_update is not None:
+    latest_block = postTrx.get_latest_block()
+    if latest_block is not None:
+        latest_update_block = latest_block
+    elif latest_update is not None:
         latest_update_block = b.get_estimated_block_num(latest_update)
     else:
         latest_update_block = start_block
     print("latest update %s - %d to %d" % (str(latest_update), latest_update_block, stop_block))
     
-    start_block = max([latest_update_block, start_block])
+    start_block = max([latest_update_block, start_block]) + 1
     cnt = 0
     updated_accounts = []
     posts_dict = {}
+    changed_member_data = []
     for ops in b.stream(start=start_block, stop=stop_block, opNames=["comment"], max_batch_size=max_batch_size, threading=threading, thread_num=8):
         #print(ops)
         timestamp = ops["timestamp"]
@@ -140,18 +145,20 @@ if __name__ == "__main__":
             # continue
         if ops["author"] not in member_accounts:
             continue
+        if ops["block_num"] <= latest_update_block:
+            continue
         if ops["block_num"] - last_block_print > 50:
             last_block_print = ops["block_num"]
             print("blocks left %d - post found: %d" % (ops["block_num"] - stop_block, len(posts_dict)))
         authorperm = construct_authorperm(ops)
-  
-
         
         try:
             c = Comment(authorperm, steem_instance=stm)
         except:
             continue
         main_post = c.is_main_post()
+        if ops["author"] not in changed_member_data:
+            changed_member_data.append(ops["author"])
         if main_post:
             member_data[ops["author"]]["last_post"] = c["created"]
         else:
@@ -178,15 +185,16 @@ if __name__ == "__main__":
                     
                 account_name = account_list[random.randint(0, len(account_list) - 1)]
                 if len(c.permlink) < 255:
-                    c.reply(reply_body, author=account_name)
+                    stm.post("", reply_body, app="steembasicincome/%s" % sbiversion, author=account_name, reply_identifier=c.identifier)
+                    # c.reply(reply_body, author=account_name)
                     time.sleep(4)
             
                 
         already_voted = False
     
-        for v in c["active_votes"]:
-            if v["voter"] in accounts:
-                already_voted = True
+        #for v in c["active_votes"]:
+        #    if v["voter"] in accounts:
+        #        already_voted = True
                   
         dt_created = c["created"]
         dt_created = dt_created.replace(tzinfo=None)
@@ -195,7 +203,7 @@ if __name__ == "__main__":
             if tag.lower() in ["nsfw", "sbi-skip"]:
                 skip = True
         
-        posts_dict[authorperm] = {"authorperm": authorperm, "author": ops["author"], "created": dt_created, "main_post": main_post,
+        posts_dict[authorperm] = {"authorperm": authorperm, "author": ops["author"], "created": dt_created, "block": ops["block_num"], "main_post": main_post,
                      "voted": already_voted, "skip": skip}
         
         if len(posts_dict) > 100:
@@ -209,7 +217,7 @@ if __name__ == "__main__":
 
     print("write member database")
     member_data_list = []
-    for m in member_data:
+    for m in changed_member_data:
         member_data_list.append(member_data[m])
     memberStorage.add_batch(member_data_list)
     member_data_list = []

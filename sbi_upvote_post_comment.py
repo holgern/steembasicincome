@@ -121,11 +121,12 @@ if __name__ == "__main__":
     already_voted_posts = []
     flagged_posts = []
     rshares_sum = 0
-    
+    start_reading = time.time()
     post_list = postTrx.get_unvoted_post()
-    
+    #print("Reading posts from database took %.2f s" % (time.time() - start_prep_time))
     # print("prep time took %.2f s" % (time.time() - start_prep_time))
     for authorperm in post_list:
+
         created = post_list[authorperm]["created"]
         if (datetime.utcnow() - created).total_seconds() > 3 * 24 * 60 * 60:
             continue
@@ -138,7 +139,7 @@ if __name__ == "__main__":
             continue
         if post_list[authorperm]["main_post"] == 0 and (datetime.utcnow() - created).total_seconds() > comment_vote_timeout_h * 60 * 60:
             postTrx.update_comment_to_old(author, created, True)
-            continue        
+
         member = Member(memberStorage.get(author))
         if member["comment_upvote"] == 0 and post_list[authorperm]["main_post"] == 0:
             continue
@@ -176,24 +177,36 @@ if __name__ == "__main__":
         
         if post_list[authorperm]["main_post"] == 0:
             highest_pct = 0
+            highest_rshares = 0
             voter = None
             current_mana = {}
             for acc in voter_accounts:
                 mana = voter_accounts[acc].get_manabar()
                 vote_percentage = rshares / (mana["max_mana"] / 50 * mana["current_mana_pct"] / 100) * 100
-                if highest_pct < mana["current_mana_pct"] and vote_percentage > 0.01:
+                if vote_percentage > 1 / comment_vote_divider * 100:
+                    vote_percentage = 1 / comment_vote_divider * 100
+                #rshares = mana["current_mana"] / 50 * vote_percentage
+                rshares_check = vote_percentage / 100 * (mana["max_mana"] / 50 * mana["current_mana_pct"] / 100)
+                
+                if vote_percentage == 20 and highest_rshares < rshares_check and vote_percentage > 0.01 and mana["current_mana"] / comment_vote_divider  > minimum_vote_threshold * 2:
+                    highest_rshares = rshares_check
                     highest_pct = mana["current_mana_pct"]
                     current_mana = mana
                     voter = acc
-             
-            vote_percentage = rshares / (current_mana["max_mana"] / 50 * current_mana["current_mana_pct"] / 100) * 100
-            if vote_percentage > 1 / comment_vote_divider * 100:
-                vote_percentage = 1 / comment_vote_divider * 100            
-            if nobroadcast:
+                elif vote_percentage < 20 and highest_pct < mana["current_mana_pct"] and vote_percentage > 0.01 and mana["current_mana"] / comment_vote_divider  > minimum_vote_threshold * 2:
+                    highest_pct = mana["current_mana_pct"]
+                    current_mana = mana
+                    voter = acc
+
+            if voter is not None:
+                vote_percentage = rshares / (current_mana["max_mana"] / 50 * current_mana["current_mana_pct"] / 100) * 100
+                if vote_percentage > 1 / comment_vote_divider * 100:
+                    vote_percentage = 1 / comment_vote_divider * 100            
+            if nobroadcast and voter is not None:
                 print(c["authorperm"])
-                print("Vote %s from %s with %.2f %%" % (author, voter, vote_percentage))            
-            else:
-                print("Upvote %s from %s with %.2f %%" % (author, voter, vote_percentage)) 
+                print("Comment Vote %s from %s with %.2f %%" % (author, voter, vote_percentage))            
+            elif voter is not None:
+                print("Comment Upvote %s from %s with %.2f %%" % (author, voter, vote_percentage)) 
                 vote_sucessfull = False
                 cnt = 0
                 while not vote_sucessfull and cnt < 5:

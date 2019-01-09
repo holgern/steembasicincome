@@ -357,6 +357,13 @@ class PostsTrx(object):
             return None
         return ret["created"]
 
+    def get_latest_block(self):
+        table = self.db[self.__tablename__]
+        ret = table.find_one(order_by='-created')
+        if ret is None:
+            return None
+        return ret["block"]
+
     def get_author_posts(self, author):
         table = self.db[self.__tablename__]
         posts = []
