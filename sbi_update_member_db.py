@@ -568,6 +568,7 @@ if __name__ == "__main__":
                         member = Member(sponsor, shares, timestamp)
                         member.append_share_age(timestamp, shares)
                         member_data[sponsor] = member
+                        member_data[sponsor]["balance_rshares"] = (minimum_upvote_threshold * 5)
                     else:
                         
                         member_data[sponsor]["latest_enrollment"] = timestamp
@@ -586,6 +587,7 @@ if __name__ == "__main__":
                             member = Member(s, shares, timestamp)
                             member.append_share_age(timestamp, shares)
                             member_data[s] = member
+                            member_data[s]["balance_rshares"] = (minimum_upvote_threshold * 5)
                         else:
                             member_data[s]["latest_enrollment"] = timestamp
                             member_data[s]["shares"] += shares
