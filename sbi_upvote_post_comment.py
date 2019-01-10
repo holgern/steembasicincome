@@ -180,28 +180,18 @@ if __name__ == "__main__":
             highest_rshares = 0
             voter = None
             current_mana = {}
+            if rshares > minimum_vote_threshold * 20:
+                rshares = int(minimum_vote_threshold * 20)
             for acc in voter_accounts:
                 mana = voter_accounts[acc].get_manabar()
                 vote_percentage = rshares / (mana["max_mana"] / 50 * mana["current_mana_pct"] / 100) * 100
-                if vote_percentage > 1 / comment_vote_divider * 100:
-                    vote_percentage = 1 / comment_vote_divider * 100
-                #rshares = mana["current_mana"] / 50 * vote_percentage
-                rshares_check = vote_percentage / 100 * (mana["max_mana"] / 50 * mana["current_mana_pct"] / 100)
-                
-                if vote_percentage == 20 and highest_rshares < rshares_check and vote_percentage > 0.01 and mana["current_mana"] / comment_vote_divider  > minimum_vote_threshold * 2:
-                    highest_rshares = rshares_check
+                if highest_pct < mana["current_mana_pct"] and rshares < mana["max_mana"] / 50 * mana["current_mana_pct"] / 100 and vote_percentage > 0.01:
                     highest_pct = mana["current_mana_pct"]
                     current_mana = mana
                     voter = acc
-                elif vote_percentage < 20 and highest_pct < mana["current_mana_pct"] and vote_percentage > 0.01 and mana["current_mana"] / comment_vote_divider  > minimum_vote_threshold * 2:
-                    highest_pct = mana["current_mana_pct"]
-                    current_mana = mana
-                    voter = acc
+            if voter is None:
+                voter = "steembasicincome"
 
-            if voter is not None:
-                vote_percentage = rshares / (current_mana["max_mana"] / 50 * current_mana["current_mana_pct"] / 100) * 100
-                if vote_percentage > 1 / comment_vote_divider * 100:
-                    vote_percentage = 1 / comment_vote_divider * 100            
             if nobroadcast and voter is not None:
                 print(c["authorperm"])
                 print("Comment Vote %s from %s with %.2f %%" % (author, voter, vote_percentage))            

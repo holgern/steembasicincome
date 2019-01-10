@@ -168,18 +168,21 @@ if __name__ == "__main__":
                 reply_body = "Hi @%s!\n\n" % ops["author"]
                 reply_body += "* you have %d units and %d bonus units\n" % (member_data[ops["author"]]["shares"], member_data[ops["author"]]["bonus_shares"])
                 reply_body += "* your rshares balance is %d or %.3f $\n" % (member_data[ops["author"]]["balance_rshares"], stm.rshares_to_sbd(member_data[ops["author"]]["balance_rshares"])) 
-                
+                rshares = member_data[ops["author"]]["balance_rshares"] * 0.2
                 if member_data[ops["author"]]["comment_upvote"] == 0:
-                    if member_data[ops["author"]]["balance_rshares"] * 0.2 > minimum_vote_threshold:
-                        reply_body += "* your next SBI upvote is predicted to be %.3f $\n" % (stm.rshares_to_sbd(member_data[ops["author"]]["balance_rshares"] * 0.2))
+                    
+                    if rshares > minimum_vote_threshold:
+                        reply_body += "* your next SBI upvote is predicted to be %.3f $\n" % (stm.rshares_to_sbd(rshares))
                     else:
-                        reply_body += "* you need to wait until your upvote value (current value: %.3f $) is above %.3f $\n" % (stm.rshares_to_sbd(member_data[ops["author"]]["balance_rshares"] * 0.2), stm.rshares_to_sbd(minimum_vote_threshold))
+                        reply_body += "* you need to wait until your upvote value (current value: %.3f $) is above %.3f $\n" % (stm.rshares_to_sbd(rshares), stm.rshares_to_sbd(minimum_vote_threshold))
                 else:
                     reply_body += "* as you did not write a post within the last 7 days, your comments will be upvoted.\n"
-                    if member_data[ops["author"]]["balance_rshares"] * 0.2 > minimum_vote_threshold * 2:
-                        reply_body += "* your next SBI upvote is predicted to be %.3f $\n" % (stm.rshares_to_sbd(member_data[ops["author"]]["balance_rshares"] * 0.2))
+                    if rshares > minimum_vote_threshold * 20:
+                        reply_body += "* your next SBI upvote is predicted to be %.3f $\n" % (stm.rshares_to_sbd(int(minimum_vote_threshold * 20)))
+                    elif rshares > minimum_vote_threshold * 2:
+                        reply_body += "* your next SBI upvote is predicted to be %.3f $\n" % (stm.rshares_to_sbd(rshares))
                     else:
-                        reply_body += "* you need to wait until your upvote value (current value: %.3f $) is above %.3f $\n" % (stm.rshares_to_sbd(member_data[ops["author"]]["balance_rshares"] * 0.2), stm.rshares_to_sbd(minimum_vote_threshold * 2))
+                        reply_body += "* you need to wait until your upvote value (current value: %.3f $) is above %.3f $\n" % (stm.rshares_to_sbd(rshares), stm.rshares_to_sbd(minimum_vote_threshold * 2))
                     
                     
                     
