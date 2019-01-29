@@ -461,7 +461,7 @@ if __name__ == "__main__":
         for m in member_accounts:
             member_data[m] = Member(memberStorage.get(m))
 
-
+        mngt_shares_assigned = False
         mngt_shares = 0
         delegation = {}
         delegation_timestamp = {}
@@ -549,20 +549,8 @@ if __name__ == "__main__":
                     shares_sum += shares
                     for s in sponsee:
                         shares_sum += sponsee[s]
-                    if (shares_sum - mngt_shares_sum) >= 100:
-                        mngt_shares_sum += 100
-                        print("add mngt shares")
-                        latest_share = trxStorage.get_lastest_share_type("Mgmt")
-                        if latest_share is not None:
-                            start_index = latest_share["index"] + 1
-                        else:
-                            start_index = 0
-                        for account in mgnt_shares:
-                            shares = mgnt_shares[account]
-                            mgmt_data = {"index": start_index, "source": "mgmt", "memo": "", "account": account, "sponsor": account, "sponsee": {}, "shares": shares, "vests": float(0), "timestamp": formatTimeString(timestamp),
-                                     "status": "Valid", "share_type": "Mgmt"}
-                            start_index += 1
-                            trxStorage.add(mgmt_data)                          
+                    # if (shares_sum - mngt_shares_sum) >= 100:
+                         
                     if sponsor not in member_data:
                         memo_text = memo_welcome()
                         # print("send memo %s with %s" % (sponsor, memo_text))
@@ -595,6 +583,25 @@ if __name__ == "__main__":
                             memo_text = memo_sponsoring_update_shares(sponsor, member_data[s]["shares"])
                             # print("send memo %s with %s" % (s, memo_text))                            
                             member_data[s].append_share_age(timestamp, shares)
+
+
+        print("mngt_shares: %d, shares_sum %d - (mngt_shares * 20): %d - shares_sum - 100: %d" % (mngt_shares, shares_sum, (mngt_shares * 20), shares_sum - 100))
+        if (mngt_shares * 20) < shares_sum - 100 and not mngt_shares_assigned:
+            mngt_shares_assigned = True
+            mngt_shares_sum += 100
+            print("add mngt shares")
+            latest_share = trxStorage.get_lastest_share_type("Mgmt")
+            if latest_share is not None:
+                start_index = latest_share["index"] + 1
+            else:
+                start_index = 0
+            for account in mgnt_shares:
+                shares = mgnt_shares[account]
+                mgmt_data = {"index": start_index, "source": "mgmt", "memo": "", "account": account, "sponsor": account, "sponsee": {}, "shares": shares, "vests": float(0), "timestamp": formatTimeString(timestamp),
+                         "status": "Valid", "share_type": "Mgmt"}
+                start_index += 1
+                print(mgmt_data)
+                trxStorage.add(mgmt_data)         
 
         # add bonus_shares from active delegation
         for m in member_data:
@@ -692,8 +699,16 @@ if __name__ == "__main__":
                     ops = accountTrx[account["name"]].get_newest(op_types=["comment"], limit=500)
                 blog = []
                 for op in ops[::-1]:
-                    comment = (json.loads(op["op_dict"]))    
-                    if comment["parent_author"] == "" and comment["author"] == account["name"] and formatTimeString(comment["timestamp"]) > addTzInfo(last_paid_post):
+                    try:
+                        comment = (json.loads(op["op_dict"]))
+                        created = formatTimeString(comment["timestamp"])
+                    except:
+                        op_dict = op["op_dict"]
+                        comment = json.loads(op_dict[:op_dict.find("body")-3] + '}')
+                        comment = Comment(comment, steem_instance=stm)
+                        comment.refresh()
+                        created = comment["created"]
+                    if comment["parent_author"] == "" and comment["author"] == account["name"] and created > addTzInfo(last_paid_post):
                         try:
                             c = Comment(comment, steem_instance=stm)
                             c.refresh()
@@ -743,8 +758,16 @@ if __name__ == "__main__":
                 ops = accountTrx[account["name"]].get_newest(op_types=["comment"], limit=500)
             posts = []
             for op in ops[::-1]:
-                comment = (json.loads(op["op_dict"]))    
-                if comment["parent_author"] != "" and comment["author"] == account["name"] and formatTimeString(comment["timestamp"]) > addTzInfo(last_paid_comment):
+                try:
+                    comment = (json.loads(op["op_dict"]))
+                    created = formatTimeString(comment["timestamp"])
+                except:
+                    op_dict = op["op_dict"]
+                    comment = json.loads(op_dict[:op_dict.find("body")-3] + '}')
+                    comment = Comment(comment, steem_instance=stm)
+                    comment.refresh()
+                    created = comment["created"]                
+                if comment["parent_author"] != "" and comment["author"] == account["name"] and created > addTzInfo(last_paid_comment):
                     try:
                         c = Comment(comment, steem_instance=stm)
                         c.refresh()

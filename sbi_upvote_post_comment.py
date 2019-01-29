@@ -191,6 +191,8 @@ if __name__ == "__main__":
                     voter = acc
             if voter is None:
                 voter = "steembasicincome"
+                current_mana = voter_accounts[acc].get_manabar()
+            vote_percentage = rshares / (current_mana["max_mana"] / 50 * current_mana["current_mana_pct"] / 100) * 100
 
             if nobroadcast and voter is not None:
                 print(c["authorperm"])

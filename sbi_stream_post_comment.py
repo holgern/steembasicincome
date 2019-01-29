@@ -179,10 +179,8 @@ if __name__ == "__main__":
                     reply_body += "* as you did not write a post within the last 7 days, your comments will be upvoted.\n"
                     if rshares > minimum_vote_threshold * 20:
                         reply_body += "* your next SBI upvote is predicted to be %.3f $\n" % (stm.rshares_to_sbd(int(minimum_vote_threshold * 20)))
-                    elif rshares > minimum_vote_threshold * 2:
-                        reply_body += "* your next SBI upvote is predicted to be %.3f $\n" % (stm.rshares_to_sbd(rshares))
                     else:
-                        reply_body += "* you need to wait until your upvote value (current value: %.3f $) is above %.3f $\n" % (stm.rshares_to_sbd(rshares), stm.rshares_to_sbd(minimum_vote_threshold * 2))
+                        reply_body += "* you need to wait until your upvote value (current value: %.3f $) is above %.3f $\n" % (stm.rshares_to_sbd(rshares), stm.rshares_to_sbd(minimum_vote_threshold * 20))
                     
                     
                     
@@ -203,7 +201,7 @@ if __name__ == "__main__":
         dt_created = dt_created.replace(tzinfo=None)
         skip = False
         for tag in c["tags"]:
-            if tag.lower() in ["nsfw", "sbi-skip"]:
+            if tag is not None and tag.lower() in ["nsfw", "sbi-skip"]:
                 skip = True
         
         posts_dict[authorperm] = {"authorperm": authorperm, "author": ops["author"], "created": dt_created, "block": ops["block_num"], "main_post": main_post,
