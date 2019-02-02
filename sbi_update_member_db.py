@@ -742,8 +742,7 @@ if __name__ == "__main__":
                             member_data[vote["voter"]]["earned_rshares"] += rshares
                             member_data[vote["voter"]]["curation_rshares"] += rshares
                             member_data[vote["voter"]]["balance_rshares"] += rshares
-            confStorage.update({"last_paid_post": last_paid_post})
-
+            
 
         print("reward voted steembasicincome comment")
         if last_paid_comment is None:
@@ -800,8 +799,8 @@ if __name__ == "__main__":
                         member_data[vote["voter"]]["balance_rshares"] += rshares
         confStorage.update({"last_paid_comment": new_paid_comment})
 
-
-    
+        confStorage.update({"last_paid_post": last_paid_post})        
+        
         print("write member database")
         memberStorage.db = dataset.connect(databaseConnector2)
         member_data_list = []

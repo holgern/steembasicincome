@@ -296,6 +296,14 @@ class MemberDB(object):
         data = dict(account=account, avg_share_age=avg_share_age)
         table.update(data, ['account'])
 
+    def update_last_vote(self, account, last_received_vote):
+        """ Change share_age depending on timestamp
+    
+        """
+        table = self.db[self.__tablename__]
+        data = dict(account=account, last_received_vote=last_received_vote)
+        table.update(data, ['account'])
+
     def update(self, data):
         """ Change share_age depending on timestamp
     

@@ -12,7 +12,7 @@ import re
 import time
 import os
 import json
-from steembi.transfer_ops_storage import TransferTrx, AccountTrx, MemberHistDB
+from steembi.transfer_ops_storage import TransferTrx, AccountTrx, MemberHistDB, CurationOptimizationTrx
 from steembi.storage import TrxDB, MemberDB, ConfigurationDB, AccountsDB
 from steembi.member import Member
 import dataset
@@ -34,6 +34,8 @@ if __name__ == "__main__":
     start_prep_time = time.time()
     db2 = dataset.connect(databaseConnector2)
     
+    
+    
     accountStorage = AccountsDB(db2)
     accounts = accountStorage.get()
     other_accounts = accountStorage.get_transfer()     
@@ -53,7 +55,7 @@ if __name__ == "__main__":
     last_paid_post = conf_setup["last_paid_post"]
     last_paid_comment = conf_setup["last_paid_comment"]  
     
-    print("Count rshares of upvoted members.")
+    # print("Count rshares of upvoted members.")
     member_accounts = memberStorage.get_all_accounts()
     print("%d members in list" % len(member_accounts))
     
@@ -71,16 +73,22 @@ if __name__ == "__main__":
     
     
     updated_member_data = []
-    db = dataset.connect(databaseConnector)
     
+    db = dataset.connect(databaseConnector)
+    curationOptimTrx = CurationOptimizationTrx(db)
+    curationOptimTrx.delete_old_posts(days=7)
     # Update current node list from @fullnodeupdate
     nodes = NodeList()
     # nodes.update_nodes(weights={"hist": 1})
     try:
         nodes.update_nodes()
     except:
-        print("could not update nodes")    
-    stm = Steem(node=nodes.get_nodes(), num_retries=3, timeout=10)
+        print("could not update nodes")
+        
+    node_list = nodes.get_nodes()
+    if "https://api.steemit.com" in node_list:
+        node_list.remove("https://api.steemit.com")     
+    stm = Steem(node=node_list, num_retries=3, timeout=10)
     # print(str(stm))
     set_shared_steem_instance(stm)
     
@@ -104,9 +112,10 @@ if __name__ == "__main__":
         trx_id_list = []
     else:
         trx_id_list = accountTrx.get_block_trx_id(start_block)
-    end_block = current_block["id"]
+    # end_block = current_block["id"] 
+    end_block = current_block["id"] - (20 * 10)
     
-    # print("start_block: %d - clear not needed blocks" % (start_block))
+    print("Checking member upvotes from %d to %d" % (start_block, end_block))
     
     date_now = datetime.utcnow()
     date_7_before = addTzInfo(date_now - timedelta(seconds=7 * 24 * 60 * 60))
@@ -137,6 +146,7 @@ if __name__ == "__main__":
     
     # print("start to stream")
     db_data = []
+    curation_vote_list = []
 
     last_block_num = None
     last_trx_id = '0' * 40
@@ -190,17 +200,53 @@ if __name__ == "__main__":
             if op["voter"] not in member_accounts and op["voter"] not in accounts:
                 continue
             if op["author"] in member_accounts and op["voter"] in accounts:
-                
-                vote = Vote(op["voter"], authorperm=construct_authorperm(op["author"], op["permlink"]), steem_instance=stm)
+                authorperm=construct_authorperm(op["author"], op["permlink"])
+                vote = Vote(op["voter"], authorperm=authorperm, steem_instance=stm)
                 print("member %s upvoted with %d" % (op["author"], int(vote["rshares"])))
                 member_data[op["author"]]["rewarded_rshares"] += int(vote["rshares"])
                 member_data[op["author"]]["balance_rshares"] -= int(vote["rshares"])
+                upvote_delay = member_data[op["author"]]["upvote_delay"]
+                if upvote_delay is None:
+                    upvote_delay = 900
+                performance = 0
+                c = Comment(authorperm, steem_instance=stm)
+                curation_rewards_SBD = c.get_curation_rewards(pending_payout_SBD=True)
+                rshares = int(vote["rshares"])
+                vote_SBD = stm.rshares_to_sbd(int(vote["rshares"]))
+                curation_SBD = curation_rewards_SBD["active_votes"][vote["voter"]]
+                if vote_SBD > 0:
+                    performance = (float(curation_SBD) / vote_SBD * 100)
+                else:
+                    performance = 0
+                best_performance = 0
+                best_time_delay = 0
+                for v in c["active_votes"]:
+                    v_SBD = stm.rshares_to_sbd(int(v["rshares"]))
+                    if v_SBD > 0 and int(v["rshares"]) > rshares * 0.5:
+                        p = float(curation_rewards_SBD["active_votes"][v["voter"]]) / v_SBD * 100
+                        if p > best_performance:
+                            best_performance = p
+                            best_time_delay = ((v["time"]) - c["created"]).total_seconds()
+                
+                if best_performance > performance * 1.05:
+                    member_data[op["author"]]["upvote_delay"] = (upvote_delay * 19 + best_time_delay) / 20
+                    if member_data[op["author"]]["upvote_delay"] > 900:
+                        member_data[op["author"]]["upvote_delay"] = 900
+                    elif member_data[op["author"]]["upvote_delay"] < 300:
+                        member_data[op["author"]]["upvote_delay"] = 300
                 updated_member_data.append(member_data[op["author"]])
-
+                    
+                curation_data = {"authorperm": authorperm, "member": op["author"], "created": c["created"], "best_time_delay": best_time_delay, "best_curation_performance": best_performance,
+                                 "vote_rshares": int(vote["rshares"]), "updated": datetime.utcnow(), "vote_delay": ((op["timestamp"]) - c["created"]).total_seconds(),
+                                 "performance": performance}
+                curation_vote_list.append(curation_data)
             data["permlink"] = op["permlink"]
             data["author"] = op["author"]
             data["voter"] = op["voter"]
             data["weight"] = op["weight"]
+            
+            
+            
             vote_cnt += 1
         else:
             continue
@@ -226,11 +272,18 @@ if __name__ == "__main__":
             
             db = dataset.connect(databaseConnector)
             accountTrx.db = db
+            curationOptimTrx.db = db
             accountTrx.add_batch(db_data)
             db_data = []
             if len(updated_member_data) > 0:
                 memberStorage.add_batch(updated_member_data)
                 updated_member_data = []
+            
+                
+            if len(curation_vote_list) > 0:
+                curationOptimTrx.add_batch(curation_vote_list)
+                curation_vote_list = []            
+            
         cnt += 1
     if len(db_data) > 0:
         print(op["timestamp"])
@@ -246,5 +299,11 @@ if __name__ == "__main__":
         print("\n---------------------\n")
         percentage_done = (block_num - start_block) / (end_block - start_block) * 100
         print("Block %d -- Datetime %s -- %.2f %% finished" % (block_num, op["timestamp"], percentage_done))
-        
+    
+    if len(curation_vote_list) > 0:
+        db = dataset.connect(databaseConnector)
+        curationOptimTrx.db = db        
+        curationOptimTrx.add_batch(curation_vote_list)
+        curation_vote_list = []
+    
     print("member hist script run %.2f s" % (time.time() - start_prep_time))
