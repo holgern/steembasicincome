@@ -365,14 +365,6 @@ class ConfigurationDB(object):
         data["id"]= 1
         table = self.db[self.__tablename__]
         table.upsert(data, ["id"])
-        self.db.commit()
-
-
-        """ Change share_age depending on timestamp
-    
-        """
-        table = self.db[self.__tablename__]
-        return table.find_one(account=account)
 
     def update(self, data):
         """ Change share_age depending on timestamp

@@ -56,6 +56,7 @@ if __name__ == "__main__":
     rshares_per_cycle = conf_setup["rshares_per_cycle"]    
     minimum_vote_threshold = conf_setup["minimum_vote_threshold"]
     comment_vote_divider = conf_setup["comment_vote_divider"]
+    comment_footer = conf_setup["comment_footer"]
     
     member_accounts = memberStorage.get_all_accounts()
     print("%d members in list" % len(member_accounts)) 
@@ -183,9 +184,11 @@ if __name__ == "__main__":
                     elif  rshares > minimum_vote_threshold * 2:
                         reply_body += "* your next SBI upvote is predicted to be %.3f $\n" % (stm.rshares_to_sbd(rshares))
                     else:
-                        reply_body += "* you need to wait until your upvote value (current value: %.3f $) is above %.3f $\n" % (stm.rshares_to_sbd(rshares), stm.rshares_to_sbd(minimum_vote_threshold * 20))
+                        reply_body += "* you need to wait until your upvote value (current value: %.3f $) is above %.3f $\n" % (stm.rshares_to_sbd(rshares), stm.rshares_to_sbd(minimum_vote_threshold * 2))
                     
-                    
+                if len(comment_footer) > 0:
+                    reply_body += "<br>\n"
+                    reply_body += comment_footer
                     
                 account_name = account_list[random.randint(0, len(account_list) - 1)]
                 if len(c.permlink) < 255:

@@ -483,7 +483,7 @@ class CurationOptimizationTrx(object):
 
         """
         table = self.db[self.__tablename__]
-        table.upsert(data, ["author", "created"])
+        table.upsert(data, ["member", "created"])
         self.db.commit()
 
     def add_batch(self, data):
@@ -495,11 +495,11 @@ class CurationOptimizationTrx(object):
         if isinstance(data, list):
             #table.insert_many(data, chunk_size=chunk_size)
             for d in data:
-                table.upsert(d, ["author", "created"])
+                table.upsert(d, ["member", "created"])
         else:
             self.db.begin()
             for d in data:
-                table.upsert(data[d], ["author", "created"])            
+                table.upsert(data[d], ["member", "created"])            
             
         self.db.commit()
 
@@ -511,10 +511,10 @@ class CurationOptimizationTrx(object):
         self.db.begin()
         if isinstance(data, list):
             for d in data:
-                table.update(d, ["author", "created"])
+                table.update(d, ["member", "created"])
         else:
             for d in data:
-                table.update(data[d], ["author", "created"])            
+                table.update(data[d], ["member", "created"])            
         self.db.commit()
 
     def get_latest_post(self):
@@ -573,10 +573,10 @@ class CurationOptimizationTrx(object):
             posts[post["authorperm"]] = post["authorperm"]
         return posts
 
-    def update_curation(self, author, created, best_time_delay, best_curation_performance, performance, updated):
+    def update_curation(self, member, created, best_time_delay, best_curation_performance, performance, updated):
         table = self.db[self.__tablename__]
-        data = dict(author=author, created=created, best_time_delay=best_time_delay, best_curation_performance=best_curation_performance, performance=performance, updated=updated)
-        table.update(data, ["author", "created"])
+        data = dict(member=member, created=created, best_time_delay=best_time_delay, best_curation_performance=best_curation_performance, performance=performance, updated=updated)
+        table.update(data, ["member", "created"])
 
     def get_authorperm_list(self):
         table = self.db[self.__tablename__]
@@ -590,17 +590,17 @@ class CurationOptimizationTrx(object):
         del_posts = []
         for post in table.find(order_by='created'):
             if (datetime.utcnow() - post["created"]).total_seconds() > 60 * 60 * 24 * days:
-                del_posts.append({"author": post["author"], "created": post["created"]} )
+                del_posts.append({"member": post["member"], "created": post["created"]} )
         for post in del_posts:
-            table.delete(author=post["author"], created=post["created"])
+            table.delete(member=post["member"], created=post["created"])
 
-    def delete(self, author, created):
+    def delete(self, member, created):
         """ Delete a data set
 
            :param int ID: database id
         """
         table = self.db[self.__tablename__]
-        table.delete(author=author, created=created)
+        table.delete(member=member, created=created)
 
     def wipe(self, sure=False):
         """Purge the entire database. No data set will survive this!"""

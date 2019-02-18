@@ -53,7 +53,8 @@ if __name__ == "__main__":
     rshares_per_cycle = conf_setup["rshares_per_cycle"]
     upvote_multiplier = conf_setup["upvote_multiplier"]
     last_paid_post = conf_setup["last_paid_post"]
-    last_paid_comment = conf_setup["last_paid_comment"]  
+    last_paid_comment = conf_setup["last_paid_comment"]
+    upvote_multiplier_adjusted = conf_setup["upvote_multiplier_adjusted"]
     
     # print("Count rshares of upvoted members.")
     member_accounts = memberStorage.get_all_accounts()
