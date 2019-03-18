@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Dec 29, 2018 at 10:40 PM
+-- Generation Time: Mar 18, 2019 at 01:50 PM
 -- Server version: 10.1.29-MariaDB-6
 -- PHP Version: 7.1.20-1+ubuntu18.04.1+deb.sury.org+1
 
@@ -24,7 +24,21 @@ CREATE TABLE `accounts` (
   `name` varchar(16) NOT NULL,
   `voting` tinyint(1) NOT NULL,
   `transfer` tinyint(1) NOT NULL DEFAULT '0',
-  `upvote_reward_rshares` tinyint(1) NOT NULL DEFAULT '0'
+  `upvote_reward_rshares` tinyint(1) NOT NULL DEFAULT '0',
+  `transfer_memo_sender` tinyint(1) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `blacklist`
+--
+
+CREATE TABLE `blacklist` (
+  `id` int(11) NOT NULL,
+  `tags` text NOT NULL,
+  `apps` text NOT NULL,
+  `body` text NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -38,14 +52,17 @@ CREATE TABLE `configuration` (
   `share_cycle_min` float NOT NULL,
   `sp_share_ratio` float NOT NULL,
   `rshares_per_cycle` bigint(20) DEFAULT '800000000',
+  `del_rshares_per_cycle` bigint(20) NOT NULL DEFAULT '80000000',
   `comment_vote_divider` float DEFAULT NULL,
   `comment_vote_timeout_h` float DEFAULT NULL,
   `last_cycle` datetime DEFAULT NULL,
   `upvote_multiplier` float NOT NULL DEFAULT '1.05',
+  `upvote_multiplier_adjusted` float NOT NULL DEFAULT '1',
   `last_paid_post` datetime DEFAULT NULL,
   `last_paid_comment` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `minimum_vote_threshold` bigint(20) NOT NULL DEFAULT '800000000',
-  `last_delegation_check` datetime DEFAULT NULL
+  `last_delegation_check` datetime DEFAULT NULL,
+  `comment_footer` text NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -79,7 +96,8 @@ CREATE TABLE `member` (
   `first_cycle_at` datetime NOT NULL DEFAULT '1970-01-01 00:00:00',
   `steemcleaners` tinyint(1) DEFAULT NULL,
   `buildawhale` tinyint(1) DEFAULT NULL,
-  `blacklisted` tinyint(1) DEFAULT NULL
+  `blacklisted` tinyint(1) DEFAULT NULL,
+  `last_received_vote` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -204,30 +222,23 @@ CREATE TABLE `transaction_out` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `trx`
+-- Table structure for table `transfer_memos`
 --
 
-CREATE TABLE `trx` (
-  `index` int(11) NOT NULL,
-  `source` varchar(50) NOT NULL,
-  `memo` text,
-  `account` varchar(50) DEFAULT NULL,
-  `sponsor` varchar(50) DEFAULT NULL,
-  `sponsee` text,
-  `shares` int(11) DEFAULT NULL,
-  `vests` decimal(15,6) DEFAULT NULL,
-  `timestamp` datetime NOT NULL,
-  `status` varchar(50) NOT NULL,
-  `share_type` varchar(50) NOT NULL
+CREATE TABLE `transfer_memos` (
+  `id` int(11) NOT NULL,
+  `memo_type` varchar(50) NOT NULL,
+  `enabled` tinyint(1) NOT NULL DEFAULT '0',
+  `memo` text NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `trx_backup`
+-- Table structure for table `trx`
 --
 
-CREATE TABLE `trx_backup` (
+CREATE TABLE `trx` (
   `index` int(11) NOT NULL,
   `source` varchar(50) NOT NULL,
   `memo` text,
@@ -250,6 +261,12 @@ CREATE TABLE `trx_backup` (
 --
 ALTER TABLE `accounts`
   ADD PRIMARY KEY (`name`);
+
+--
+-- Indexes for table `blacklist`
+--
+ALTER TABLE `blacklist`
+  ADD UNIQUE KEY `id` (`id`);
 
 --
 -- Indexes for table `configuration`
@@ -302,15 +319,15 @@ ALTER TABLE `transaction_out`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `transfer_memos`
+--
+ALTER TABLE `transfer_memos`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indexes for table `trx`
 --
 ALTER TABLE `trx`
-  ADD PRIMARY KEY (`index`,`source`);
-
---
--- Indexes for table `trx_backup`
---
-ALTER TABLE `trx_backup`
   ADD PRIMARY KEY (`index`,`source`);
 
 --
@@ -331,9 +348,14 @@ ALTER TABLE `pending_refunds`
 -- AUTO_INCREMENT for table `transaction_memo`
 --
 ALTER TABLE `transaction_memo`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=343135976;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=343136232;
 --
 -- AUTO_INCREMENT for table `transaction_out`
 --
 ALTER TABLE `transaction_out`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6277061;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6312802;
+--
+-- AUTO_INCREMENT for table `transfer_memos`
+--
+ALTER TABLE `transfer_memos`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
