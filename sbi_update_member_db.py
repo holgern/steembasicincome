@@ -84,6 +84,7 @@ if __name__ == "__main__":
     share_cycle_min = conf_setup["share_cycle_min"]
     sp_share_ratio = conf_setup["sp_share_ratio"]
     rshares_per_cycle = conf_setup["rshares_per_cycle"]
+    del_rshares_per_cycle = conf_setup["del_rshares_per_cycle"]
     upvote_multiplier = conf_setup["upvote_multiplier"]
     last_paid_post = conf_setup["last_paid_post"]
     last_paid_comment = conf_setup["last_paid_comment"]
@@ -315,10 +316,10 @@ if __name__ == "__main__":
                     member_data[m]["first_cycle_at"] = current_cycle
                 elif member_data[m]["first_cycle_at"] < datetime(2000, 1 , 1, 0, 0, 0):
                     member_data[m]["first_cycle_at"] = current_cycle
-                member_data[m]["balance_rshares"] += (member_data[m]["shares"] + member_data[m]["bonus_shares"]) * rshares_per_cycle
-                member_data[m]["earned_rshares"] += (member_data[m]["shares"] + member_data[m]["bonus_shares"]) * rshares_per_cycle
-                member_data[m]["subscribed_rshares"] += (member_data[m]["shares"]) * rshares_per_cycle
-                member_data[m]["delegation_rshares"] += (member_data[m]["bonus_shares"]) * rshares_per_cycle
+                member_data[m]["balance_rshares"] += (member_data[m]["shares"] * rshares_per_cycle) + (member_data[m]["bonus_shares"] * del_rshares_per_cycle)
+                member_data[m]["earned_rshares"] += (member_data[m]["shares"] * rshares_per_cycle) + (member_data[m]["bonus_shares"] * del_rshares_per_cycle)
+                member_data[m]["subscribed_rshares"] += (member_data[m]["shares"] * rshares_per_cycle)
+                member_data[m]["delegation_rshares"] += (member_data[m]["bonus_shares"] * del_rshares_per_cycle)
             
             print("reward voted steembasicincome post and comments")
             # account = Account("steembasicincome", steem_instance=stm)

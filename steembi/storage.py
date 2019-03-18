@@ -396,6 +396,55 @@ class ConfigurationDB(object):
             table.drop
 
 
+class BlacklistDB(object):
+    """ This is the trx storage class
+    """
+    __tablename__ = 'blacklist'
+
+    def __init__(self, db):
+        self.db = db
+
+    def exists_table(self):
+        """ Check if the database table exists
+        """
+        if len(self.db.tables) == 0:
+            return False
+        if self.__tablename__ in self.db.tables:
+            return True
+        else:
+            return False
+
+    def get(self):
+        """ Returns the public keys stored in the database
+        """
+        table = self.db[self.__tablename__]
+        return table.find_one(id=1)
+    
+    def set(self, data):
+        """ Add a new data set
+    
+        """
+        data["id"]= 1
+        table = self.db[self.__tablename__]
+        table.upsert(data, ["id"])
+
+    def update(self, data):
+        """ Change share_age depending on timestamp
+    
+        """
+        data["id"]= 1
+        table = self.db[self.__tablename__]
+        table.update(data, ['id'])
+    
+    def delete(self, account):
+        """ Delete a data set
+    
+           :param int ID: database id
+        """
+        table = self.db[self.__tablename__]
+        table.delete(account=account)
+
+
 class AccountsDB(object):
     """ This is the accounts storage class
     """

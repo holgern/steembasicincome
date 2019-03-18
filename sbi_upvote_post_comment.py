@@ -149,6 +149,7 @@ if __name__ == "__main__":
             continue
         elif member["blacklisted"] is None and (member["steemcleaners"] or member["buildawhale"]):
             continue
+
         if post_list[authorperm]["main_post"] == 1:
             rshares = member["balance_rshares"] / comment_vote_divider
         else:
