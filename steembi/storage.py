@@ -493,6 +493,16 @@ class AccountsDB(object):
                 accounts.append(a["name"])
         return accounts
 
+    def get_transfer_memo_sender(self):
+        """ Returns the accounts stored in the database
+        """
+        table = self.db[self.__tablename__]
+        accounts = []
+        for a in table.all():
+            if a["transfer_memo_sender"] == 1:
+                accounts.append(a["name"])
+        return accounts
+
     def set(self, data):
         """ Add a new data set
     
@@ -575,6 +585,36 @@ class KeysDB(object):
         else:
             table = self.db[self.__tablename__]
             table.drop
+
+
+class TransferMemoDB(object):
+    """ This is the trx storage class
+    """
+    __tablename__ = 'transfer_memos'
+
+    def __init__(self, db):
+        self.db = db
+
+    def exists_table(self):
+        """ Check if the database table exists
+        """
+        if len(self.db.tables) == 0:
+            return False
+        if self.__tablename__ in self.db.tables:
+            return True
+        else:
+            return False
+
+    def get(self, memo_type):
+        """ Returns the public keys stored in the database
+        """
+        table = self.db[self.__tablename__]
+        return table.find_one(memo_type=memo_type)
+
+    def get_all_data(self):
+        """ Returns the public keys stored in the database
+        """
+        return self.db[self.__tablename__].all()
 
 
 class TransactionMemoDB(object):
