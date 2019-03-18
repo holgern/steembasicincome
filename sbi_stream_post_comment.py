@@ -247,7 +247,7 @@ if __name__ == "__main__":
                 app = app["name"]
             if app is not None and isinstance(app, str) and app.find("/") > -1:
                 app = app.split("/")[0]
-            elif app is not None and isinstance(app, str) and app.lower() in blacklist_apps:
+            if app is not None and isinstance(app, str) and app.lower() in blacklist_apps:
                 skip = True
         for s in blacklist_body:
             if c.body.find(s) > -1:
