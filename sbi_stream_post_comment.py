@@ -205,10 +205,11 @@ if __name__ == "__main__":
                     else:
                         reply_body += "* you need to wait until your upvote value (current value: %.3f $) is above %.3f $\n" % (stm.rshares_to_sbd(rshares), stm.rshares_to_sbd(minimum_vote_threshold * 2))
                 if rshares_denom > 0:
-                    reply_body += "* %.2f %% of your total SBI vote value has come from your subscription level\n" % (member_data[ops["author"]]["subscribed_rshares"] / rshares_denom * 100)
-                    reply_body += "* %.2f %% of of your total SBI vote value has come from your bonus units\n" % (member_data[ops["author"]]["delegation_rshares"] / rshares_denom * 100)
-                    reply_body += "* %.2f %% of your total SBI vote value has come from upvoting rewards\n" % (member_data[ops["author"]]["curation_rshares"] / rshares_denom * 100)
-                    reply_body += "* %.2f %% of your total SBI vote value has come from new account bonus or extra value from pre-automation rewards\n" % (member_data[ops["author"]]["other_rshares"] / rshares_denom * 100)
+                    reply_body += "\n\nStructure of your total SBI vote value:\n"
+                    reply_body += "* %.2f %% has come from your subscription level\n" % (member_data[ops["author"]]["subscribed_rshares"] / rshares_denom * 100)
+                    reply_body += "* %.2f %% has come from your bonus units\n" % (member_data[ops["author"]]["delegation_rshares"] / rshares_denom * 100)
+                    reply_body += "* %.2f %% has come from upvoting rewards\n" % (member_data[ops["author"]]["curation_rshares"] / rshares_denom * 100)
+                    reply_body += "* %.2f %% has come from new account bonus or extra value from pre-automation rewards\n" % (member_data[ops["author"]]["other_rshares"] / rshares_denom * 100)
                 if len(comment_footer) > 0:
                     reply_body += "<br>\n"
                     reply_body += comment_footer
