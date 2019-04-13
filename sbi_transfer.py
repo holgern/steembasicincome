@@ -97,6 +97,7 @@ if __name__ == "__main__":
             transactionStorage.delete_to("sbi8")
             transactionStorage.delete_to("sbi9")
             transactionStorage.delete_to("sbi10")
+            print("done.")
     
         stop_index = None
         # stop_index = addTzInfo(datetime(2018, 7, 21, 23, 46, 00))

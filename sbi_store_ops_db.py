@@ -100,7 +100,7 @@ if __name__ == "__main__":
             data = []
             last_block = 0
             last_trx = trx_in_block
-            for op in account.history(start=start_block - 3, use_block_num=True):
+            for op in account.history(start=start_block - 5, use_block_num=True):
                 if op["block"] < start_block:
                     # last_block = op["block"]
                     continue

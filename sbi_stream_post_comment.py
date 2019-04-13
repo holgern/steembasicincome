@@ -177,6 +177,7 @@ if __name__ == "__main__":
             changed_member_data.append(ops["author"])
         if main_post:
             member_data[ops["author"]]["last_post"] = c["created"]
+            member_data[ops["author"]]["comment_upvote"] = 0
         else:
             member_data[ops["author"]]["last_comment"] = c["created"]
             status_command = c.body.find("!sbi status")
@@ -197,7 +198,7 @@ if __name__ == "__main__":
                         reply_body += "* you need to wait until your upvote value (current value: %.3f $) is above %.3f $\n" % (stm.rshares_to_sbd(rshares), stm.rshares_to_sbd(minimum_vote_threshold))
                 else:
                     rshares =  member_data[ops["author"]]["balance_rshares"] / (comment_vote_divider ** 2)
-                    reply_body += "* as you did not write a post within the last 7 days, your comments will be upvoted.\n"
+                    reply_body += "* as you did not wrote a post within the last 7 days, your comments will be upvoted.\n"
                     if rshares > minimum_vote_threshold * 20:
                         reply_body += "* your next SBI upvote is predicted to be %.3f $\n" % (stm.rshares_to_sbd(int(minimum_vote_threshold * 20)))
                     elif  rshares > minimum_vote_threshold * 2:

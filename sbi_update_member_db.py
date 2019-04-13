@@ -40,6 +40,7 @@ def memo_sp_delegation(transferMemos, memo_transfer_acc, sponsor, shares, sp_sha
         else:
             memo_text = transferMemos["sp_delegation"]["memo"]
         memo_transfer_acc.transfer(sponsor, 0.001, "STEEM", memo=memo_text)
+        sleep(4)
     except:
         print("Could not sent 0.001 STEEM to %s" % sponsor)
 
@@ -55,6 +56,7 @@ def memo_welcome(transferMemos, memo_transfer_acc, sponsor):
     try:
         memo_text = transferMemos["welcome"]["memo"]
         memo_transfer_acc.transfer(sponsor, 0.001, "STEEM", memo=memo_text)
+        sleep(4)
     except:
         print("Could not sent 0.001 STEEM to %s" % sponsor)
     
@@ -72,6 +74,7 @@ def memo_sponsoring(transferMemos, memo_transfer_acc, s, sponsor):
         else:
             memo_text = transferMemos["sponsoring"]["memo"]
         memo_transfer_acc.transfer(s, 0.001, "STEEM", memo=memo_text)
+        sleep(4)
     except:
         print("Could not sent 0.001 STEEM to %s" % s)
 
@@ -89,6 +92,7 @@ def memo_update_shares(transferMemos, memo_transfer_acc, sponsor, shares):
         else:
             memo_text = transferMemos["update_shares"]["memo"]
         memo_transfer_acc.transfer(sponsor, 0.001, "STEEM", memo=memo_text)
+        sleep(4)
     except:
         print("Could not sent 0.001 STEEM to %s" % sponsor)    
 
@@ -112,6 +116,7 @@ def memo_sponsoring_update_shares(transferMemos, memo_transfer_acc, s, sponsor, 
         else:
             memo_text = transferMemos["sponsoring_update_shares"]["memo"]
         memo_transfer_acc.transfer(s, 0.001, "STEEM", memo=memo_text)
+        sleep(4)
     except:
         print("Could not sent 0.001 STEEM to %s" % s)  
 
@@ -411,7 +416,7 @@ if __name__ == "__main__":
                 member_data[m]["earned_rshares"] += (member_data[m]["shares"] * rshares_per_cycle) + (member_data[m]["bonus_shares"] * del_rshares_per_cycle)
                 member_data[m]["subscribed_rshares"] += (member_data[m]["shares"] * rshares_per_cycle)
                 member_data[m]["delegation_rshares"] += (member_data[m]["bonus_shares"] * del_rshares_per_cycle)
-            
+        if False:    
             print("reward voted steembasicincome post and comments")
             # account = Account("steembasicincome", steem_instance=stm)
             
@@ -440,36 +445,30 @@ if __name__ == "__main__":
                     except:
                         op_dict = op["op_dict"]
                         comment = json.loads(op_dict[:op_dict.find("body")-3] + '}')
-                        try:
-                            comment = Comment(comment, steem_instance=stm)
-                            comment.refresh()
-                            created = comment["created"]
-                        except:
-                            continue
-                    if comment["parent_author"] == "" and comment["author"] == account["name"] and created > addTzInfo(last_paid_post):
-                        try:
-                            c = Comment(comment, steem_instance=stm)
-                            c.refresh()
-                            blog.append(c)
-                        except:
-                            continue
-                    elif comment["parent_author"] != "" and comment["author"] == account["name"] and created > addTzInfo(last_paid_comment):
-                        try:
-                            c = Comment(comment, steem_instance=stm)
-                            c.refresh()
-                            posts.append(c)
-                        except:
-                            continue                    
-                
-                for post in blog:
-                    if post["created"] <= addTzInfo(last_paid_post):
+                    try:
+                        comment = Comment(comment, steem_instance=stm)
+                        comment.refresh()
+                        created = comment["created"]
+                    except:
                         continue
-                    if post.is_pending():
+                    if comment.is_pending():
                         continue
-                    if post.is_comment():
+                    if comment["author"] != account["name"]:
                         continue
-                    if post["author"] != account["name"]:
+                    
+                    if len(blog) > 10 or len(posts) > 50:
                         continue
+                        
+                    if comment["parent_author"] == "" and created > addTzInfo(last_paid_post):
+
+                        blog.append(comment["authorperm"])
+                    elif comment["parent_author"] != "" and created > addTzInfo(last_paid_comment):
+                        posts.append(comment["authorperm"])
+    
+    
+                post_rshares = 0
+                for authorperm in blog:
+                    post = Comment(authorperm, steem_instance=stm)
                     if post["created"] > addTzInfo(new_paid_post):
                         new_paid_post = post["created"].replace(tzinfo=None) 
                     # last_paid_post = post["created"]
@@ -487,20 +486,13 @@ if __name__ == "__main__":
                             member_data[vote["voter"]]["earned_rshares"] += rshares
                             member_data[vote["voter"]]["curation_rshares"] += rshares
                             member_data[vote["voter"]]["balance_rshares"] += rshares
-            
+                            post_rshares += rshares
 
-            for post in posts:
-                if post["created"] <= addTzInfo(last_paid_comment):
-                    continue
-                if post.is_pending():
-                    continue
-                if not post.is_comment():
-                    continue
-                if post.time_elapsed().total_seconds() / 60 / 60 / 24 < 7.0:
-                    continue
-                if post["author"] != account["name"]:
-                    continue
-                if post["created"] > addTzInfo(new_paid_comment) and not post.is_pending():
+            
+            comment_rshares = 0
+            for authorperm in posts:
+                post = Comment(authorperm, steem_instance=stm)
+                if post["created"] > addTzInfo(new_paid_comment):
                     new_paid_comment = post["created"].replace(tzinfo=None)
                 # last_paid_comment = post["created"]
                 all_votes = ActiveVotes(post["authorperm"])
@@ -515,8 +507,9 @@ if __name__ == "__main__":
                         member_data[vote["voter"]]["earned_rshares"] += rshares
                         member_data[vote["voter"]]["curation_rshares"] += rshares
                         member_data[vote["voter"]]["balance_rshares"] += rshares
-    
-        
+                        comment_rshares += rshares
+        #print("%d new curation rshares for posts" % post_rshares)
+        #print("%d new curation rshares for comments" % comment_rshares)
         print("write member database")
         memberStorage.db = dataset.connect(databaseConnector2)
         member_data_list = []
@@ -547,8 +540,13 @@ if __name__ == "__main__":
         
         if new_cycle:
             last_cycle = last_cycle + timedelta(seconds=60 * share_cycle_min)
-        
-        confStorage.update({"last_cycle": last_cycle, "last_paid_comment": new_paid_comment, "last_paid_post": new_paid_post})
+        print("update last_cycle to %s" % str(last_cycle))
+        confStorage.db = dataset.connect(databaseConnector2)
+        if False:
+            confStorage.update({"last_cycle": last_cycle, "last_paid_comment": new_paid_comment, "last_paid_post": new_paid_post})
+        else:
+            confStorage.update({"last_cycle": last_cycle})
+
         
         # Statistics
         shares = 0

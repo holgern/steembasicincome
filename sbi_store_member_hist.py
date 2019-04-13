@@ -122,28 +122,8 @@ if __name__ == "__main__":
     date_7_before = addTzInfo(date_now - timedelta(seconds=7 * 24 * 60 * 60))
     date_28_before = addTzInfo(date_now - timedelta(seconds=28 * 24 * 60 * 60))
     date_72h_before = addTzInfo(date_now - timedelta(seconds=72 * 60 * 60))    
-    
-    deleting = True
-    while deleting:
-        delete_ops = []
-        delete_before = False
-        for op in accountTrx.get_ordered_block_num():
-            if addTzInfo(op["timestamp"]) < start_time:
-                delete_ops.append({"block_num": op["block_num"], "trx_id": op["trx_id"], "op_num": op["op_num"]})
-        if len(delete_ops) > 0:
-            delete_before = True
-            print("delete %d - %d" % ((delete_ops[0]["block_num"]), (delete_ops[-1]["block_num"])))
-        for op in accountTrx.get_ordered_block_num_reverse():
-            if addTzInfo(op["timestamp"]) > stop_time:
-                delete_ops.append({"block_num": op["block_num"], "trx_id": op["trx_id"], "op_num": op["op_num"]})
-        if len(delete_ops) > 0 and not delete_before:
-            print("delete %d - %d" % ((delete_ops[0]["block_num"]), (delete_ops[-1]["block_num"])))
-        for ops in delete_ops:    
-            accountTrx.delete(block_num=ops["block_num"], trx_id=ops["trx_id"], op_num=ops["op_num"])
-        if len(delete_ops) > 0:
-            deleting = True
-        else:
-            deleting = False
+    print("delete old hist data")
+    accountTrx.delete_old_data(end_block - (20 * 60 * 24 * 7))
     
     # print("start to stream")
     db_data = []
@@ -292,9 +272,9 @@ if __name__ == "__main__":
         accountTrx.db = db        
         accountTrx.add_batch(db_data)
         db_data = []
-        if len(updated_member_data) > 0:
-            memberStorage.add_batch(updated_member_data)
-            updated_member_data = []
+    if len(updated_member_data) > 0:
+        memberStorage.add_batch(updated_member_data)
+        updated_member_data = []
 
 
         print("\n---------------------\n")

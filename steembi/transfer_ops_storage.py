@@ -270,6 +270,11 @@ class MemberHistDB(object):
         table = self.db[self.__tablename__]
         return table.find(order_by='-block_num', _limit=limit)
 
+    def delete_old_data(self, block_num):
+        table = self.db[self.__tablename__]
+        
+        table.delete(block_num={'<': block_num})
+
     def delete(self, block_num, trx_id, op_num):
         """ Delete a data set
 
