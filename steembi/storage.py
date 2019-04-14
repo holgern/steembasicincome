@@ -473,6 +473,13 @@ class AccountsDB(object):
                 accounts.append(a["name"])
         return accounts
 
+    def get_data(self):
+        table = self.db[self.__tablename__]
+        accounts = {}
+        for acc in table.all():
+            accounts[acc["name"]] = acc
+        return accounts
+        
     def get_transfer(self):
         """ Returns the accounts stored in the database
         """
@@ -507,7 +514,6 @@ class AccountsDB(object):
         """ Add a new data set
     
         """
-        data["id"]= 1
         table = self.db[self.__tablename__]
         table.upsert(data, ["name"])
         self.db.commit()

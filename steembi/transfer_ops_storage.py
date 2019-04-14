@@ -62,10 +62,10 @@ class AccountTrx(object):
                 ops.append(op)
         return ops
 
-    def get_newest(self, op_types = [], limit=100):
+    def get_newest(self, timestamp, op_types = [], limit=100):
         ops = []
         table = self.db[self.__tablename__]
-        for op in table.find(order_by='-op_acc_index'):
+        for op in table.find(table.table.columns.timestamp > timestamp, order_by='-op_acc_index'):
             if op["type"] in op_types or len(op_types) == 0:
                 ops.append(op)
             if len(ops) >= limit:
