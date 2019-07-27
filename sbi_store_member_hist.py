@@ -182,7 +182,10 @@ if __name__ == "__main__":
                 continue
             if op["author"] in member_accounts and op["voter"] in accounts:
                 authorperm=construct_authorperm(op["author"], op["permlink"])
-                vote = Vote(op["voter"], authorperm=authorperm, steem_instance=stm)
+                try:
+                    vote = Vote(op["voter"], authorperm=authorperm, steem_instance=stm)
+                except:
+                    continue
                 print("member %s upvoted with %d" % (op["author"], int(vote["rshares"])))
                 member_data[op["author"]]["rewarded_rshares"] += int(vote["rshares"])
                 member_data[op["author"]]["balance_rshares"] -= int(vote["rshares"])

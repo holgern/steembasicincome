@@ -304,7 +304,10 @@ if __name__ == "__main__":
                         print("mngt bonus_shares: %s - %d" % (op["sponsor"], op["shares"]))
                 else:
                     sponsor = op["sponsor"]
-                    sponsee = json.loads(op["sponsee"].replace('""', '"'))
+                    try:
+                        sponsee = json.loads(op["sponsee"].replace('""', '"'))
+                    except:
+                        continue
                     shares = op["shares"]
                     share_age = 0
                     if isinstance(op["timestamp"], str):

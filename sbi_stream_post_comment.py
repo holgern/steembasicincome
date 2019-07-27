@@ -233,10 +233,10 @@ if __name__ == "__main__":
         dt_created = c["created"]
         dt_created = dt_created.replace(tzinfo=None)
         skip = False
-        
-        for tag in c["tags"]:
-            if tag is not None and tag.lower() in blacklist_tags:
-                skip = True
+        if "tags" in c and c["tags"] is not None:
+            for tag in c["tags"]:
+                if tag is not None and tag.lower() in blacklist_tags:
+                    skip = True
         json_metadata = c.json_metadata
         if isinstance(json_metadata, str):
             try:
