@@ -165,6 +165,7 @@ if __name__ == "__main__":
     last_delegation_check = conf_setup["last_delegation_check"]
     minimum_vote_threshold = conf_setup["minimum_vote_threshold"]
     upvote_multiplier_adjusted = conf_setup["upvote_multiplier_adjusted"]
+    comment_vote_divider = conf_setup["comment_vote_divider"]
     
     accountTrx = {}
     for account in accounts:
@@ -329,7 +330,7 @@ if __name__ == "__main__":
                         member = Member(sponsor, shares, timestamp)
                         member.append_share_age(timestamp, shares)
                         member_data[sponsor] = member
-                        member_data[sponsor]["balance_rshares"] = (minimum_vote_threshold * 5)
+                        member_data[sponsor]["balance_rshares"] = (minimum_vote_threshold * comment_vote_divider)
                     else:
                         
                         member_data[sponsor]["latest_enrollment"] = timestamp
@@ -350,7 +351,7 @@ if __name__ == "__main__":
                             member = Member(s, shares, timestamp)
                             member.append_share_age(timestamp, shares)
                             member_data[s] = member
-                            member_data[s]["balance_rshares"] = (minimum_vote_threshold * 5)
+                            member_data[s]["balance_rshares"] = (minimum_vote_threshold * comment_vote_divider)
                         else:
                             member_data[s]["latest_enrollment"] = timestamp
                             member_data[s]["shares"] += shares
