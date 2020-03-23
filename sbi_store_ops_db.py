@@ -25,6 +25,7 @@ if __name__ == "__main__":
         # print(config_data)
         databaseConnector = config_data["databaseConnector"]
         databaseConnector2 = config_data["databaseConnector2"]
+        hive_blockchain = config_data["hive_blockchain"]
     start_prep_time = time.time()
     # sqlDataBaseFile = os.path.join(path, database)
     # databaseConnector = "sqlite:///" + sqlDataBaseFile
@@ -47,8 +48,9 @@ if __name__ == "__main__":
         nodes = NodeList()
         nodes.update_nodes()
         # nodes.update_nodes(weights={"hist": 1})
-        stm = Steem(node=nodes.get_nodes())
+        stm = Steem(node=nodes.get_nodes(hive=hive_blockchain))
         # print(str(stm))
+        assert stm.is_hive == hive_blockchain
         
         print("Fetch new account history ops.")
         

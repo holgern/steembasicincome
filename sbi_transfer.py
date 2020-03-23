@@ -28,6 +28,7 @@ if __name__ == "__main__":
         databaseConnector = config_data["databaseConnector"]
         databaseConnector2 = config_data["databaseConnector2"]
         mgnt_shares = config_data["mgnt_shares"]
+        hive_blockchain = config_data["hive_blockchain"]
 
 
     start_prep_time = time.time()
@@ -73,7 +74,7 @@ if __name__ == "__main__":
             nodes.update_nodes()
         except:
             print("could not update nodes")    
-        stm = Steem(keys=key_list, node=nodes.get_nodes())
+        stm = Steem(keys=key_list, node=nodes.get_nodes(hive=hive_blockchain))
         # set_shared_steem_instance(stm)    
         
         # print("load member database")

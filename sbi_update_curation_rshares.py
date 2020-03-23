@@ -35,6 +35,7 @@ if __name__ == "__main__":
         databaseConnector = config_data["databaseConnector"]
         databaseConnector2 = config_data["databaseConnector2"]
         mgnt_shares = config_data["mgnt_shares"]
+        hive_blockchain = config_data["hive_blockchain"]
         
     start_prep_time = time.time()
     db2 = dataset.connect(databaseConnector2)
@@ -96,8 +97,8 @@ if __name__ == "__main__":
         #print(key_list)
         nodes = NodeList()
         nodes.update_nodes()
-        stm = Steem(node=nodes.get_nodes())
-        stm2 = Steem(node=nodes.get_nodes(), use_condenser=True)
+        stm = Steem(node=nodes.get_nodes(hive=hive_blockchain))
+        stm2 = Steem(node=nodes.get_nodes(hive=hive_blockchain), use_condenser=True)
 
         member_data = {}
         n_records = 0

@@ -26,6 +26,7 @@ if __name__ == "__main__":
         databaseConnector = config_data["databaseConnector"]
         databaseConnector2 = config_data["databaseConnector2"]
         mgnt_shares = config_data["mgnt_shares"]
+        hive_blockchain = config_data["hive_blockchain"]
 
 
     db = dataset.connect(databaseConnector)
@@ -54,7 +55,7 @@ if __name__ == "__main__":
             nodes.update_nodes()
         except:
             print("could not update nodes") 
-        stm = Steem(node=nodes.get_nodes())
+        stm = Steem(node=nodes.get_nodes(hive=hive_blockchain))
         set_shared_steem_instance(stm)
         
     

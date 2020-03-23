@@ -140,10 +140,10 @@ class ParseAccountHist(list):
             data = {"index": index, "sender": account, "to": op["to"], "memo": processed_memo, "encrypted": encrypted, "referenced_accounts": None, "amount": amount.amount, "amount_symbol": amount.symbol, "timestamp": timestamp}
             self.transactionOutStorage.add(data)            
             return
-        if amount.symbol == "SBD":
+        if amount.symbol == self.steem.sbd_symbol:
             # self.trxStorage.get_account(op["to"], share_type="SBD")
             shares = -int(amount.amount)
-            if "http" in op["memo"] or "STEEM" not in op["memo"]:
+            if "http" in op["memo"] or self.steem.steem_symbol not in op["memo"]:
                 data = {"index": index, "sender": account, "to": op["to"], "memo": processed_memo, "encrypted": encrypted, "referenced_accounts": None, "amount": amount.amount, "amount_symbol": amount.symbol, "timestamp": timestamp}
                 self.transactionOutStorage.add(data)                
                 return
@@ -187,8 +187,8 @@ class ParseAccountHist(list):
             data = {"index": index, "sender": account, "to": self.account["name"], "memo": processed_memo, "encrypted": False, "referenced_accounts": sponsor + ";" + json.dumps(sponsee), "amount": amount.amount, "amount_symbol": amount.symbol, "timestamp": timestamp}
             self.transactionStorage.add(data)
             return
-        if amount.symbol == "SBD":
-            share_type = "SBD"
+        if amount.symbol == self.steem.sbd_symbol:
+            share_type = self.steem.sbd_symbol
         
         sponsee_amount = 0
         for a in sponsee:

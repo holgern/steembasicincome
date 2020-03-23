@@ -22,7 +22,7 @@ from steembi.memo_parser import MemoParser
 from steembi.member import Member
 
 
-def memo_sp_delegation(transferMemos, memo_transfer_acc, sponsor, shares, sp_share_ratio):
+def memo_sp_delegation(transferMemos, memo_transfer_acc, sponsor, shares, sp_share_ratio, STEEM_symbol="STEEM"):
     if "sp_delegation" not in transferMemos:
         return
     if transferMemos["sp_delegation"]["enabled"] == 0:
@@ -39,13 +39,13 @@ def memo_sp_delegation(transferMemos, memo_transfer_acc, sponsor, shares, sp_sha
             memo_text = transferMemos["sp_delegation"]["memo"] % shares
         else:
             memo_text = transferMemos["sp_delegation"]["memo"]
-        memo_transfer_acc.transfer(sponsor, 0.001, "STEEM", memo=memo_text)
+        memo_transfer_acc.transfer(sponsor, 0.001, STEEM_symbol, memo=memo_text)
         sleep(4)
     except:
-        print("Could not sent 0.001 STEEM to %s" % sponsor)
+        print("Could not sent 0.001 %s to %s" % (STEEM_symbol, sponsor))
 
 
-def memo_welcome(transferMemos, memo_transfer_acc, sponsor):
+def memo_welcome(transferMemos, memo_transfer_acc, sponsor, STEEM_symbol="STEEM"):
     if "welcome" not in transferMemos:
         return
     
@@ -55,13 +55,13 @@ def memo_welcome(transferMemos, memo_transfer_acc, sponsor):
         return    
     try:
         memo_text = transferMemos["welcome"]["memo"]
-        memo_transfer_acc.transfer(sponsor, 0.001, "STEEM", memo=memo_text)
+        memo_transfer_acc.transfer(sponsor, 0.001, STEEM_symbol, memo=memo_text)
         sleep(4)
     except:
-        print("Could not sent 0.001 STEEM to %s" % sponsor)
+        print("Could not sent 0.001 %s to %s" % (STEEM_symbol, sponsor))
     
 
-def memo_sponsoring(transferMemos, memo_transfer_acc, s, sponsor):
+def memo_sponsoring(transferMemos, memo_transfer_acc, s, sponsor, STEEM_symbol="STEEM"):
     if "sponsoring" not in transferMemos:
         return
     if transferMemos["sponsoring"]["enabled"] == 0:
@@ -73,13 +73,13 @@ def memo_sponsoring(transferMemos, memo_transfer_acc, s, sponsor):
             memo_text = transferMemos["sponsoring"]["memo"] % sponsor
         else:
             memo_text = transferMemos["sponsoring"]["memo"]
-        memo_transfer_acc.transfer(s, 0.001, "STEEM", memo=memo_text)
+        memo_transfer_acc.transfer(s, 0.001, STEEM_symbol, memo=memo_text)
         sleep(4)
     except:
-        print("Could not sent 0.001 STEEM to %s" % s)
+        print("Could not sent 0.001 %s to %s" % (STEEM_symbol, s))
 
 
-def memo_update_shares(transferMemos, memo_transfer_acc, sponsor, shares):
+def memo_update_shares(transferMemos, memo_transfer_acc, sponsor, shares, STEEM_symbol="STEEM"):
     if "update_shares" not in transferMemos:
         return
     if transferMemos["update_shares"]["enabled"] == 0:
@@ -91,13 +91,13 @@ def memo_update_shares(transferMemos, memo_transfer_acc, sponsor, shares):
             memo_text = transferMemos["update_shares"]["memo"] % shares
         else:
             memo_text = transferMemos["update_shares"]["memo"]
-        memo_transfer_acc.transfer(sponsor, 0.001, "STEEM", memo=memo_text)
+        memo_transfer_acc.transfer(sponsor, 0.001, STEEM_symbol, memo=memo_text)
         sleep(4)
     except:
-        print("Could not sent 0.001 STEEM to %s" % sponsor)    
+        print("Could not sent 0.001 %s to %s" % (STEEM_symbol, sponsor))
 
 
-def memo_sponsoring_update_shares(transferMemos, memo_transfer_acc, s, sponsor, shares):
+def memo_sponsoring_update_shares(transferMemos, memo_transfer_acc, s, sponsor, shares, STEEM_symbol="STEEM"):
     
     if "sponsoring_update_shares" not in transferMemos:
         return
@@ -115,10 +115,10 @@ def memo_sponsoring_update_shares(transferMemos, memo_transfer_acc, s, sponsor, 
             memo_text = transferMemos["sponsoring_update_shares"]["memo"] % sponsor
         else:
             memo_text = transferMemos["sponsoring_update_shares"]["memo"]
-        memo_transfer_acc.transfer(s, 0.001, "STEEM", memo=memo_text)
+        memo_transfer_acc.transfer(s, 0.001, STEEM_symbol, memo=memo_text)
         sleep(4)
     except:
-        print("Could not sent 0.001 STEEM to %s" % s)  
+        print("Could not sent 0.001 %s to %s" % (STEEM_symbol, s))  
 
 
 if __name__ == "__main__":
@@ -133,6 +133,7 @@ if __name__ == "__main__":
         databaseConnector = config_data["databaseConnector"]
         databaseConnector2 = config_data["databaseConnector2"]
         mgnt_shares = config_data["mgnt_shares"]
+        hive_blockchain = config_data["hive_blockchain"]
         
     start_prep_time = time.time()
     db2 = dataset.connect(databaseConnector2)
@@ -214,7 +215,7 @@ if __name__ == "__main__":
         #print(key_list)
         nodes = NodeList()
         nodes.update_nodes()
-        stm = Steem(keys=keys_list, node=nodes.get_nodes())
+        stm = Steem(keys=keys_list, node=nodes.get_nodes(hive=hive_blockchain))
         
         if memo_transfer_acc is not None:
             try:
@@ -324,7 +325,7 @@ if __name__ == "__main__":
                          
                     if sponsor not in member_data:
                         # Build and send transfer with memo to welcome new member
-                        memo_welcome(transferMemos, memo_transfer_acc, sponsor)
+                        memo_welcome(transferMemos, memo_transfer_acc, sponsor, STEEM_symbol=stm.steem_symbol)
 
                         member = Member(sponsor, shares, timestamp)
                         member.append_share_age(timestamp, shares)
@@ -336,7 +337,7 @@ if __name__ == "__main__":
                         member_data[sponsor]["shares"] += shares
                         
                         # Build and send transfer with memo about new shares
-                        memo_update_shares(transferMemos, memo_transfer_acc, sponsor, member_data[sponsor]["shares"])
+                        memo_update_shares(transferMemos, memo_transfer_acc, sponsor, member_data[sponsor]["shares"], STEEM_symbol=stm.steem_symbol)
                         member_data[sponsor].append_share_age(timestamp, shares)
 
                     if len(sponsee) == 0:
@@ -345,7 +346,7 @@ if __name__ == "__main__":
                         shares = sponsee[s]
                         if s not in member_data:
                             # Build and send transfer with memo to welcome new sponsered member
-                            memo_sponsoring(transferMemos, memo_transfer_acc, s, sponsor)
+                            memo_sponsoring(transferMemos, memo_transfer_acc, s, sponsor, STEEM_symbol=stm.steem_symbol)
                                 
                             member = Member(s, shares, timestamp)
                             member.append_share_age(timestamp, shares)
@@ -355,7 +356,7 @@ if __name__ == "__main__":
                             member_data[s]["latest_enrollment"] = timestamp
                             member_data[s]["shares"] += shares
                             # Build and send transfer with memo about new sponsored shares
-                            memo_sponsoring_update_shares(transferMemos, memo_transfer_acc, s, sponsor, member_data[s]["shares"])
+                            memo_sponsoring_update_shares(transferMemos, memo_transfer_acc, s, sponsor, member_data[s]["shares"], STEEM_symbol=stm.steem_symbol)
                             member_data[s].append_share_age(timestamp, shares)
 
 

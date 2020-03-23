@@ -34,6 +34,7 @@ if __name__ == "__main__":
         # print(config_data)
         databaseConnector = config_data["databaseConnector"]
         databaseConnector2 = config_data["databaseConnector2"]
+        hive_blockchain = config_data["hive_blockchain"]
 
     start_prep_time = time.time()
     db = dataset.connect(databaseConnector)
@@ -126,7 +127,7 @@ if __name__ == "__main__":
     for k in keys:
         if k["key_type"] == 'posting':
             keys_list.append(k["wif"].replace("\n", '').replace('\r', ''))    
-    node_list = nodes.get_nodes(normal=normal, appbase=appbase, wss=wss, https=https)
+    node_list = nodes.get_nodes(hive=hive_blockchain)
     stm = Steem(node=node_list, keys=keys_list, num_retries=5, call_num_retries=3, timeout=15, nobroadcast=nobroadcast) 
     
     b = Blockchain(steem_instance = stm)

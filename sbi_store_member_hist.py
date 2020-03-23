@@ -28,6 +28,7 @@ if __name__ == "__main__":
         # print(config_data)
         databaseConnector = config_data["databaseConnector"]
         databaseConnector2 = config_data["databaseConnector2"]
+        hive_blockchain = config_data["hive_blockchain"]
     
     # sqlDataBaseFile = os.path.join(path, database)
     # databaseConnector = "sqlite:///" + sqlDataBaseFile
@@ -86,7 +87,7 @@ if __name__ == "__main__":
     except:
         print("could not update nodes")
         
-    node_list = nodes.get_nodes()
+    node_list = nodes.get_nodes(hive=hive_blockchain)
     stm = Steem(node=node_list, num_retries=3, timeout=10)
     # print(str(stm))
     set_shared_steem_instance(stm)
