@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from beem.instance import set_shared_steem_instance
 from beem.blockchain import Blockchain
 from beem.account import Account
+from beem.vote import Vote
 import time 
 import json
 import os
@@ -110,8 +111,7 @@ if __name__ == "__main__":
         if k["key_type"] == 'posting':
             keys_list.append(k["wif"].replace("\n", '').replace('\r', ''))
     node_list = nodes.get_nodes(normal=normal, appbase=appbase, wss=wss, https=https)
-    if "https://api.steemit.com" in node_list:
-        node_list.remove("https://api.steemit.com")    
+   
     stm = Steem(node=node_list, keys=keys_list, num_retries=5, call_num_retries=3, timeout=15, nobroadcast=nobroadcast)      
     
     voter_accounts = {}
@@ -130,7 +130,7 @@ if __name__ == "__main__":
     for authorperm in post_list:
 
         created = post_list[authorperm]["created"]
-        if (datetime.utcnow() - created).total_seconds() > 3 * 24 * 60 * 60:
+        if (datetime.utcnow() - created).total_seconds() > 1 * 24 * 60 * 60:
             continue
         if (start_timestamp > created):
             continue
@@ -143,7 +143,8 @@ if __name__ == "__main__":
             postTrx.update_comment_to_old(author, created, True)
 
         member = Member(memberStorage.get(author))
-        if member["comment_upvote"] == 0 and post_list[authorperm]["main_post"] == 0:
+#        if member["comment_upvote"] == 0 and post_list[authorperm]["main_post"] == 0:
+        if post_list[authorperm]["main_post"] == 0:
             continue
         if member["blacklisted"]:
             continue
@@ -157,24 +158,37 @@ if __name__ == "__main__":
         if post_list[authorperm]["main_post"] == 1 and rshares < minimum_vote_threshold:
             continue
         elif post_list[authorperm]["main_post"] == 0 and rshares < minimum_vote_threshold * 2:
-            continue        
-        try:
-            c = Comment(authorperm, steem_instance=stm)
-        except:
+            continue
+        cnt = 0
+        c = None
+        while c is None and cnt < 5:
+            cnt += 1
+            try:
+                c = Comment(authorperm, use_tags_api=True, steem_instance=stm)
+            except:
+                c = None
+                stm.rpc.next()
+        if c is None:
+            print("Error getting %s" % authorperm)
             continue
         main_post = c.is_main_post()
         already_voted = False
         if c.time_elapsed() > timedelta(hours=156):
             continue        
-        voted_after = 900
-        for v in c["active_votes"]:
+        voted_after = 300
+            
+        for v in c.get_votes(raw_data=True):
             if v["voter"] in accounts:
                 already_voted = True
-                voted_after = (v["time"] - c["created"]).total_seconds()
+                try:
+                    
+                    voted_after = (v["time"] - c["created"]).total_seconds()
+                except:
+                    voted_after =300
         if already_voted:
             postTrx.update_voted(author, created, already_voted, voted_after)
             continue
-        vote_delay_sec = 15 * 60
+        vote_delay_sec = 5 * 60
         if member["upvote_delay"] is not None:
             vote_delay_sec = member["upvote_delay"]
         if c.time_elapsed() < timedelta(seconds=(vote_delay_sec - upvote_delay_correction)):
@@ -208,7 +222,7 @@ if __name__ == "__main__":
             elif voter is not None:
                 print("Comment Upvote %s from %s with %.2f %%" % (author, voter, vote_percentage)) 
                 vote_sucessfull = False
-                voted_after = 900
+                voted_after = 300
                 cnt = 0
                 vote_time = None
                 while not vote_sucessfull and cnt < 5:
@@ -216,12 +230,13 @@ if __name__ == "__main__":
                         c.upvote(vote_percentage, voter=voter)
                         time.sleep(4)
                         c.refresh()
-                        for v in c["active_votes"]:
+                        for v in c.get_votes(raw_data=True):
                             if voter == v["voter"]:
                                 vote_sucessfull = True
                                 vote_time = v["time"]
                                 voted_after = (v["time"] - c["created"]).total_seconds()
-                    except:
+                    except Exception as e:
+                        print(e)
                         time.sleep(4)
                         if cnt > 0:
                             c.steem.rpc.next()
@@ -282,11 +297,12 @@ if __name__ == "__main__":
                                 c.upvote(vote_percentage, voter=voter)
                                 time.sleep(4)
                                 c.refresh()
-                                for v in c["active_votes"]:
+                                for v in c.get_votes(raw_data=True):
                                     if voter == v["voter"]:
                                         vote_sucessfull = True
                                         vote_time = v["time"]
-                            except:
+                            except Exception as e:
+                                print(e)
                                 time.sleep(4)
                                 if cnt > 0:
                                     c.steem.rpc.next()
@@ -308,19 +324,20 @@ if __name__ == "__main__":
                     print("Upvote %s from %s with %.2f %%" % (author, voter, vote_percentage))
                     vote_sucessfull = False
                     cnt = 0
-                    voted_after = 900
+                    voted_after = 300
                     vote_time = None
                     while not vote_sucessfull and cnt < 5:
                         try:
                             c.upvote(vote_percentage, voter=voter)
                             time.sleep(4)
                             c.refresh()
-                            for v in c["active_votes"]:
+                            for v in c.get_votes(raw_data=True):
                                 if voter == v["voter"]:
                                     vote_sucessfull = True
                                     vote_time = v["time"]
                                     voted_after = (v["time"] - c["created"]).total_seconds()
-                        except:
+                        except Exception as e:
+                            print(e)
                             time.sleep(4)
                             if cnt > 0:
                                 c.steem.rpc.next()

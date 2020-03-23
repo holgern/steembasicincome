@@ -87,8 +87,6 @@ if __name__ == "__main__":
         print("could not update nodes")
         
     node_list = nodes.get_nodes()
-    if "https://api.steemit.com" in node_list:
-        node_list.remove("https://api.steemit.com")     
     stm = Steem(node=node_list, num_retries=3, timeout=10)
     # print(str(stm))
     set_shared_steem_instance(stm)
@@ -115,6 +113,8 @@ if __name__ == "__main__":
         trx_id_list = accountTrx.get_block_trx_id(start_block)
     # end_block = current_block["id"] 
     end_block = current_block["id"] - (20 * 10)
+    if end_block > start_block + 6000:
+        end_block = start_block + 6000
     
     print("Checking member upvotes from %d to %d" % (start_block, end_block))
     
@@ -135,6 +135,7 @@ if __name__ == "__main__":
     cnt = 0
     comment_cnt = 0
     vote_cnt = 0
+    # print("Check rshares from %d - %d" % (int(start_block), int(end_block)))
     for op in b.stream(start=int(start_block), stop=int(end_block), opNames=["vote", "comment"], threading=False, thread_num=8):
         block_num = op["block_num"]
         if last_block_num is None:
@@ -155,7 +156,7 @@ if __name__ == "__main__":
             if op["author"] not in member_accounts:
                 continue
             try:
-                c = Comment(op, steem_instance=stm)
+                c = Comment(op, use_tags_api=True, steem_instance=stm)
                 c.refresh()
             except:
                 continue
@@ -182,31 +183,37 @@ if __name__ == "__main__":
                 continue
             if op["author"] in member_accounts and op["voter"] in accounts:
                 authorperm=construct_authorperm(op["author"], op["permlink"])
-                try:
-                    vote = Vote(op["voter"], authorperm=authorperm, steem_instance=stm)
-                except:
-                    continue
+                vote = Vote(op["voter"], authorperm=authorperm, steem_instance=stm)
                 print("member %s upvoted with %d" % (op["author"], int(vote["rshares"])))
                 member_data[op["author"]]["rewarded_rshares"] += int(vote["rshares"])
                 member_data[op["author"]]["balance_rshares"] -= int(vote["rshares"])
+                
                 upvote_delay = member_data[op["author"]]["upvote_delay"]
                 if upvote_delay is None:
-                    upvote_delay = 900
+                    upvote_delay = 300
                 performance = 0
                 c = Comment(authorperm, steem_instance=stm)
-                curation_rewards_SBD = c.get_curation_rewards(pending_payout_SBD=True)
+                
+                try:
+                    
+                    curation_rewards_SBD = c.get_curation_rewards(pending_payout_SBD=True)
+                    curation_SBD = curation_rewards_SBD["active_votes"][vote["voter"]]
+                    if vote_SBD > 0:
+                        performance = (float(curation_SBD) / vote_SBD * 100)
+                    else:
+                        performance = 0                    
+                except:
+                    performance = 0
+                    curation_rewards_SBD = None
+                    
                 rshares = int(vote["rshares"])
                 vote_SBD = stm.rshares_to_sbd(int(vote["rshares"]))
-                curation_SBD = curation_rewards_SBD["active_votes"][vote["voter"]]
-                if vote_SBD > 0:
-                    performance = (float(curation_SBD) / vote_SBD * 100)
-                else:
-                    performance = 0
+
                 best_performance = 0
                 best_time_delay = 0
                 for v in c["active_votes"]:
                     v_SBD = stm.rshares_to_sbd(int(v["rshares"]))
-                    if v_SBD > 0 and int(v["rshares"]) > rshares * 0.5:
+                    if v_SBD > 0 and int(v["rshares"]) > rshares * 0.5 and curation_rewards_SBD is not None:
                         p = float(curation_rewards_SBD["active_votes"][v["voter"]]) / v_SBD * 100
                         if p > best_performance:
                             best_performance = p
@@ -214,10 +221,10 @@ if __name__ == "__main__":
                 
                 if best_performance > performance * 1.05:
                     member_data[op["author"]]["upvote_delay"] = (upvote_delay * 19 + best_time_delay) / 20
-                    if member_data[op["author"]]["upvote_delay"] > 900:
-                        member_data[op["author"]]["upvote_delay"] = 900
-                    elif member_data[op["author"]]["upvote_delay"] < 300:
+                    if member_data[op["author"]]["upvote_delay"] > 300:
                         member_data[op["author"]]["upvote_delay"] = 300
+                    elif member_data[op["author"]]["upvote_delay"] < 100:
+                        member_data[op["author"]]["upvote_delay"] = 100
                 updated_member_data.append(member_data[op["author"]])
                     
                 curation_data = {"authorperm": authorperm, "member": op["author"], "created": c["created"], "best_time_delay": best_time_delay, "best_curation_performance": best_performance,

@@ -211,7 +211,7 @@ class ParseAccountHist(list):
         if sponsee_amount != shares and not account_error and True:
             sponsee_account = self.get_highest_avg_share_age_account()
             sponsee_shares = shares-sponsee_amount
-            if sponsee_shares > 0:
+            if sponsee_shares > 0 and sponsee_account is not None:
                 sponsee = {sponsee_account: sponsee_shares}
                 print("%s sponsers %s with %d shares" % (sponsor, sponsee_account, sponsee_shares))
                 self.new_transfer_record(index, processed_memo, account, sponsor, json.dumps(sponsee), shares, timestamp, share_type=share_type)

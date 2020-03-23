@@ -135,14 +135,16 @@ if __name__ == "__main__":
     # print("reading all authorperm")
     already_voted_posts = []
     flagged_posts = []
-    start_block = b.get_current_block_num() - int(201600)
+    start_block = b.get_current_block_num() - int(28800)
     stop_block = b.get_current_block_num()
     last_block_print = start_block
     
     latest_update = postTrx.get_latest_post()
     latest_block = postTrx.get_latest_block()
-    if latest_block is not None:
+    if latest_block is not None and latest_block > start_block:
         latest_update_block = latest_block
+    elif latest_block is not None and latest_block < start_block:
+        latest_update_block = start_block
     elif latest_update is not None:
         latest_update_block = b.get_estimated_block_num(latest_update)
     else:
@@ -150,6 +152,8 @@ if __name__ == "__main__":
     print("latest update %s - %d to %d" % (str(latest_update), latest_update_block, stop_block))
     
     start_block = max([latest_update_block, start_block]) + 1
+    if stop_block > start_block + 6000:
+        stop_block = start_block + 6000
     cnt = 0
     updated_accounts = []
     posts_dict = {}
@@ -167,10 +171,16 @@ if __name__ == "__main__":
             last_block_print = ops["block_num"]
             print("blocks left %d - post found: %d" % (ops["block_num"] - stop_block, len(posts_dict)))
         authorperm = construct_authorperm(ops)
-        
-        try:
-            c = Comment(authorperm, steem_instance=stm)
-        except:
+        c = None
+        cnt = 0
+        while c is None and cnt < 5:
+            cnt += 1
+            try:
+                c = Comment(authorperm, use_tags_api=True, steem_instance=stm)
+            except:
+                c = None
+                continue
+        if c is None:
             continue
         main_post = c.is_main_post()
         if ops["author"] not in changed_member_data:
@@ -235,7 +245,7 @@ if __name__ == "__main__":
         skip = False
         if "tags" in c and c["tags"] is not None:
             for tag in c["tags"]:
-                if tag is not None and tag.lower() in blacklist_tags:
+                if tag is not None and isinstance(tag, str) and tag.lower() in blacklist_tags:
                     skip = True
         json_metadata = c.json_metadata
         if isinstance(json_metadata, str):
@@ -257,7 +267,7 @@ if __name__ == "__main__":
         
         vote_delay = member_data[ops["author"]]["upvote_delay"]
         if vote_delay is None:
-            vote_delay = 900
+            vote_delay = 300
         posts_dict[authorperm] = {"authorperm": authorperm, "author": ops["author"], "created": dt_created, "block": ops["block_num"], "main_post": main_post,
                      "voted": already_voted, "skip": skip, "vote_delay": vote_delay}
         

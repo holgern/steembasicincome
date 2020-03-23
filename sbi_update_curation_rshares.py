@@ -97,6 +97,7 @@ if __name__ == "__main__":
         nodes = NodeList()
         nodes.update_nodes()
         stm = Steem(node=nodes.get_nodes())
+        stm2 = Steem(node=nodes.get_nodes(), use_condenser=True)
 
         member_data = {}
         n_records = 0
@@ -167,10 +168,11 @@ if __name__ == "__main__":
                 post_rshares = 0
                 for authorperm in blog:
                     post = Comment(authorperm, steem_instance=stm)
+                    print("Checking post %s" % post["authorperm"])
                     if post["created"] > addTzInfo(new_paid_post):
                         new_paid_post = post["created"].replace(tzinfo=None) 
                     last_paid_post = post["created"].replace(tzinfo=None) 
-                    all_votes = ActiveVotes(post["authorperm"])
+                    all_votes = ActiveVotes(post["authorperm"], steem_instance=stm2)
                     for vote in all_votes:
                         if vote["voter"] in member_data:
                             if member_data[vote["voter"]]["shares"] <= 0:
@@ -193,7 +195,7 @@ if __name__ == "__main__":
                     if post["created"] > addTzInfo(new_paid_comment):
                         new_paid_comment = post["created"].replace(tzinfo=None)
                     last_paid_comment = post["created"].replace(tzinfo=None) 
-                    all_votes = ActiveVotes(post["authorperm"])
+                    all_votes = ActiveVotes(post["authorperm"], steem_instance=stm2)
                     for vote in all_votes:
                         if vote["voter"] in member_data:
                             if member_data[vote["voter"]]["shares"] <= 0:
