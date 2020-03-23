@@ -125,6 +125,7 @@ if __name__ == "__main__":
     date_72h_before = addTzInfo(date_now - timedelta(seconds=72 * 60 * 60))    
     print("delete old hist data")
     accountTrx.delete_old_data(end_block - (20 * 60 * 24 * 7))
+    print("delete done")
     
     # print("start to stream")
     db_data = []
@@ -263,8 +264,10 @@ if __name__ == "__main__":
             last_block_num = block_num
             
             db = dataset.connect(databaseConnector)
+            db2 = dataset.connect(databaseConnector2)
             accountTrx.db = db
             curationOptimTrx.db = db
+            memberStorage.db = db2
             accountTrx.add_batch(db_data)
             db_data = []
             if len(updated_member_data) > 0:
@@ -284,6 +287,8 @@ if __name__ == "__main__":
         accountTrx.add_batch(db_data)
         db_data = []
     if len(updated_member_data) > 0:
+        db2 = dataset.connect(databaseConnector2)
+        memberStorage.db = db2
         memberStorage.add_batch(updated_member_data)
         updated_member_data = []
 

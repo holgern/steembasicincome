@@ -160,7 +160,7 @@ if __name__ == "__main__":
                 print("account %s - %d" % (account["name"], start_index))
             data = []
             for op in account.history(start=start_index, use_block_num=False, only_ops=["transfer"]):
-                amount = Amount(op["amount"])
+                amount = Amount(op["amount"], steem_instance=stm)
                 virtual_op = op["virtual_op"]
                 trx_in_block = op["trx_in_block"]
                 if virtual_op > 0:
