@@ -187,8 +187,9 @@ if __name__ == "__main__":
         if ops["author"] not in changed_member_data:
             changed_member_data.append(ops["author"])
         if main_post:
-            member_data[ops["author"]]["last_post"] = c["created"]
-            member_data[ops["author"]]["comment_upvote"] = 0
+            if c["created"] == c["last_update] :
+                member_data[ops["author"]]["last_post"] = c["created"]
+                member_data[ops["author"]]["comment_upvote"] = 0
         else:
             member_data[ops["author"]]["last_comment"] = c["created"]
             status_command = c.body.find("!sbi status")
