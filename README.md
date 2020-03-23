@@ -67,9 +67,11 @@ A file `config.json` needs to be created:
 
         "databaseConnector": "mysql://user:password@localhost/sbi_steem_ops",
         "databaseConnector2": "mysql://user:password@localhost/sbi",
-        "mgnt_shares": {"josephsavage": 3, "earthnation-bot": 1, "holger80": 1}
+        "hive_blockchain": true,
+        "mgnt_shares": {"josephsavage": 4, "holger80": 1}
 }
 ```
+For STEEM set hive_blockchain to false.
 
 ## Running steembasicincome
 
