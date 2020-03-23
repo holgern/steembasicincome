@@ -147,7 +147,7 @@ class ParseAccountHist(list):
                 data = {"index": index, "sender": account, "to": op["to"], "memo": processed_memo, "encrypted": encrypted, "referenced_accounts": None, "amount": amount.amount, "amount_symbol": amount.symbol, "timestamp": timestamp}
                 self.transactionOutStorage.add(data)                
                 return
-            trx = self.trxStorage.get_SBD_transfer(op["to"], shares, formatTimeString(op["timestamp"]))
+            trx = self.trxStorage.get_SBD_transfer(op["to"], shares, formatTimeString(op["timestamp"]), SBD_symbol=self.steem.sbd_symbol)
             sponsee = json.dumps({})
             if trx:
                 sponsee = trx["sponsee"]
