@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Dec 29, 2018 at 10:41 PM
+-- Generation Time: Mar 23, 2020 at 03:37 PM
 -- Server version: 10.1.29-MariaDB-6
 -- PHP Version: 7.1.20-1+ubuntu18.04.1+deb.sury.org+1
 
@@ -13,6 +13,24 @@ SET time_zone = "+00:00";
 --
 -- Database: `sbi_steem_ops`
 --
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `curation_optimization`
+--
+
+CREATE TABLE `curation_optimization` (
+  `authorperm` varchar(300) NOT NULL,
+  `member` varchar(16) NOT NULL,
+  `created` datetime NOT NULL,
+  `best_time_delay` float NOT NULL,
+  `best_curation_performance` float NOT NULL,
+  `vote_rshares` bigint(20) NOT NULL,
+  `updated` datetime NOT NULL,
+  `vote_delay` float NOT NULL,
+  `performance` float NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -46,11 +64,14 @@ CREATE TABLE `posts_comments` (
   `authorperm` varchar(300) NOT NULL,
   `author` varchar(16) NOT NULL,
   `created` datetime NOT NULL,
+  `block` int(11) DEFAULT NULL,
   `voted` tinyint(1) NOT NULL DEFAULT '0',
   `rshares` bigint(20) NOT NULL DEFAULT '0',
   `main_post` tinyint(1) NOT NULL DEFAULT '0',
   `skip` tinyint(1) NOT NULL DEFAULT '0',
-  `comment_to_old` tinyint(1) NOT NULL DEFAULT '0'
+  `comment_to_old` tinyint(1) NOT NULL DEFAULT '0',
+  `vote_delay` float NOT NULL DEFAULT '900',
+  `voted_after` float DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -223,9 +244,9 @@ CREATE TABLE `sbi10_ops` (
 
 CREATE TABLE `sbi_ops` (
   `virtual_op` int(11) NOT NULL,
-  `op_acc_index` int(11) NOT NULL,
+  `op_acc_index` bigint(19) NOT NULL,
   `op_acc_name` varchar(50) NOT NULL,
-  `block` int(11) NOT NULL,
+  `block` bigint(19) NOT NULL,
   `trx_in_block` int(11) NOT NULL,
   `op_in_trx` int(11) NOT NULL,
   `timestamp` datetime NOT NULL,
@@ -278,13 +299,21 @@ CREATE TABLE `transfers` (
 --
 
 --
+-- Indexes for table `curation_optimization`
+--
+ALTER TABLE `curation_optimization`
+  ADD PRIMARY KEY (`member`,`created`),
+  ADD KEY `ix_curation_optimization_1f3f6589887b9c0e` (`member`,`created`);
+
+--
 -- Indexes for table `member_hist`
 --
 ALTER TABLE `member_hist`
   ADD PRIMARY KEY (`block_num`,`trx_id`,`op_num`),
   ADD KEY `author` (`author`),
   ADD KEY `voter` (`voter`),
-  ADD KEY `type` (`type`);
+  ADD KEY `type` (`type`),
+  ADD KEY `block_num` (`block_num`);
 
 --
 -- Indexes for table `posts_comments`
@@ -301,7 +330,8 @@ ALTER TABLE `posts_comments`
 ALTER TABLE `sbi2_ops`
   ADD PRIMARY KEY (`virtual_op`,`block`,`trx_in_block`,`op_in_trx`),
   ADD KEY `block` (`block`),
-  ADD KEY `op_acc_index` (`op_acc_index`);
+  ADD KEY `op_acc_index` (`op_acc_index`),
+  ADD KEY `op_acc_index_2` (`op_acc_index`,`type`);
 
 --
 -- Indexes for table `sbi3_ops`

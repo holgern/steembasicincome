@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Mar 18, 2019 at 01:50 PM
+-- Generation Time: Mar 23, 2020 at 03:36 PM
 -- Server version: 10.1.29-MariaDB-6
 -- PHP Version: 7.1.20-1+ubuntu18.04.1+deb.sury.org+1
 
@@ -25,7 +25,9 @@ CREATE TABLE `accounts` (
   `voting` tinyint(1) NOT NULL,
   `transfer` tinyint(1) NOT NULL DEFAULT '0',
   `upvote_reward_rshares` tinyint(1) NOT NULL DEFAULT '0',
-  `transfer_memo_sender` tinyint(1) NOT NULL DEFAULT '0'
+  `transfer_memo_sender` tinyint(1) NOT NULL DEFAULT '0',
+  `last_paid_post` datetime DEFAULT NULL,
+  `last_paid_comment` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -252,6 +254,26 @@ CREATE TABLE `trx` (
   `share_type` varchar(50) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `trx_backup`
+--
+
+CREATE TABLE `trx_backup` (
+  `index` int(11) NOT NULL,
+  `source` varchar(50) NOT NULL,
+  `memo` text,
+  `account` varchar(50) DEFAULT NULL,
+  `sponsor` varchar(50) DEFAULT NULL,
+  `sponsee` text,
+  `shares` int(11) DEFAULT NULL,
+  `vests` decimal(15,6) DEFAULT NULL,
+  `timestamp` datetime NOT NULL,
+  `status` varchar(50) NOT NULL,
+  `share_type` varchar(50) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 --
 -- Indexes for dumped tables
 --
@@ -331,6 +353,12 @@ ALTER TABLE `trx`
   ADD PRIMARY KEY (`index`,`source`);
 
 --
+-- Indexes for table `trx_backup`
+--
+ALTER TABLE `trx_backup`
+  ADD PRIMARY KEY (`index`,`source`);
+
+--
 -- AUTO_INCREMENT for dumped tables
 --
 
@@ -348,14 +376,14 @@ ALTER TABLE `pending_refunds`
 -- AUTO_INCREMENT for table `transaction_memo`
 --
 ALTER TABLE `transaction_memo`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=343136232;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=343136664;
 --
 -- AUTO_INCREMENT for table `transaction_out`
 --
 ALTER TABLE `transaction_out`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6312802;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6387232;
 --
 -- AUTO_INCREMENT for table `transfer_memos`
 --
 ALTER TABLE `transfer_memos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
