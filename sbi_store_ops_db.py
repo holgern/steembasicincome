@@ -49,8 +49,7 @@ if __name__ == "__main__":
         nodes.update_nodes()
         # nodes.update_nodes(weights={"hist": 1})
         stm = Steem(node=nodes.get_nodes(hive=hive_blockchain))
-        # print(str(stm))
-        assert stm.is_hive == hive_blockchain
+        print(str(stm))
         
         print("Fetch new account history ops.")
         

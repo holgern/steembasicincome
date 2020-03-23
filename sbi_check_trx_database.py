@@ -26,6 +26,7 @@ if __name__ == "__main__":
         databaseConnector2 = config_data["databaseConnector2"]
         other_accounts = config_data["other_accounts"]
         mgnt_shares = config_data["mgnt_shares"]
+        hive_blockchain = config_data["hive_blockchain"]
     db = dataset.connect(databaseConnector)
     db2 = dataset.connect(databaseConnector2)
     # Create keyStorage

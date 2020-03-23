@@ -27,6 +27,7 @@ if __name__ == "__main__":
         databaseConnector2 = config_data["databaseConnector2"]
         other_accounts = config_data["other_accounts"]
         mgnt_shares = config_data["mgnt_shares"]
+        hive_blockchain = config_data["hive_blockchain"]
 
     db2 = dataset.connect(databaseConnector2)
     # Create keyStorage
@@ -54,7 +55,7 @@ if __name__ == "__main__":
         nodes.update_nodes()
     except:
         print("could not update nodes")    
-    stm = Steem(node=nodes.get_nodes())
+    stm = Steem(node=nodes.get_nodes(hive=hive_blockchain))
     data = trxStorage.get_all_data()
     status = {}
     share_type = {}

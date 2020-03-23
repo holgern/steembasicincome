@@ -34,6 +34,7 @@ if __name__ == "__main__":
         databaseConnector2 = config_data["databaseConnector2"]
         other_accounts = config_data["other_accounts"]
         mgnt_shares = config_data["mgnt_shares"]
+        hive_blockchain = config_data["hive_blockchain"]
         
         
     db2 = dataset.connect(databaseConnector2)
@@ -78,7 +79,7 @@ if __name__ == "__main__":
             nodes.update_nodes()
         except:
             print("could not update nodes")        
-        stm = Steem(keys=key_list, node=nodes.get_nodes())        
+        stm = Steem(keys=key_list, node=nodes.get_nodes(hive=hive_blockchain))        
         if True: # check if member are blacklisted
             member_accounts = memberStorage.get_all_accounts()
             member_data = {}
