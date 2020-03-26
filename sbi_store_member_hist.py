@@ -247,7 +247,7 @@ if __name__ == "__main__":
             db_data.append(data)
             last_trx_id = op["trx_id"]
 
-        if cnt % 1000 == 0 and cnt > 0:
+        if cnt % 200 == 0 and cnt > 0:
             time_for_blocks = time.time() - start_time
             block_diff_for_db_storage = block_num - last_block_num
             if block_diff_for_db_storage == 0:

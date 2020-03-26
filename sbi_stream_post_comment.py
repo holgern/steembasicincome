@@ -174,12 +174,14 @@ if __name__ == "__main__":
         authorperm = construct_authorperm(ops)
         c = None
         cnt = 0
+        use_tags_api=True
         while c is None and cnt < 5:
             cnt += 1
             try:
-                c = Comment(authorperm, use_tags_api=True, steem_instance=stm)
+                c = Comment(authorperm, use_tags_api=use_tags_api, steem_instance=stm)
             except:
                 c = None
+                use_tags_api = False
                 continue
         if c is None:
             continue
