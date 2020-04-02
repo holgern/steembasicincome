@@ -178,12 +178,17 @@ if __name__ == "__main__":
             continue        
         voted_after = 300
             
-        for v in c.get_votes(raw_data=True):
+        for v in c.get_votes():
             if v["voter"] in accounts:
                 already_voted = True
                 try:
-                    
-                    voted_after = (v["time"] - c["created"]).total_seconds()
+                    if "time" in v:
+                        voted_after = (v["time"] - c["created"]).total_seconds()
+                    elif "last_update" in v:
+                        voted_after = (v["last_update"] - c["created"]).total_seconds()
+                    else:
+                        voted_after =300
+                        
                 except:
                     voted_after =300
         if already_voted:
@@ -231,11 +236,15 @@ if __name__ == "__main__":
                         c.upvote(vote_percentage, voter=voter)
                         time.sleep(4)
                         c.refresh()
-                        for v in c.get_votes(raw_data=True):
+                        for v in c.get_votes():
                             if voter == v["voter"]:
                                 vote_sucessfull = True
-                                vote_time = v["time"]
-                                voted_after = (v["time"] - c["created"]).total_seconds()
+                                if "time" in v:
+                                    vote_time = v["time"]
+                                    voted_after = (v["time"] - c["created"]).total_seconds()
+                                else:
+                                    vote_time = v["last_update"]
+                                    voted_after = (v["last_update"] - c["created"]).total_seconds()                                    
                     except Exception as e:
                         print(e)
                         time.sleep(4)
@@ -298,10 +307,13 @@ if __name__ == "__main__":
                                 c.upvote(vote_percentage, voter=voter)
                                 time.sleep(4)
                                 c.refresh()
-                                for v in c.get_votes(raw_data=True):
+                                for v in c.get_votes():
                                     if voter == v["voter"]:
                                         vote_sucessfull = True
-                                        vote_time = v["time"]
+                                        if "time" in v:
+                                            vote_time = v["time"]
+                                        else:
+                                            vote_time = v["last_update"]
                             except Exception as e:
                                 print(e)
                                 time.sleep(4)
@@ -332,11 +344,15 @@ if __name__ == "__main__":
                             c.upvote(vote_percentage, voter=voter)
                             time.sleep(4)
                             c.refresh()
-                            for v in c.get_votes(raw_data=True):
+                            for v in c.get_votes():
                                 if voter == v["voter"]:
                                     vote_sucessfull = True
-                                    vote_time = v["time"]
-                                    voted_after = (v["time"] - c["created"]).total_seconds()
+                                    if "time" in v:
+                                        vote_time = v["time"]
+                                        voted_after = (v["time"] - c["created"]).total_seconds()
+                                    else:
+                                        vote_time = v["last_update"]
+                                        voted_after = (v["last_update"] - c["created"]).total_seconds()                                        
                         except Exception as e:
                             print(e)
                             time.sleep(4)

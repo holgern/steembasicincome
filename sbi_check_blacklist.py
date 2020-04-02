@@ -101,7 +101,10 @@ if __name__ == "__main__":
                 response = ""
                 cnt2 = 0
                 while str(response) != '<Response [200]>' and cnt2 < 10:
-                    response = requests.get("http://blacklist.usesteem.com/user/%s" % m)
+                    if hive_blockchain:
+                        response = requests.get("http://blacklist.usehive.com/user/%s" % m)
+                    else:
+                        response = requests.get("http://blacklist.usesteem.com/user/%s" % m)
                     cnt2 += 1
                     
                 

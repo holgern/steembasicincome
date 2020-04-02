@@ -213,13 +213,18 @@ if __name__ == "__main__":
 
                 best_performance = 0
                 best_time_delay = 0
-                for v in c["active_votes"]:
+                for v in c.get_votes():
                     v_SBD = stm.rshares_to_sbd(int(v["rshares"]))
                     if v_SBD > 0 and int(v["rshares"]) > rshares * 0.5 and curation_rewards_SBD is not None:
                         p = float(curation_rewards_SBD["active_votes"][v["voter"]]) / v_SBD * 100
                         if p > best_performance:
                             best_performance = p
-                            best_time_delay = ((v["time"]) - c["created"]).total_seconds()
+                            if "time" in v:
+                                best_time_delay = ((v["time"]) - c["created"]).total_seconds()
+                            elif "last_update" in v:
+                                best_time_delay = ((v["last_update"]) - c["created"]).total_seconds()
+                            else:
+                                best_time_delay = upvote_delay
                 
                 if best_performance > performance * 1.05:
                     member_data[op["author"]]["upvote_delay"] = (upvote_delay * 19 + best_time_delay) / 20
